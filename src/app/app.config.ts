@@ -4,12 +4,13 @@ import {
   provideZonelessChangeDetection,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
-import { MessageService, ConfirmationService } from 'primeng/api';
-import { providePrimeNG } from 'primeng/config';
+import { provideNzConfig } from 'ng-zorro-antd/core/config';
+import { en_GB, provideNzI18n } from 'ng-zorro-antd/i18n';
+import { provideNzIcons } from 'ng-zorro-antd/icon';
+import { NzModalService } from 'ng-zorro-antd/modal';
 import { routes } from './app.routes';
 import { provideFirebase } from './core/firebase/firebase';
-import { ZyppiPreset } from './core/theme/zyppi-preset';
-import { environment } from '../environments/environment';
+import { ICONS } from './core/theme/icons';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,18 +22,14 @@ export const appConfig: ApplicationConfig = {
       withInMemoryScrolling({ scrollPositionRestoration: 'top' }),
     ),
     provideFirebase(),
-    providePrimeNG({
-      ripple: true,
-      ...(environment.primeLicenseKey ? { license: environment.primeLicenseKey } : {}),
-      theme: {
-        preset: ZyppiPreset,
-        options: {
-          darkModeSelector: '.z-dark',
-          cssLayer: { name: 'primeng', order: 'theme, base, primeng, components, utilities' },
-        },
-      },
+    provideNzI18n(en_GB),
+    provideNzIcons(ICONS),
+    // Not root-provided in NG-ZORRO 22; shared by the Confirm helper.
+    NzModalService,
+    provideNzConfig({
+      message: { nzTop: 72, nzDuration: 3500 },
+      notification: { nzPlacement: 'topRight' },
+      modal: { nzMaskClosable: false },
     }),
-    MessageService,
-    ConfirmationService,
   ],
 };

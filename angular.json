@@ -33,8 +33,17 @@
               }
             ],
             "styles": [
+              {
+                "input": "src/themes/light.less",
+                "bundleName": "theme-light",
+                "inject": false
+              },
+              {
+                "input": "src/themes/dark.less",
+                "bundleName": "theme-dark",
+                "inject": false
+              },
               "src/tailwind.css",
-              "node_modules/primeicons/primeicons.css",
               "src/styles.scss"
             ]
           },
@@ -95,7 +104,8 @@
           "defaultConfiguration": "development"
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {}
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",

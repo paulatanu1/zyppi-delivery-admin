@@ -1,18 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToastModule } from 'primeng/toast';
 import { ThemeService } from './core/theme/theme.service';
 
 @Component({
   selector: 'z-root',
-  imports: [RouterOutlet, ToastModule, ConfirmDialogModule],
+  imports: [RouterOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <router-outlet />
-    <p-toast position="top-right" />
-    <p-confirmdialog />
-  `,
+  template: `<router-outlet />`,
   styles: `
     :host {
       display: block;

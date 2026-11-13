@@ -14,6 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Sora:wght@600;700&display=swap"
       rel="stylesheet"
     />
+    <link id="z-theme" rel="stylesheet" href="theme-light.css" />
     <script>
       // Apply the saved theme before first paint (no light flash in dark mode).
       (function () {
@@ -24,7 +25,10 @@
         var dark =
           mode === 'dark' ||
           (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        if (dark) document.documentElement.classList.add('z-dark');
+        if (dark) {
+          document.documentElement.classList.add('z-dark');
+          document.getElementById('z-theme').setAttribute('href', 'theme-dark.css');
+        }
       })();
     </script>
   </head>

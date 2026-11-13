@@ -1,33 +1,23 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzResultModule } from 'ng-zorro-antd/result';
 
-/** Forbidden / not-found, driven by route data. */
+/** Forbidden / not-found, driven by route data (`status`: 403 | 404). */
 @Component({
   selector: 'z-status-page',
-  imports: [RouterLink, ButtonModule],
+  imports: [RouterLink, NzButtonModule, NzResultModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-[60vh] grid place-items-center text-center p-6">
-      <div class="max-w-sm">
-        <div class="badge"><i [class]="data['icon']"></i></div>
-        <h2 class="text-[24px] mt-6">{{ data['heading'] }}</h2>
-        <p class="z-muted mt-2">{{ data['message'] }}</p>
-        <p-button label="Go to dashboard" routerLink="/" styleClass="mt-6" />
+    <nz-result
+      [nzStatus]="data['status']"
+      [nzTitle]="data['heading']"
+      [nzSubTitle]="data['message']"
+    >
+      <div nz-result-extra>
+        <a nz-button nzType="primary" routerLink="/">Go to dashboard</a>
       </div>
-    </div>
-  `,
-  styles: `
-    .badge {
-      display: inline-grid;
-      place-items: center;
-      width: 72px;
-      height: 72px;
-      border-radius: 24px;
-      background: var(--z-brand-soft);
-      color: var(--z-brand-text);
-      font-size: 28px;
-    }
+    </nz-result>
   `,
 })
 export class StatusPage {

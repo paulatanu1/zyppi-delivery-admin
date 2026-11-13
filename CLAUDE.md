@@ -1,6 +1,6 @@
 # Zyppi Admin — rules for Claude Code
 
-Angular 22 + PrimeNG 22 admin for the Zyppi grocery app. Firebase project `zippy-app-2024`, shared with `../../Desktop/zyppi/zyppi-APP` (Flutter app, plus `functions/`, `firestore.rules`, `storage.rules`). This is a fresh build: **do not reuse code from the old `zyppi-admin` repo**. Base branch **`development-base`**; one branch per phase (`docs/PLAN.md` §7).
+Angular 22 + NG-ZORRO 22 admin for the Zyppi grocery app. Firebase project `zippy-app-2024`, shared with `../../Desktop/zyppi/zyppi-APP` (Flutter app, plus `functions/`, `firestore.rules`, `storage.rules`). This is a fresh build: **do not reuse code from the old `zyppi-admin` repo**. Base branch **`development-base`**; one branch per phase (`docs/PLAN.md` §7).
 
 ## Commands
 - `nvm use` (Node 24.15+). After every change, `npm run check` must pass: prettier, lint, tests and build.
@@ -12,8 +12,10 @@ Angular 22 + PrimeNG 22 admin for the Zyppi grocery app. Firebase project `zippy
 - Components never import `firebase/*`. Each feature has a `<feature>.api.ts` service that uses the DI tokens in `core/firebase/firebase.ts`.
 - Orders, payments, stock and order status change **only through Cloud Functions callables**. Never write `orders`, `paymentIntents` or `inventory` directly. The same goes for anything audited.
 - Money is `int` paise, formatted only with the `rupees` pipe or `formatPaise`.
-- No literal colours in components. Use the `--z-*` CSS variables (`src/styles.scss`), PrimeNG tokens, or Tailwind with those variables. Brand surfaces use the `.z-brand` class, which carries the texture.
-- Every screen must look right in light and dark mode and from phone width up. Every async screen needs four states: loading (`p-skeleton`), empty, error with retry, and data.
+- UI comes from NG-ZORRO (`ng-zorro-antd/*` standalone modules). Register new icons in `core/theme/icons.ts`. Confirm dialogs go through `shared/ui/confirm.ts` and toasts through `NzMessageService`.
+- No literal colours in components. Use the `--z-*` CSS variables (`src/styles.scss`), the Less variables in `src/themes/*.less`, or Tailwind with those variables. Brand surfaces use the `.z-brand` class, which carries the texture.
+- Tailwind utilities are unlayered and there's no preflight (see `src/tailwind.css`). Lists need `list-none p-0` when unstyled.
+- Every screen must look right in light and dark mode and from phone width up. Every async screen needs four states: loading (`nz-skeleton`), empty, error with retry, and data.
 - Gate menus and routes with `roleGuard` plus `data.roles`, and add the item to `layout/nav.ts`.
 
 ## Ask before

@@ -1,8 +1,13 @@
-/* Layer order shared with PrimeNG (providePrimeNG cssLayer) so Tailwind
-   utilities can override component styles without !important. */
-@layer theme, base, primeng, components, utilities;
-@import 'tailwindcss';
-@plugin 'tailwindcss-primeui';
+/* Tailwind for layout utilities only; components come from NG-ZORRO.
+   - No preflight: NG-ZORRO's theme ships its own base/reset.
+   - Utilities are imported UNLAYERED on purpose: NG-ZORRO's CSS is
+     unlayered, and unlayered rules always beat layered ones, so layered
+     utilities (e.g. `mt-4` on a <p>) would silently lose to its base
+     styles. Unlayered, normal specificity applies and this file (loaded
+     after the theme) wins ties. */
+@layer theme;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css';
 @custom-variant dark (&:where(.z-dark, .z-dark *));
 
 @theme {

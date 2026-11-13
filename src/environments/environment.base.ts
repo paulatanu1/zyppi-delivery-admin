@@ -8,12 +8,6 @@ export const baseEnvironment = {
   production: true,
   useEmulators: false,
   functionsRegion: 'asia-south1',
-  /**
-   * PrimeUI license key (primeui.dev/licenses). Verified offline in the
-   * browser, so it ships in the bundle either way. Empty = PrimeNG works
-   * but shows an "Invalid PrimeUI License" badge.
-   */
-  primeLicenseKey: '',
   firebase: {
     apiKey: 'AIzaSyBeeSEObnfOYUwAT67tf1YUkyz8rTPTH_4',
     authDomain: 'zippy-app-2024.firebaseapp.com',

@@ -4,7 +4,10 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 
 const KEY = 'zyppi-admin.theme';
 
-/** Light / dark / system. Dark is the `.z-dark` class on <html>. */
+/**
+ * Light / dark / system. Dark = the `.z-dark` class on <html> (our tokens)
+ * plus the NG-ZORRO `theme-dark.css` bundle in <link id="z-theme">.
+ */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   private readonly doc = inject(DOCUMENT);
@@ -19,7 +22,11 @@ export class ThemeService {
   constructor() {
     this.media?.addEventListener('change', (e) => this.systemDark.set(e.matches));
     effect(() => {
-      this.doc.documentElement.classList.toggle('z-dark', this.isDark());
+      const dark = this.isDark();
+      this.doc.documentElement.classList.toggle('z-dark', dark);
+      const link = this.doc.getElementById('z-theme');
+      const href = dark ? 'theme-dark.css' : 'theme-light.css';
+      if (link && link.getAttribute('href') !== href) link.setAttribute('href', href);
       try {
         localStorage.setItem(KEY, this.mode());
       } catch {

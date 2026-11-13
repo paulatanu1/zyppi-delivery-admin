@@ -1,7 +1,7 @@
 # Zyppi Admin — complete management system (new repo `zyppi-delivery-admin`)
 
 ## Context
-The customer app (`zyppi-APP`, Flutter, Firebase `zippy-app-2024`) is close to launch. We need a complete operations panel. It is a **fresh build, not based on the old `zyppi-admin`**, in `git@github.com:paulatanu1/zyppi-delivery-admin.git` using Angular 22 and PrimeNG. Today the backend supports only a few admin actions: an `admin: true` claim, `adminUpdateOrderStatus`, `adminListUsers`, `adminReplySupport` and `adminCloseSupport`. There are no riders, notifications, banner scheduling, settings or kill switches, and no reports. This plan does three things:
+The customer app (`zyppi-APP`, Flutter, Firebase `zippy-app-2024`) is close to launch. We need a complete operations panel. It is a **fresh build, not based on the old `zyppi-admin`**, in `git@github.com:paulatanu1/zyppi-delivery-admin.git` using Angular 22 and NG-ZORRO (Ant Design). Today the backend supports only a few admin actions: an `admin: true` claim, `adminUpdateOrderStatus`, `adminListUsers`, `adminReplySupport` and `adminCloseSupport`. There are no riders, notifications, banner scheduling, settings or kill switches, and no reports. This plan does three things:
 - lists what exists,
 - lists what is missing,
 - sets out the frontend and backend work in phases.
@@ -109,7 +109,7 @@ Each of these changes the data model or rules, which CLAUDE.md requires you to a
 ## 5. Rider self sign-up (this plan's scope)
 There is no rider app, so the admin repo ships a **small public "Become a rider" web flow** at `/rider/apply`:
 1. Phone OTP sign-in. This is blocked when the `phoneOtp` switch is off; Google sign-in is the fallback.
-2. A multi-step PrimeNG form: personal details → vehicle → documents (camera or file upload) → bank/UPI.
+2. A multi-step NG-ZORRO form (`nz-steps`): personal details → vehicle → documents (camera or file upload) → bank/UPI.
 3. Submit, then the applicant can see their status and the rejection reason, and resubmit.
 
 A future rider Flutter app uses the same `riders` data and callables.
@@ -126,10 +126,10 @@ Approved riders become assignable on orders. Each rider has a performance tab (d
 **Setup**
 - Clone into `~/Documents/zyppi-delivery-admin`. The remote has only `main` with a LICENSE, so create `development-base` from `main`, push it, and branch features from it.
 - Angular 22: standalone components, signals, zoneless change detection, the new control flow, lazy routes per feature.
-- PrimeNG 22 with `@primeuix/themes` (Aura base) and a custom **Zyppi preset**: primary `#673AB7`, dark `#5E35B1`, tint `#EDE7F6`, surface `#D1C4E9`, accent `#2443D6`, matching `zyppi-APP/lib/core/theme/app_colors.dart`. Light and dark modes are switched with the PrimeNG `darkModeSelector`.
-- PrimeIcons, and the `@angular/fire` (Auth, Firestore, Functions, Storage, Messaging) SDK.
-- Charts through PrimeNG `p-chart` (Chart.js). XLSX/CSV import and export with `xlsx` (SheetJS) and `papaparse`. PDF reports and invoices with `pdfmake`.
-- Tailwind v4 for layout utilities only, using the `tailwindcss-primeui` plugin.
+- **NG-ZORRO 22** (Ant Design, MIT) with Zyppi Less themes (`src/themes/light.less` and `dark.less`): primary `#673AB7`, accent `#2443D6`, matching `zyppi-APP/lib/core/theme/app_colors.dart`. They're built as two CSS bundles and swapped at runtime for light and dark. Switched from PrimeNG on 2026-11-13, because PrimeNG 21 and later need a PrimeUI license.
+- Ant Design icons (registered statically), and the Firebase JS SDK behind DI tokens. `@angular/fire` has no stable release for Angular 22.
+- Charts with ngx-echarts (MIT) and ECharts (Apache 2.0). XLSX/CSV import and export with `xlsx` (SheetJS) and `papaparse`. PDF reports and invoices with `pdfmake`.
+- Tailwind v4 for layout utilities only, unlayered and without preflight.
 
 **Look**
 - The brand texture is ported from `lib/core/widgets/z_brand_texture.dart` as an inline SVG/CSS pattern on the sidebar header, the login hero and the KPI cards.
@@ -188,7 +188,7 @@ Each phase is one branch from `development-base` (admin) or `Development` (app/f
 
 | # | Phase | Repos | Done when |
 |---|---|---|---|
-| A0 | Merge `feat/ux-polish` into `Development` (config/delivery); clone and scaffold the admin (Angular 22, PrimeNG preset, theme and texture, layout, login, role guard); hosting target config | both | Login with an admin account works; light/dark shell renders |
+| A0 | Merge `feat/ux-polish` into `Development` (config/delivery); clone and scaffold the admin (Angular 22, NG-ZORRO theme, theme and texture, layout, login, role guard); hosting target config | both | Login with an admin account works; light/dark shell renders |
 | A1 | Backend foundation: roles claim, `requireRole`, audit log, `config/features` and its guards, rules plus emulator tests | functions | `npm test` green; flags toggle function behaviour in the emulator |
 | A2 | Catalog: products (with bulk import), categories, inventory, server-side keywords | both | A product is created, a 50-row XLSX is imported, and search finds it in the app |
 | A3 | Orders and payments: transitions, cancel → restock and refund, needs-review queue, invoices | both | A COD order is cancelled and its stock returns; a sandbox PayU refund goes through |

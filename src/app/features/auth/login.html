@@ -5,15 +5,25 @@
       <span class="z-display text-xl">Zyppi Admin</span>
     </div>
     <div class="max-w-md">
-      <h1 class="text-[40px] leading-[1.1]">Run every order, rider and offer from one place.</h1>
+      <h1 class="text-[40px] leading-[1.1] !text-white">
+        Run every order, rider and offer from one place.
+      </h1>
       <p class="mt-4 text-[15px] opacity-85">
         Live orders, catalog, riders, payments, notifications and reports for Purulia, Raghunathpur
         and Chelyama.
       </p>
-      <ul class="mt-8 space-y-3 text-[14px] font-semibold">
-        <li><i class="pi pi-bolt mr-2"></i>Live order board with instant status updates</li>
-        <li><i class="pi pi-verified mr-2"></i>Rider verification and assignment</li>
-        <li><i class="pi pi-chart-line mr-2"></i>Sales charts and exportable reports</li>
+      <ul class="mt-8 space-y-3 text-[14px] font-semibold list-none p-0">
+        <li>
+          <span nz-icon nzType="thunderbolt" class="mr-2"></span>Live order board with instant
+          status updates
+        </li>
+        <li>
+          <span nz-icon nzType="safety-certificate" class="mr-2"></span>Rider verification and
+          assignment
+        </li>
+        <li>
+          <span nz-icon nzType="bar-chart" class="mr-2"></span>Sales charts and exportable reports
+        </li>
       </ul>
     </div>
     <p class="text-xs opacity-70">Authorised staff only. Every action is logged.</p>
@@ -22,14 +32,15 @@
   <section class="z-backdrop flex items-center justify-center p-4 sm:p-8">
     <div class="w-full max-w-[420px]">
       <div class="flex justify-end mb-4">
-        <p-button
-          [icon]="theme.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
-          [text]="true"
-          [rounded]="true"
-          severity="secondary"
-          [ariaLabel]="theme.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
-          (onClick)="theme.toggle()"
-        />
+        <button
+          nz-button
+          nzType="text"
+          nzShape="circle"
+          [attr.aria-label]="theme.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
+          (click)="theme.toggle()"
+        >
+          <span nz-icon [nzType]="theme.isDark() ? 'sun' : 'moon'"></span>
+        </button>
       </div>
       <div class="z-card p-6 sm:p-8">
         <div
@@ -47,64 +58,82 @@
           }}
         </p>
 
-        <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4" novalidate>
-          <div class="flex flex-col gap-2">
-            <label for="email" class="font-bold text-[13px]">Email</label>
-            <input
-              pInputText
-              id="email"
-              type="email"
-              autocomplete="username"
-              formControlName="email"
-              [invalid]="showError('email')"
-              placeholder="you@zyppi.in"
-            />
-            @if (showError('email')) {
-              <small class="text-[var(--z-danger)]">Enter a valid email.</small>
-            }
-          </div>
+        <form nz-form nzLayout="vertical" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <nz-form-item>
+            <nz-form-label nzFor="email">Email</nz-form-label>
+            <nz-form-control nzErrorTip="Enter a valid email.">
+              <nz-input-wrapper class="w-full">
+                <span nzInputPrefix nz-icon nzType="mail" class="z-muted"></span>
+                <input
+                  nz-input
+                  nzSize="large"
+                  id="email"
+                  type="email"
+                  autocomplete="username"
+                  formControlName="email"
+                  placeholder="you@zyppi.in"
+                />
+              </nz-input-wrapper>
+            </nz-form-control>
+          </nz-form-item>
 
           @if (mode() === 'signin') {
-            <div class="flex flex-col gap-2">
-              <div class="flex justify-between items-baseline">
-                <label for="password" class="font-bold text-[13px]">Password</label>
-                <button type="button" class="link" (click)="switchMode('reset')">
-                  Forgot password?
-                </button>
-              </div>
-              <p-password
-                inputId="password"
-                formControlName="password"
-                [feedback]="false"
-                [toggleMask]="true"
-                [fluid]="true"
-                autocomplete="current-password"
-                [invalid]="showError('password')"
-              />
-              @if (showError('password')) {
-                <small class="text-[var(--z-danger)]">Enter your password (6+ characters).</small>
-              }
+            <nz-form-item class="!mb-2">
+              <nz-form-label nzFor="password">Password</nz-form-label>
+              <nz-form-control nzErrorTip="Enter your password (6+ characters).">
+                <nz-input-wrapper class="w-full">
+                  <span nzInputPrefix nz-icon nzType="lock" class="z-muted"></span>
+                  <input
+                    nz-input
+                    nzSize="large"
+                    id="password"
+                    [type]="showPassword() ? 'text' : 'password'"
+                    autocomplete="current-password"
+                    formControlName="password"
+                  />
+                  <button
+                    nzInputSuffix
+                    type="button"
+                    class="eye"
+                    [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                    (click)="showPassword.set(!showPassword())"
+                  >
+                    <span nz-icon [nzType]="showPassword() ? 'eye-invisible' : 'eye'"></span>
+                  </button>
+                </nz-input-wrapper>
+              </nz-form-control>
+            </nz-form-item>
+            <div class="flex justify-end mb-5">
+              <button type="button" class="link" (click)="switchMode('reset')">
+                Forgot password?
+              </button>
             </div>
           }
 
           @if (error(); as e) {
-            <p-message severity="error">{{ e }}</p-message>
+            <nz-alert nzType="error" [nzMessage]="e" nzShowIcon class="block mb-4" />
           }
           @if (info(); as i) {
-            <p-message severity="success">{{ i }}</p-message>
+            <nz-alert nzType="success" [nzMessage]="i" nzShowIcon class="block mb-4" />
           }
 
-          <p-button
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="large"
+            nzBlock
             type="submit"
-            [label]="mode() === 'signin' ? 'Sign in' : 'Send reset link'"
-            [loading]="busy()"
-            [fluid]="true"
-            styleClass="z-brand !border-0 !py-3"
-          />
+            class="z-brand-btn"
+            [nzLoading]="busy()"
+          >
+            {{ mode() === 'signin' ? 'Sign in' : 'Send reset link' }}
+          </button>
           @if (mode() === 'reset') {
-            <button type="button" class="link self-center" (click)="switchMode('signin')">
-              Back to sign in
-            </button>
+            <div class="text-center mt-4">
+              <button type="button" class="link" (click)="switchMode('signin')">
+                Back to sign in
+              </button>
+            </div>
           }
         </form>
       </div>

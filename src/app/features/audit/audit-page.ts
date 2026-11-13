@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { QueryDocumentSnapshot } from 'firebase/firestore';
-import { ButtonModule } from 'primeng/button';
-import { SelectModule } from 'primeng/select';
-import { TagModule } from 'primeng/tag';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 import { ROLE_LABELS, isRole } from '../../core/auth/roles';
 import { LoadStatus, friendlyFirestoreError } from '../../core/firebase/live';
 import { WhenPipe } from '../../shared/pipes/when.pipe';
@@ -18,22 +19,30 @@ interface Entry extends AuditRow {
 /** Settings → Audit log (super_admin only): append-only record of admin changes. */
 @Component({
   selector: 'z-audit-page',
-  imports: [FormsModule, ButtonModule, SelectModule, TagModule, WhenPipe, PageHeader, PageState],
+  imports: [
+    FormsModule,
+    NzButtonModule,
+    NzIconModule,
+    NzSelectModule,
+    NzTagModule,
+    WhenPipe,
+    PageHeader,
+    PageState,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <z-page-header
       title="Audit log"
       subtitle="Every change made through this panel: who, when, and what it was before and after. Nobody can edit or delete it."
     >
-      <p-select
-        [options]="actionOptions"
+      <nz-select
+        [nzOptions]="actionOptions"
         [ngModel]="action()"
         (ngModelChange)="setAction($event)"
-        placeholder="All actions"
-        [showClear]="true"
-        ariaLabel="Filter by action"
+        nzPlaceHolder="All actions"
+        [nzAllowClear]="true"
+        aria-label="Filter by action"
         class="min-w-[240px]"
-        appendTo="body"
       />
     </z-page-header>
 
@@ -41,16 +50,15 @@ interface Entry extends AuditRow {
       [status]="status()"
       [error]="error()"
       [empty]="entries().length === 0"
-      emptyIcon="pi pi-history"
       emptyTitle="No changes recorded yet"
       (retry)="reload()"
     >
-      <ol class="flex flex-col gap-3">
+      <ol class="flex flex-col gap-3 list-none p-0 m-0">
         @for (e of entries(); track e.id) {
           <li class="z-card p-4 md:p-5">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <span class="font-extrabold">{{ label(e.action) }}</span>
-              <p-tag [value]="roleLabel(e.role)" severity="secondary" />
+              <nz-tag>{{ roleLabel(e.role) }}</nz-tag>
               <span class="z-caption ml-auto">{{ e.at | when }}</span>
             </div>
             <div class="z-caption mt-1">
@@ -61,7 +69,12 @@ interface Entry extends AuditRow {
                 @for (c of e.changes; track c.path) {
                   <div class="path">{{ c.path }}</div>
                   <div class="before">{{ c.before }}</div>
-                  <i class="pi pi-arrow-right z-muted text-xs" aria-label="changed to"></i>
+                  <span
+                    nz-icon
+                    nzType="arrow-right"
+                    class="z-muted text-xs"
+                    aria-label="changed to"
+                  ></span>
                   <div class="after">{{ c.after }}</div>
                 }
               </div>
@@ -71,12 +84,7 @@ interface Entry extends AuditRow {
       </ol>
       @if (cursor()) {
         <div class="flex justify-center mt-6">
-          <p-button
-            label="Load older"
-            [outlined]="true"
-            [loading]="loadingMore()"
-            (onClick)="more()"
-          />
+          <button nz-button [nzLoading]="loadingMore()" (click)="more()">Load older</button>
         </div>
       }
     </z-page-state>
@@ -139,7 +147,7 @@ export class AuditPage {
   }
 
   setAction(action: string | null): void {
-    this.action.set(action);
+    this.action.set(action ?? null);
     void this.reload();
   }
 

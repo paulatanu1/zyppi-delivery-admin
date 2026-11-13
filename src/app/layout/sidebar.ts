@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { NzIconModule } from 'ng-zorro-antd/icon';
 import { AuthService } from '../core/auth/auth.service';
 import { hasRole } from '../core/auth/roles';
 import { NAV } from './nav';
 
 @Component({
   selector: 'z-sidebar',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, NzIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="z-brand flex items-center gap-3 px-5 h-[var(--z-topbar-h)] shrink-0">
@@ -27,12 +28,12 @@ import { NAV } from './nav';
               routerLinkActive="active"
               (click)="navigate.emit()"
             >
-              <i [class]="item.icon"></i>
+              <span nz-icon [nzType]="item.icon"></span>
               <span>{{ item.label }}</span>
             </a>
           } @else {
             <span class="item disabled" [attr.title]="'Coming in phase ' + item.phase">
-              <i [class]="item.icon"></i>
+              <span nz-icon [nzType]="item.icon"></span>
               <span class="flex-1">{{ item.label }}</span>
               <span class="soon">Soon</span>
             </span>
@@ -73,8 +74,8 @@ import { NAV } from './nav';
         background 0.15s,
         color 0.15s;
     }
-    .item i {
-      font-size: 16px;
+    .item [nz-icon] {
+      font-size: 17px;
     }
     a.item:hover {
       background: var(--z-surface-2);

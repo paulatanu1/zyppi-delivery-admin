@@ -52,7 +52,7 @@ export const routes: Routes = [
         title: 'No access · Zyppi Admin',
         data: {
           heading: 'No access',
-          icon: 'pi pi-lock',
+          status: '403',
           message: 'Your role can’t open this page. Ask a super admin if you need it.',
         },
         loadComponent: () => import('./features/system/status-page').then((m) => m.StatusPage),
@@ -62,7 +62,7 @@ export const routes: Routes = [
         title: 'Not found · Zyppi Admin',
         data: {
           heading: 'Page not found',
-          icon: 'pi pi-compass',
+          status: '404',
           message: 'That page doesn’t exist or has moved.',
         },
         loadComponent: () => import('./features/system/status-page').then((m) => m.StatusPage),

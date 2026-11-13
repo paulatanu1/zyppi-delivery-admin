@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { NzIconModule } from 'ng-zorro-antd/icon';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE_LABELS, hasRole } from '../../core/auth/roles';
 import { NAV } from '../../layout/nav';
@@ -9,6 +10,7 @@ import { NAV } from '../../layout/nav';
  */
 @Component({
   selector: 'z-dashboard',
+  imports: [NzIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="z-brand rounded-[var(--z-radius-sheet)] p-6 md:p-10">
@@ -26,7 +28,7 @@ import { NAV } from '../../layout/nav';
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       @for (m of modules(); track m.label) {
         <div class="z-card p-5 flex items-start gap-4">
-          <span class="icon"><i [class]="m.icon"></i></span>
+          <span class="icon"><span nz-icon [nzType]="m.icon"></span></span>
           <div class="min-w-0">
             <div class="font-extrabold">{{ m.label }}</div>
             <div class="z-caption mt-1">

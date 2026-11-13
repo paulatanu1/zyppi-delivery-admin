@@ -5,9 +5,9 @@
   @if (value(); as f) {
     <div class="text-right">
       @if (offCount() > 0) {
-        <p-tag severity="warn" [value]="offCount() + ' switched off'" />
+        <nz-tag nzColor="warning">{{ offCount() }} switched off</nz-tag>
       } @else {
-        <p-tag severity="success" value="All services on" />
+        <nz-tag nzColor="success">All services on</nz-tag>
       }
       @if (f.updatedAt) {
         <div class="z-caption mt-2">
@@ -23,34 +23,31 @@
     <!-- Maintenance -->
     <section class="z-card p-5 md:p-6 mb-6" [class.maint-on]="f.maintenance.enabled">
       <div class="flex items-start gap-4">
-        <span class="icon danger"><i class="pi pi-wrench"></i></span>
+        <span class="icon danger"><span nz-icon nzType="tool"></span></span>
         <div class="flex-1 min-w-0">
           <div class="flex flex-wrap items-center gap-2">
             <h3 class="text-[16px]">Maintenance mode</h3>
             @if (f.maintenance.enabled) {
-              <p-tag severity="danger" value="ON — orders stopped" />
+              <nz-tag nzColor="error">ON — orders stopped</nz-tag>
             }
           </div>
           <p class="z-muted mt-1">
             Stops every new order and payment across all areas. Orders already placed carry on.
           </p>
         </div>
-        <button
-          type="button"
-          class="switch"
-          role="switch"
-          [attr.aria-checked]="f.maintenance.enabled"
-          aria-label="Maintenance mode"
-          [disabled]="saving() !== null"
+        <nz-switch
+          [ngModel]="f.maintenance.enabled"
+          [nzControl]="true"
+          [nzLoading]="saving() === 'maintenance'"
+          [nzDisabled]="saving() !== null && saving() !== 'maintenance'"
           (click)="toggleMaintenance()"
-        >
-          <p-toggleswitch [ngModel]="f.maintenance.enabled" [readonly]="true" tabindex="-1" />
-        </button>
+          aria-label="Maintenance mode"
+        />
       </div>
       <div class="mt-4 md:pl-14">
         <label for="maint-msg" class="font-bold text-[13px]">Message customers see</label>
         <textarea
-          pTextarea
+          nz-input
           id="maint-msg"
           rows="2"
           class="w-full mt-2"
@@ -63,14 +60,15 @@
           <span class="z-caption"
             >{{ message().length }}/{{ maxMessage }} · Empty uses the default text</span
           >
-          <p-button
-            label="Save message"
-            size="small"
-            [outlined]="true"
+          <button
+            nz-button
+            nzSize="small"
             [disabled]="!messageDirty()"
-            [loading]="saving() === 'maintenance'"
-            (onClick)="saveMessage()"
-          />
+            [nzLoading]="saving() === 'maintenance'"
+            (click)="saveMessage()"
+          >
+            Save message
+          </button>
         </div>
       </div>
     </section>
@@ -81,29 +79,22 @@
       @for (s of switches; track s.id) {
         <section class="z-card p-5 flex flex-col gap-3" [class.is-off]="!isOn(s)">
           <div class="flex items-start gap-4">
-            <span class="icon"><i [class]="s.icon"></i></span>
+            <span class="icon"><span nz-icon [nzType]="s.icon"></span></span>
             <div class="flex-1 min-w-0">
               <h4 class="font-extrabold text-[15px]">{{ s.title }}</h4>
               <div class="z-caption mt-1">{{ isOn(s) ? 'On' : 'Off' }}</div>
             </div>
-            <button
-              type="button"
-              class="switch"
-              role="switch"
-              [attr.aria-checked]="isOn(s)"
-              [attr.aria-label]="s.title"
-              [disabled]="saving() !== null"
+            <nz-switch
+              [ngModel]="isOn(s)"
+              [nzControl]="true"
+              [nzLoading]="saving() === s.id"
+              [nzDisabled]="saving() !== null && saving() !== s.id"
               (click)="toggle(s)"
-            >
-              @if (saving() === s.id) {
-                <i class="pi pi-spin pi-spinner z-muted"></i>
-              } @else {
-                <p-toggleswitch [ngModel]="isOn(s)" [readonly]="true" tabindex="-1" />
-              }
-            </button>
+              [attr.aria-label]="s.title"
+            />
           </div>
           <p class="text-[13px] z-muted"><b>When off:</b> {{ s.whenOff }}</p>
-          <p class="saves"><i class="pi pi-wallet"></i> Saves: {{ s.saves }}</p>
+          <p class="saves"><span nz-icon nzType="wallet"></span> Saves: {{ s.saves }}</p>
         </section>
       }
     </div>
@@ -117,27 +108,27 @@
           New orders are refused in these areas (“store closed”). Customers who already paid still
           get their order.
         </p>
-        <p-multiselect
+        <nz-select
           class="w-full mt-4"
-          [options]="areaOptions()"
+          nzMode="multiple"
+          nzPlaceHolder="No area paused"
+          nzNotFoundContent="No service areas yet"
+          [nzOptions]="areaOptions()"
           [ngModel]="closedAreas()"
           (ngModelChange)="closedAreas.set($event)"
-          placeholder="No area paused"
-          display="chip"
-          [filter]="false"
-          [showToggleAll]="false"
-          ariaLabel="Paused areas"
-          emptyMessage="No service areas yet"
-          appendTo="body"
+          aria-label="Paused areas"
         />
         <div class="flex justify-end mt-3">
-          <p-button
-            label="Save areas"
-            size="small"
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="small"
             [disabled]="!areasDirty()"
-            [loading]="saving() === 'areas'"
-            (onClick)="saveAreas()"
-          />
+            [nzLoading]="saving() === 'areas'"
+            (click)="saveAreas()"
+          >
+            Save areas
+          </button>
         </div>
       </section>
 
@@ -148,11 +139,11 @@
           version.
         </p>
         <input
-          pInputText
+          nz-input
           class="w-full mt-4"
           placeholder="e.g. 1.4.0"
           aria-label="Minimum app version"
-          [invalid]="!versionValid()"
+          [nzStatus]="versionValid() ? '' : 'error'"
           [ngModel]="version()"
           (ngModelChange)="version.set($event)"
         />
@@ -160,13 +151,16 @@
           <small class="text-[var(--z-danger)]">Use the x.y.z format, e.g. 1.4.0</small>
         }
         <div class="flex justify-end mt-3">
-          <p-button
-            label="Save version"
-            size="small"
+          <button
+            nz-button
+            nzType="primary"
+            nzSize="small"
             [disabled]="!versionDirty() || !versionValid()"
-            [loading]="saving() === 'version'"
-            (onClick)="saveVersion()"
-          />
+            [nzLoading]="saving() === 'version'"
+            (click)="saveVersion()"
+          >
+            Save version
+          </button>
         </div>
       </section>
     </div>

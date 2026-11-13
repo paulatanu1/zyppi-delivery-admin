@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { MenuItem } from 'primeng/api';
-import { AvatarModule } from 'primeng/avatar';
-import { ButtonModule } from 'primeng/button';
-import { DrawerModule } from 'primeng/drawer';
-import { MenuModule } from 'primeng/menu';
-import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
+import { NzAvatarModule } from 'ng-zorro-antd/avatar';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzDrawerModule } from 'ng-zorro-antd/drawer';
+import { NzDropdownModule } from 'ng-zorro-antd/dropdown';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzMenuModule } from 'ng-zorro-antd/menu';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { filter, map } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
 import { ROLE_LABELS } from '../core/auth/roles';
@@ -19,12 +19,13 @@ import { Sidebar } from './sidebar';
   imports: [
     RouterOutlet,
     Sidebar,
-    ButtonModule,
-    DrawerModule,
-    MenuModule,
-    AvatarModule,
-    TagModule,
-    TooltipModule,
+    NzAvatarModule,
+    NzButtonModule,
+    NzDrawerModule,
+    NzDropdownModule,
+    NzIconModule,
+    NzMenuModule,
+    NzTooltipModule,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -32,49 +33,71 @@ import { Sidebar } from './sidebar';
       <z-sidebar />
     </aside>
 
-    <p-drawer [(visible)]="drawerOpen" [showCloseIcon]="false" styleClass="!w-[var(--z-sidebar-w)]">
-      <ng-template #headless>
+    <nz-drawer
+      [nzVisible]="drawerOpen()"
+      nzPlacement="left"
+      [nzClosable]="false"
+      [nzWidth]="264"
+      [nzBodyStyle]="{ padding: '0' }"
+      (nzOnClose)="drawerOpen.set(false)"
+    >
+      <ng-container *nzDrawerContent>
         <z-sidebar (navigate)="drawerOpen.set(false)" />
-      </ng-template>
-    </p-drawer>
+      </ng-container>
+    </nz-drawer>
 
     <div class="lg:pl-[var(--z-sidebar-w)] min-h-full z-backdrop">
       <header
         class="topbar sticky top-0 z-10 flex items-center gap-2 px-4 md:px-8 h-[var(--z-topbar-h)]"
       >
-        <p-button
-          class="lg:hidden"
-          icon="pi pi-bars"
-          [text]="true"
-          [rounded]="true"
-          severity="secondary"
-          ariaLabel="Open menu"
-          (onClick)="drawerOpen.set(true)"
-        />
+        <button
+          nz-button
+          nzType="text"
+          nzShape="circle"
+          class="lg:!hidden"
+          aria-label="Open menu"
+          (click)="drawerOpen.set(true)"
+        >
+          <span nz-icon nzType="menu"></span>
+        </button>
         <h1 class="text-[18px] flex-1 truncate">{{ title() }}</h1>
-        <p-button
-          [icon]="theme.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
-          [text]="true"
-          [rounded]="true"
-          severity="secondary"
-          [pTooltip]="theme.isDark() ? 'Light theme' : 'Dark theme'"
-          tooltipPosition="bottom"
-          [ariaLabel]="theme.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
-          (onClick)="theme.toggle()"
-        />
-        <button type="button" class="user" (click)="menu.toggle($event)" aria-haspopup="menu">
-          <p-avatar
-            [label]="initial()"
-            shape="circle"
-            styleClass="!bg-[var(--z-brand)] !text-white"
-          />
+        <button
+          nz-button
+          nzType="text"
+          nzShape="circle"
+          nz-tooltip
+          [nzTooltipTitle]="theme.isDark() ? 'Light theme' : 'Dark theme'"
+          [attr.aria-label]="theme.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
+          (click)="theme.toggle()"
+        >
+          <span nz-icon [nzType]="theme.isDark() ? 'sun' : 'moon'"></span>
+        </button>
+        <button
+          type="button"
+          class="user"
+          nz-dropdown
+          [nzDropdownMenu]="userMenu"
+          nzTrigger="click"
+          nzPlacement="bottomRight"
+          aria-haspopup="menu"
+        >
+          <nz-avatar [nzText]="initial()" nzSize="small" class="avatar" />
           <span class="hidden sm:flex flex-col items-start leading-tight">
             <span class="font-bold text-[13px] max-w-[180px] truncate">{{ name() }}</span>
             <span class="z-caption">{{ roleLabel() }}</span>
           </span>
-          <i class="pi pi-angle-down z-muted text-xs"></i>
+          <span nz-icon nzType="down" class="z-muted text-[11px]"></span>
         </button>
-        <p-menu #menu [model]="menuItems" [popup]="true" appendTo="body" />
+        <nz-dropdown-menu #userMenu="nzDropdownMenu">
+          <ul nz-menu>
+            <li nz-menu-item>
+              <button type="button" class="menu-btn" (click)="signOut()">
+                <span nz-icon nzType="logout"></span>
+                <span class="ml-2">Sign out</span>
+              </button>
+            </li>
+          </ul>
+        </nz-dropdown-menu>
       </header>
 
       <main class="px-4 md:px-8 py-6 max-w-[1440px] mx-auto">
@@ -107,6 +130,18 @@ import { Sidebar } from './sidebar';
     .user:hover {
       border-color: var(--z-line-2);
     }
+    .menu-btn {
+      all: unset;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      cursor: pointer;
+    }
+    .avatar {
+      background: var(--z-brand);
+      color: #fff;
+      font-weight: 800;
+    }
   `,
 })
 export class Shell {
@@ -135,16 +170,10 @@ export class Shell {
     return role ? ROLE_LABELS[role] : '';
   });
 
-  readonly menuItems: MenuItem[] = [
-    {
-      label: 'Sign out',
-      icon: 'pi pi-sign-out',
-      command: async () => {
-        await this.auth.signOut();
-        await this.router.navigateByUrl('/login');
-      },
-    },
-  ];
+  async signOut(): Promise<void> {
+    await this.auth.signOut();
+    await this.router.navigateByUrl('/login');
+  }
 
   private deepestTitle(): string {
     let r = this.route.snapshot;

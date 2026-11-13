@@ -2,6 +2,7 @@ import { Role } from '../core/auth/roles';
 
 export interface NavItem {
   label: string;
+  /** NG-ZORRO (Ant Design) outline icon name, registered in core/theme/icons.ts. */
   icon: string;
   /** Router link; absent while the module is still being built. */
   link?: string;
@@ -22,46 +23,46 @@ export const NAV: NavGroup[] = [
   {
     label: 'Overview',
     items: [
-      { label: 'Dashboard', icon: 'pi pi-th-large', link: '/dashboard', roles: ALL },
-      { label: 'Reports', icon: 'pi pi-chart-bar', roles: ['finance', 'ops'], phase: 'A7' },
+      { label: 'Dashboard', icon: 'dashboard', link: '/dashboard', roles: ALL },
+      { label: 'Reports', icon: 'bar-chart', roles: ['finance', 'ops'], phase: 'A7' },
     ],
   },
   {
     label: 'Operations',
     items: [
-      { label: 'Orders', icon: 'pi pi-shopping-bag', roles: ['ops', 'support'], phase: 'A3' },
-      { label: 'Riders', icon: 'pi pi-truck', roles: ['ops'], phase: 'A4' },
-      { label: 'Inventory', icon: 'pi pi-box', roles: ['ops', 'catalog'], phase: 'A2' },
-      { label: 'Customers', icon: 'pi pi-users', roles: ['ops', 'support'], phase: 'A8' },
-      { label: 'Support', icon: 'pi pi-comments', roles: ['support'], phase: 'A8' },
+      { label: 'Orders', icon: 'shopping', roles: ['ops', 'support'], phase: 'A3' },
+      { label: 'Riders', icon: 'car', roles: ['ops'], phase: 'A4' },
+      { label: 'Inventory', icon: 'inbox', roles: ['ops', 'catalog'], phase: 'A2' },
+      { label: 'Customers', icon: 'team', roles: ['ops', 'support'], phase: 'A8' },
+      { label: 'Support', icon: 'message', roles: ['support'], phase: 'A8' },
     ],
   },
   {
     label: 'Catalog & growth',
     items: [
-      { label: 'Products', icon: 'pi pi-tag', roles: ['catalog'], phase: 'A2' },
-      { label: 'Categories', icon: 'pi pi-sitemap', roles: ['catalog'], phase: 'A2' },
-      { label: 'Banners & home', icon: 'pi pi-images', roles: ['catalog'], phase: 'A5' },
-      { label: 'Coupons', icon: 'pi pi-ticket', roles: ['catalog', 'finance'], phase: 'A5' },
-      { label: 'Notifications', icon: 'pi pi-megaphone', roles: ['catalog'], phase: 'A6' },
+      { label: 'Products', icon: 'tag', roles: ['catalog'], phase: 'A2' },
+      { label: 'Categories', icon: 'apartment', roles: ['catalog'], phase: 'A2' },
+      { label: 'Banners & home', icon: 'picture', roles: ['catalog'], phase: 'A5' },
+      { label: 'Coupons', icon: 'gift', roles: ['catalog', 'finance'], phase: 'A5' },
+      { label: 'Notifications', icon: 'notification', roles: ['catalog'], phase: 'A6' },
     ],
   },
   {
     label: 'Money',
-    items: [{ label: 'Payments', icon: 'pi pi-wallet', roles: ['finance'], phase: 'A3' }],
+    items: [{ label: 'Payments', icon: 'wallet', roles: ['finance'], phase: 'A3' }],
   },
   {
     label: 'System',
     items: [
       {
         label: 'Services & switches',
-        icon: 'pi pi-sliders-h',
+        icon: 'control',
         link: '/settings/services',
         roles: [],
       },
-      { label: 'Admins & roles', icon: 'pi pi-shield', link: '/settings/staff', roles: [] },
-      { label: 'Audit log', icon: 'pi pi-history', link: '/settings/audit', roles: [] },
-      { label: 'Store settings', icon: 'pi pi-cog', roles: ['ops'], phase: 'A8' },
+      { label: 'Admins & roles', icon: 'safety-certificate', link: '/settings/staff', roles: [] },
+      { label: 'Audit log', icon: 'history', link: '/settings/audit', roles: [] },
+      { label: 'Store settings', icon: 'setting', roles: ['ops'], phase: 'A8' },
     ],
   },
 ];

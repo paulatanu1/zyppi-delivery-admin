@@ -1,6 +1,6 @@
 # Zyppi Admin
 
-Operations panel for the Zyppi quick-commerce app: orders, riders, catalog, inventory, banners, notifications, payments, reports and settings. Built with Angular 22 (standalone, signals, zoneless), PrimeNG 22 and Tailwind v4, on the Firebase project `zippy-app-2024`, which it shares with the customer app (`zyppi-APP`).
+Operations panel for the Zyppi quick-commerce app: orders, riders, catalog, inventory, banners, notifications, payments, reports and settings. Built with Angular 22 (standalone, signals, zoneless), NG-ZORRO 22 (Ant Design, MIT) and Tailwind v4, on the Firebase project `zippy-app-2024`, which it shares with the customer app (`zyppi-APP`).
 
 The roadmap is in [`docs/PLAN.md`](docs/PLAN.md). Phase A0 (this scaffold) covers the shell, theme, login and roles.
 
@@ -21,8 +21,8 @@ The roadmap is in [`docs/PLAN.md`](docs/PLAN.md). Phase A0 (this scaffold) cover
 - Access comes from the Firebase Auth custom claim `role`: `super_admin | ops | catalog | support | finance`. The legacy `admin: true` claim counts as `super_admin`.
 - Accounts with no role are signed out with an explanation.
 
-## PrimeNG license
-PrimeNG 21 and later are licensed per organisation. Small teams can use the free Community license. Put the key in `primeLicenseKey` in `src/environments/environment.base.ts`. Without a key, PrimeNG works but shows an "Invalid PrimeUI License" badge.
+## UI library
+NG-ZORRO (MIT, free). Its Less themes are in `src/themes/`: `light.less` and `dark.less` use the Zyppi purple, radii and fonts. They're built as the `theme-light.css` and `theme-dark.css` bundles, and `ThemeService` swaps the `<link id="z-theme">` between them. Charts (A7) will use ngx-echarts (MIT).
 
 ## Hosting
 Firebase Hosting, target `admin` (`firebase.json`). Setting it up is a one-time step that changes the Firebase project:

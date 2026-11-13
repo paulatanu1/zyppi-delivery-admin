@@ -28,3 +28,11 @@
 .link:hover {
   text-decoration: underline;
 }
+
+.eye {
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  color: var(--z-ink-3);
+  cursor: pointer;
+}

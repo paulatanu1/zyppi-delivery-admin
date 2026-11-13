@@ -1,16 +1,24 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
-import { PasswordModule } from 'primeng/password';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzFormModule } from 'ng-zorro-antd/form';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzInputModule } from 'ng-zorro-antd/input';
 import { AuthService, authErrorMessage } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
 
 @Component({
   selector: 'z-login',
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, PasswordModule, MessageModule],
+  imports: [
+    ReactiveFormsModule,
+    NzAlertModule,
+    NzButtonModule,
+    NzFormModule,
+    NzIconModule,
+    NzInputModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './login.html',
   styleUrl: './login.scss',
@@ -22,6 +30,7 @@ export class Login {
   protected readonly theme = inject(ThemeService);
 
   readonly mode = signal<'signin' | 'reset'>('signin');
+  readonly showPassword = signal(false);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
   readonly info = signal<string | null>(null);
@@ -63,11 +72,6 @@ export class Login {
     this.mode.set(mode);
     this.error.set(null);
     this.info.set(null);
-  }
-
-  showError(name: 'email' | 'password'): boolean {
-    const c = this.form.controls[name];
-    return c.invalid && c.touched;
   }
 
   private async run(task: () => Promise<void>): Promise<void> {

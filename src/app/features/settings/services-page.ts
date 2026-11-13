@@ -7,16 +7,17 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { TagModule } from 'primeng/tag';
-import { TextareaModule } from 'primeng/textarea';
-import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzMessageService } from 'ng-zorro-antd/message';
+import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzSwitchModule } from 'ng-zorro-antd/switch';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 import { allReady } from '../../core/firebase/live';
 import { WhenPipe } from '../../shared/pipes/when.pipe';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Confirm } from '../../shared/ui/confirm';
 import { PageState } from '../../shared/ui/page-state';
 import { StaffApi } from '../staff/staff.api';
 import {
@@ -39,12 +40,12 @@ import { SettingsApi } from './settings.api';
   selector: 'z-services-page',
   imports: [
     FormsModule,
-    ButtonModule,
-    InputTextModule,
-    MultiSelectModule,
-    TagModule,
-    TextareaModule,
-    ToggleSwitchModule,
+    NzButtonModule,
+    NzIconModule,
+    NzInputModule,
+    NzSelectModule,
+    NzSwitchModule,
+    NzTagModule,
     WhenPipe,
     PageHeader,
     PageState,
@@ -55,8 +56,8 @@ import { SettingsApi } from './settings.api';
 })
 export class ServicesPage {
   private readonly api = inject(SettingsApi);
-  private readonly confirm = inject(ConfirmationService);
-  private readonly toast = inject(MessageService);
+  private readonly confirm = inject(Confirm);
+  private readonly message$ = inject(NzMessageService);
 
   readonly features = this.api.watchFeatures();
   readonly areas = this.api.watchServiceAreas();
@@ -116,41 +117,42 @@ export class ServicesPage {
     return f ? switchValue(f, s.id) : true;
   }
 
-  toggle(s: ServiceSwitch): void {
+  async toggle(s: ServiceSwitch): Promise<void> {
     if (this.saving()) return;
     const turnOn = !this.isOn(s);
-    this.confirm.confirm({
-      header: `${turnOn ? 'Turn on' : 'Turn off'} ${s.title}?`,
-      message: turnOn ? 'Customers get this back within a minute.' : `${s.whenOff}`,
-      icon: turnOn ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle',
-      acceptLabel: turnOn ? 'Turn on' : 'Turn off',
-      rejectLabel: 'Cancel',
-      acceptButtonProps: { severity: turnOn ? 'primary' : 'danger' },
-      rejectButtonProps: { severity: 'secondary', outlined: true },
-      accept: () =>
-        this.save(s.id, switchPatch(s.id, turnOn), `${s.title} turned ${turnOn ? 'on' : 'off'}`),
+    const ok = await this.confirm.ask({
+      title: `${turnOn ? 'Turn on' : 'Turn off'} ${s.title}?`,
+      content: turnOn ? 'Customers get this back within a minute.' : s.whenOff,
+      okText: turnOn ? 'Turn on' : 'Turn off',
+      danger: !turnOn,
     });
+    if (ok) {
+      await this.save(
+        s.id,
+        switchPatch(s.id, turnOn),
+        `${s.title} turned ${turnOn ? 'on' : 'off'}`,
+      );
+    }
   }
 
-  toggleMaintenance(): void {
+  async toggleMaintenance(): Promise<void> {
+    if (this.saving()) return;
     const on = !this.value()?.maintenance.enabled;
-    this.confirm.confirm({
-      header: on ? 'Start maintenance mode?' : 'End maintenance mode?',
-      message: on
+    const ok = await this.confirm.ask({
+      title: on ? 'Start maintenance mode?' : 'End maintenance mode?',
+      content: on
         ? 'Every new order and payment is refused until you turn it off. Customers see your message.'
         : 'Customers can order again within a minute.',
-      icon: on ? 'pi pi-exclamation-triangle' : 'pi pi-check-circle',
-      acceptLabel: on ? 'Start maintenance' : 'End maintenance',
-      rejectLabel: 'Cancel',
-      acceptButtonProps: { severity: on ? 'danger' : 'primary' },
-      rejectButtonProps: { severity: 'secondary', outlined: true },
-      accept: () =>
-        this.save(
-          'maintenance',
-          { maintenance: { enabled: on, message: this.message().trim() } },
-          on ? 'Maintenance mode is on' : 'Maintenance mode is off',
-        ),
+      okText: on ? 'Start maintenance' : 'End maintenance',
+      danger: on,
     });
+    if (ok) {
+      await this.save(
+        'maintenance',
+        { maintenance: { enabled: on, message: this.message().trim() } },
+        on ? 'Maintenance mode is on' : 'Maintenance mode is off',
+      );
+    }
   }
 
   saveMessage(): void {
@@ -178,9 +180,9 @@ export class ServicesPage {
     this.saving.set(key);
     try {
       await this.api.updateFeatures(patch);
-      this.toast.add({ severity: 'success', summary: done, detail: 'Live within a minute.' });
+      this.message$.success(`${done}. Live within a minute.`);
     } catch (e) {
-      this.toast.add({ severity: 'error', summary: 'Not saved', detail: (e as Error).message });
+      this.message$.error(`Not saved: ${(e as Error).message}`);
     } finally {
       this.saving.set(null);
     }
