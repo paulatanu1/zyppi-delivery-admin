@@ -30,7 +30,7 @@ export const NAV: NavGroup[] = [
   {
     label: 'Operations',
     items: [
-      { label: 'Orders', icon: 'shopping', roles: ['ops', 'support'], phase: 'A3' },
+      { label: 'Orders', icon: 'shopping', link: '/orders', roles: ['ops', 'support'] },
       { label: 'Riders', icon: 'car', roles: ['ops'], phase: 'A4' },
       { label: 'Inventory', icon: 'inbox', link: '/catalog/inventory', roles: ['ops', 'catalog'] },
       { label: 'Customers', icon: 'team', roles: ['ops', 'support'], phase: 'A8' },
@@ -49,7 +49,7 @@ export const NAV: NavGroup[] = [
   },
   {
     label: 'Money',
-    items: [{ label: 'Payments', icon: 'wallet', roles: ['finance'], phase: 'A3' }],
+    items: [{ label: 'Payments', icon: 'wallet', link: '/payments', roles: ['finance'] }],
   },
   {
     label: 'System',

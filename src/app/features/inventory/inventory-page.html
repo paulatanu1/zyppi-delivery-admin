@@ -286,7 +286,8 @@
               <span class="z-caption ml-auto">{{ m.at | when }}</span>
             </div>
             <div class="z-caption mt-1">
-              {{ reasonLabel(m.reason) }}{{ m.note ? ' · ' + m.note : '' }} · {{ m.actorEmail }}
+              {{ reasonLabel(m) }}{{ m.note ? ' · ' + m.note : ''
+              }}{{ m.actorEmail ? ' · ' + m.actorEmail : '' }}
             </div>
           </li>
         }

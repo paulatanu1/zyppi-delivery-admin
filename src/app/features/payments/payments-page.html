@@ -1,0 +1,231 @@
+<z-page-header
+  title="Payments"
+  subtitle="Online payments through PayU, refunds, and payments that need a person to look at them."
+/>
+
+<div class="grid gap-4 grid-cols-2 md:grid-cols-4 mb-4">
+  <div class="z-card p-4">
+    <div class="z-overline">Paid online today</div>
+    <div class="z-display text-[24px] mt-1">{{ kpis().paidToday | rupees }}</div>
+    <div class="z-caption">{{ kpis().paidTodayCount }} payments</div>
+  </div>
+  <div class="z-card p-4">
+    <div class="z-overline">Needs review</div>
+    <div class="z-display text-[24px] mt-1" [class.text-[var(--z-danger)]]="kpis().review">
+      {{ kpis().review }}
+    </div>
+  </div>
+  <div class="z-card p-4">
+    <div class="z-overline">Refunds in progress</div>
+    <div class="z-display text-[24px] mt-1">{{ kpis().openRefunds }}</div>
+  </div>
+  <div class="z-card p-4">
+    <div class="z-overline">Not completed (30 d)</div>
+    <div class="z-display text-[24px] mt-1">{{ kpis().failedRate }}%</div>
+    <div class="z-caption">failed or abandoned checkouts</div>
+  </div>
+</div>
+
+<nz-tabs [nzSelectedIndex]="tab()" (nzSelectedIndexChange)="tab.set($event)">
+  <nz-tab [nzTitle]="reviewTitle">
+    <ng-template #reviewTitle>
+      Needs review <nz-badge [nzCount]="kpis().review" nzSize="small" class="ml-1" />
+    </ng-template>
+    <z-page-state
+      [status]="review.status()"
+      [error]="review.error()"
+      [empty]="(review.value() ?? []).length === 0"
+      emptyTitle="Nothing to review"
+      emptyText="When a customer pays but the order can’t be created (stock ran out, amount differs), it waits here for a refund."
+      (retry)="review.retry()"
+    >
+      <div class="flex flex-col gap-3">
+        @for (i of review.value(); track i.id) {
+          <div class="z-card p-4 flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-[220px]">
+              <div class="flex items-center gap-2">
+                <span class="z-display text-[18px]">{{ i.amountPaise | rupees }}</span>
+                <nz-tag>{{ i.paymentMethod }}</nz-tag>
+              </div>
+              <div class="text-[13px] text-[var(--z-danger)] mt-1">
+                {{ i.failureReason || 'Paid, no order created' }}
+              </div>
+              <div class="z-caption mt-1">
+                {{ i.createdAt | when }} · txn {{ i.id }} · PayU {{ i.transactionId }}
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button nz-button (click)="openDismiss(i)" [disabled]="busy() === i.id">
+                Mark resolved
+              </button>
+              <button nz-button nzType="primary" [nzLoading]="busy() === i.id" (click)="refund(i)">
+                Refund {{ i.amountPaise - i.refundedPaise | rupees }}
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </z-page-state>
+  </nz-tab>
+
+  <nz-tab nzTitle="Refunds">
+    <z-page-state
+      [status]="refunds.status()"
+      [error]="refunds.error()"
+      [empty]="(refunds.value() ?? []).length === 0"
+      emptyTitle="No refunds yet"
+      (retry)="refunds.retry()"
+    >
+      <div class="z-card overflow-hidden">
+        <nz-table
+          #rt
+          [nzData]="refunds.value() ?? []"
+          [nzPageSize]="25"
+          [nzScroll]="{ x: '760px' }"
+        >
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>For</th>
+              <th>Amount</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th nzWidth="60px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rt.data; track r.id) {
+              <tr>
+                <td class="z-caption">{{ r.createdAt | when }}<br />{{ r.createdByEmail }}</td>
+                <td>
+                  @if (r.orderId) {
+                    <a [routerLink]="['/orders', r.orderId]" class="font-bold"
+                      >#{{ short(r.orderId) }}</a
+                    >
+                  } @else {
+                    <span class="z-caption">Payment {{ r.intentId }}</span>
+                  }
+                </td>
+                <td class="font-bold">{{ r.amountPaise | rupees }}</td>
+                <td class="z-muted">
+                  {{ r.reason }}
+                  @if (r.failureReason) {
+                    <div class="text-[12px] text-[var(--z-danger)]">{{ r.failureReason }}</div>
+                  }
+                </td>
+                <td>
+                  <nz-tag [nzColor]="refundMeta[r.status].color">{{
+                    refundMeta[r.status].label
+                  }}</nz-tag>
+                </td>
+                <td>
+                  @if (r.status === 'requesting' || r.status === 'requested') {
+                    <button
+                      nz-button
+                      nzType="text"
+                      nzShape="circle"
+                      [nzLoading]="busy() === r.id"
+                      (click)="refresh(r)"
+                      aria-label="Check refund status"
+                    >
+                      <span nz-icon nzType="reload"></span>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </z-page-state>
+  </nz-tab>
+
+  <nz-tab nzTitle="All online payments">
+    <div class="flex justify-end mb-3">
+      <nz-select
+        class="min-w-[200px]"
+        nzAllowClear
+        nzPlaceHolder="All statuses"
+        aria-label="Status"
+        [nzOptions]="statusOptions"
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event ?? null)"
+      />
+    </div>
+    <z-page-state
+      [status]="intents.status()"
+      [error]="intents.error()"
+      [empty]="visibleIntents().length === 0"
+      emptyTitle="No online payments in the last 30 days"
+      (retry)="intents.retry()"
+    >
+      <div class="z-card overflow-hidden">
+        <nz-table #it [nzData]="visibleIntents()" [nzPageSize]="50" [nzScroll]="{ x: '760px' }">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Order</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (i of it.data; track i.id) {
+              <tr>
+                <td class="z-caption">{{ i.createdAt | when }}</td>
+                <td class="font-bold">{{ i.amountPaise | rupees }}</td>
+                <td>{{ i.paymentMethod }}</td>
+                <td>
+                  <nz-tag [nzColor]="intentMeta[i.status].color">{{
+                    intentMeta[i.status].label
+                  }}</nz-tag>
+                  @if (i.failureReason && i.status !== 'completed') {
+                    <div class="z-caption">{{ i.failureReason }}</div>
+                  }
+                </td>
+                <td>
+                  @if (i.orderId) {
+                    <a [routerLink]="['/orders', i.orderId]" class="font-bold"
+                      >#{{ short(i.orderId) }}</a
+                    >
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </z-page-state>
+  </nz-tab>
+</nz-tabs>
+
+<nz-modal
+  [nzVisible]="!!dismissing()"
+  nzTitle="Mark as resolved"
+  [nzCentered]="true"
+  nzOkText="Mark resolved"
+  [nzOkLoading]="busy() === dismissing()?.id"
+  (nzOnOk)="dismiss()"
+  (nzOnCancel)="dismissing.set(null)"
+>
+  <ng-container *nzModalContent>
+    <div class="flex flex-col gap-3">
+      <p class="z-muted">
+        Use this when it was handled outside the panel. The note is kept in the audit log.
+      </p>
+      <textarea
+        nz-input
+        rows="3"
+        maxlength="300"
+        placeholder="e.g. Refunded from the PayU dashboard on 14 Nov"
+        aria-label="Note"
+        [ngModel]="note()"
+        (ngModelChange)="note.set($event)"
+      ></textarea>
+      @if (dismissError(); as e) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+      }
+    </div>
+  </ng-container>
+</nz-modal>

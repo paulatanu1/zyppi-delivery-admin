@@ -1,0 +1,319 @@
+<nz-drawer
+  [nzVisible]="!!orderId()"
+  [nzWidth]="width()"
+  [nzTitle]="title"
+  [nzFooter]="footer"
+  (nzOnClose)="closed.emit()"
+>
+  <ng-template #title>
+    @if (order(); as o) {
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="z-display text-[18px]">#{{ o.shortId }}</span>
+        <nz-tag [nzColor]="meta[o.status].color">{{ meta[o.status].label }}</nz-tag>
+        <span class="z-caption">{{ o.placedAt | when }}</span>
+      </div>
+    } @else {
+      Order
+    }
+  </ng-template>
+
+  <ng-container *nzDrawerContent>
+    @switch (order()) {
+      @case (undefined) {
+        <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 8 }" />
+      }
+      @case (null) {
+        <nz-alert nzType="warning" nzShowIcon nzMessage="Order not found or you can’t see it." />
+      }
+      @default {
+        @if (order(); as o) {
+          @if (o.status === 'cancelled') {
+            <nz-alert
+              nzType="error"
+              nzShowIcon
+              class="block mb-2"
+              [nzMessage]="'Cancelled: ' + (o.cancelReason ?? 'no reason recorded')"
+              [nzDescription]="
+                o.refundedPaise
+                  ? 'Refund ' + (o.refundedPaise | rupees) + ' · ' + (o.refundStatus ?? '')
+                  : ''
+              "
+            />
+          }
+
+          <!-- Timeline -->
+          <div class="pb-2">
+            <nz-timeline>
+              @for (e of events(); track e.id) {
+                <nz-timeline-item [nzColor]="meta[e.status]?.color === 'red' ? 'red' : 'purple'">
+                  <b>{{ eventLabel(e) }}</b>
+                  <span class="z-caption ml-2">{{ e.createdAt | when }}</span>
+                  @if (e.note) {
+                    <div class="z-caption">{{ e.note }}</div>
+                  }
+                </nz-timeline-item>
+              }
+            </nz-timeline>
+          </div>
+
+          <!-- Customer & address -->
+          <div class="section">
+            <div class="z-overline mb-2">Deliver to · {{ area() }}</div>
+            <div class="font-bold">{{ customer()?.name || o.address?.label || 'Customer' }}</div>
+            @if (customer()?.phone; as phone) {
+              <a class="font-bold" [href]="'tel:' + phone">{{ phone }}</a>
+            }
+            <p class="z-muted mt-1">{{ o.addressText }}</p>
+            @if (o.address?.landmark) {
+              <p class="z-caption">Landmark: {{ o.address?.landmark }}</p>
+            }
+            @if (navigate(); as url) {
+              <a nz-button nzSize="small" class="mt-2" [href]="url" target="_blank" rel="noopener">
+                <span nz-icon nzType="environment"></span>Navigate
+              </a>
+            }
+          </div>
+
+          <!-- Items -->
+          <div class="section">
+            <div class="z-overline mb-2">{{ o.items.length }} items</div>
+            <ul class="list-none p-0 m-0 flex flex-col gap-2">
+              @for (i of o.items; track i.variantId) {
+                <li class="flex items-center gap-3">
+                  @if (i.image) {
+                    <img class="thumb" [src]="i.image" alt="" loading="lazy" />
+                  } @else {
+                    <span class="thumb"></span>
+                  }
+                  <div class="flex-1 min-w-0">
+                    <div class="font-bold truncate">{{ i.name }}</div>
+                    <div class="z-caption">{{ i.unit }} · {{ i.pricePaise | rupees }} each</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-extrabold">× {{ i.quantity }}</div>
+                    <div class="z-caption">{{ i.pricePaise * i.quantity | rupees }}</div>
+                  </div>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <!-- Bill -->
+          <div class="section bill">
+            <span class="z-muted">Item total</span><span>{{ o.itemTotalPaise | rupees }}</span>
+            <span class="z-muted">Delivery fee</span><span>{{ o.deliveryFeePaise | rupees }}</span>
+            <span class="z-muted">Handling fee</span><span>{{ o.handlingFeePaise | rupees }}</span>
+            @if (o.tipPaise) {
+              <span class="z-muted">Rider tip</span><span>{{ o.tipPaise | rupees }}</span>
+            }
+            @if (o.discountPaise) {
+              <span class="z-muted"
+                >Discount {{ o.couponCode ? '(' + o.couponCode + ')' : '' }}</span
+              >
+              <span class="text-[var(--z-ok)]">−{{ o.discountPaise | rupees }}</span>
+            }
+            <span class="font-extrabold">Total</span>
+            <span class="font-extrabold">{{ o.totalPaise | rupees }}</span>
+          </div>
+
+          <!-- Payment -->
+          <div class="section">
+            <div class="z-overline mb-2">Payment</div>
+            <div class="flex flex-wrap items-center gap-2">
+              <b>{{ o.paymentMethod }}</b>
+              @if (o.paymentStatus === 'succeeded') {
+                <nz-tag nzColor="success">{{
+                  o.paymentMethod === 'Cash on delivery' ? 'Collected' : 'Paid'
+                }}</nz-tag>
+              } @else {
+                <nz-tag>{{
+                  o.paymentMethod === 'Cash on delivery' ? 'Collect on delivery' : o.paymentStatus
+                }}</nz-tag>
+              }
+              @if (o.providerReference) {
+                <span class="z-caption">PayU {{ o.providerReference }}</span>
+              }
+            </div>
+            @for (r of refunds(); track r.id) {
+              <div class="z-card p-3 mt-3 flex items-center gap-3">
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold">Refund {{ r.amountPaise | rupees }}</div>
+                  <div class="z-caption">{{ r.reason }} · {{ r.createdAt | when }}</div>
+                  @if (r.failureReason) {
+                    <div class="text-[12px] text-[var(--z-danger)]">{{ r.failureReason }}</div>
+                  }
+                </div>
+                <nz-tag [nzColor]="refundMeta[r.status].color">{{
+                  refundMeta[r.status].label
+                }}</nz-tag>
+                @if (r.status === 'requesting' || r.status === 'requested') {
+                  <button
+                    nz-button
+                    nzSize="small"
+                    nzType="text"
+                    [nzLoading]="busy() === 'refund-' + r.id"
+                    (click)="refresh(r)"
+                    aria-label="Check refund status"
+                  >
+                    <span nz-icon nzType="reload"></span>
+                  </button>
+                }
+              </div>
+            }
+            @if (canRefund() && refundable() > 0) {
+              <button nz-button nzSize="small" class="mt-3" (click)="openRefund()">
+                <span nz-icon nzType="wallet"></span>Refund…
+              </button>
+            }
+          </div>
+
+          <!-- Rider -->
+          @if (o.status !== 'delivered' && o.status !== 'cancelled' && canOperate()) {
+            <div class="section">
+              <div class="z-overline mb-2">Rider</div>
+              <div class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                <input
+                  nz-input
+                  placeholder="Name"
+                  aria-label="Rider name"
+                  maxlength="80"
+                  [ngModel]="riderName()"
+                  (ngModelChange)="riderName.set($event)"
+                />
+                <input
+                  nz-input
+                  placeholder="Phone"
+                  aria-label="Rider phone"
+                  maxlength="15"
+                  inputmode="tel"
+                  [ngModel]="riderPhone()"
+                  (ngModelChange)="riderPhone.set($event)"
+                />
+                <button nz-button [nzLoading]="busy() === 'rider'" (click)="saveRider()">
+                  Save
+                </button>
+              </div>
+              <p class="z-caption mt-1">Shown to the customer on the tracking screen.</p>
+            </div>
+          } @else if (o.riderName) {
+            <div class="section">
+              <div class="z-overline mb-1">Rider</div>
+              {{ o.riderName }} {{ o.riderPhone ? '· ' + o.riderPhone : '' }}
+            </div>
+          }
+        }
+      }
+    }
+  </ng-container>
+
+  <ng-template #footer>
+    @if (order(); as o) {
+      <div class="flex flex-wrap items-center gap-2">
+        <button nz-button [nzLoading]="busy() === 'invoice'" (click)="invoice()">
+          <span nz-icon nzType="download"></span>Invoice
+        </button>
+        <button nz-button [nzLoading]="busy() === 'slip'" (click)="slip()">Packing slip</button>
+        <span class="flex-1"></span>
+        @if (canOperate() && meta[o.status].next) {
+          <button nz-button nzDanger [disabled]="!!busy()" (click)="openCancel()">
+            Cancel order
+          </button>
+          <button nz-button nzType="primary" [nzLoading]="busy() === 'advance'" (click)="advance()">
+            {{ meta[o.status].nextLabel }}
+          </button>
+        }
+      </div>
+    }
+  </ng-template>
+</nz-drawer>
+
+<nz-modal
+  [nzVisible]="cancelOpen()"
+  nzTitle="Cancel this order?"
+  [nzCentered]="true"
+  nzOkText="Cancel order"
+  [nzOkDanger]="true"
+  nzCancelText="Keep order"
+  [nzOkLoading]="busy() === 'cancel'"
+  (nzOnOk)="confirmCancel()"
+  (nzOnCancel)="cancelOpen.set(false)"
+>
+  <ng-container *nzModalContent>
+    <div class="flex flex-col gap-3">
+      <p class="z-muted">
+        The customer is notified, stock goes back to the store
+        @if (
+          order() &&
+          order()!.paymentStatus === 'succeeded' &&
+          order()!.paymentMethod !== 'Cash on delivery'
+        ) {
+          and <b>{{ order()!.totalPaise - order()!.refundedPaise | rupees }}</b> is refunded to
+          their {{ order()!.paymentMethod }}
+        }
+        . This can’t be undone.
+      </p>
+      <nz-select
+        nzPlaceHolder="Reason"
+        aria-label="Cancel reason"
+        [nzOptions]="cancelOptions"
+        [ngModel]="cancelPreset()"
+        (ngModelChange)="cancelPreset.set($event)"
+      />
+      @if (cancelPreset() === 'Other') {
+        <textarea
+          nz-input
+          rows="2"
+          maxlength="300"
+          placeholder="What happened?"
+          aria-label="Other reason"
+          [ngModel]="cancelText()"
+          (ngModelChange)="cancelText.set($event)"
+        ></textarea>
+      }
+      @if (dialogError(); as e) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+      }
+    </div>
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="refundOpen()"
+  nzTitle="Refund payment"
+  [nzCentered]="true"
+  nzOkText="Refund"
+  [nzOkLoading]="busy() === 'refund'"
+  (nzOnOk)="confirmRefund()"
+  (nzOnCancel)="refundOpen.set(false)"
+>
+  <ng-container *nzModalContent>
+    <div class="flex flex-col gap-3">
+      <p class="z-muted">
+        Up to <b>{{ refundable() | rupees }}</b> can be refunded through PayU. It usually reaches
+        the customer in 5–7 working days.
+      </p>
+      <nz-input-number
+        class="!w-full"
+        [nzMin]="1"
+        [nzMax]="refundable() / 100"
+        [nzPrecision]="2"
+        aria-label="Refund amount"
+        [ngModel]="refundRupees()"
+        (ngModelChange)="refundRupees.set($event)"
+      >
+        <span nzInputPrefix>₹</span>
+      </nz-input-number>
+      <input
+        nz-input
+        placeholder="Reason, e.g. item missing"
+        maxlength="300"
+        aria-label="Refund reason"
+        [ngModel]="refundReason()"
+        (ngModelChange)="refundReason.set($event)"
+      />
+      @if (dialogError(); as e) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+      }
+    </div>
+  </ng-container>
+</nz-modal>
