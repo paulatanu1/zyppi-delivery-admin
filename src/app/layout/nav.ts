@@ -53,9 +53,15 @@ export const NAV: NavGroup[] = [
   {
     label: 'System',
     items: [
-      { label: 'Settings', icon: 'pi pi-cog', roles: [], phase: 'A1' },
-      { label: 'Admins & roles', icon: 'pi pi-shield', roles: [], phase: 'A1' },
-      { label: 'Audit log', icon: 'pi pi-history', roles: [], phase: 'A1' },
+      {
+        label: 'Services & switches',
+        icon: 'pi pi-sliders-h',
+        link: '/settings/services',
+        roles: [],
+      },
+      { label: 'Admins & roles', icon: 'pi pi-shield', link: '/settings/staff', roles: [] },
+      { label: 'Audit log', icon: 'pi pi-history', link: '/settings/audit', roles: [] },
+      { label: 'Store settings', icon: 'pi pi-cog', roles: ['ops'], phase: 'A8' },
     ],
   },
 ];

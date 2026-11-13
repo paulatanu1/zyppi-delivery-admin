@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { adminGuard, guestGuard } from './core/auth/guards';
+import { adminGuard, guestGuard, roleGuard } from './core/auth/guards';
 
 export const routes: Routes = [
   {
@@ -19,6 +19,33 @@ export const routes: Routes = [
         title: 'Dashboard · Zyppi Admin',
         data: { heading: 'Dashboard' },
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
+      },
+      {
+        path: 'settings',
+        canActivate: [roleGuard],
+        data: { roles: [] }, // super_admin only
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'services' },
+          {
+            path: 'services',
+            title: 'Services & switches · Zyppi Admin',
+            data: { heading: 'Settings' },
+            loadComponent: () =>
+              import('./features/settings/services-page').then((m) => m.ServicesPage),
+          },
+          {
+            path: 'staff',
+            title: 'Admins & roles · Zyppi Admin',
+            data: { heading: 'Settings' },
+            loadComponent: () => import('./features/staff/staff-page').then((m) => m.StaffPage),
+          },
+          {
+            path: 'audit',
+            title: 'Audit log · Zyppi Admin',
+            data: { heading: 'Settings' },
+            loadComponent: () => import('./features/audit/audit-page').then((m) => m.AuditPage),
+          },
+        ],
       },
       {
         path: 'forbidden',

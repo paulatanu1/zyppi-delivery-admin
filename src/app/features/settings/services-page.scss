@@ -1,0 +1,57 @@
+.icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--z-radius-control);
+  background: var(--z-brand-soft);
+  color: var(--z-brand-text);
+
+  &.danger {
+    background: var(--z-danger-soft);
+    color: var(--z-danger);
+  }
+}
+
+.switch {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 56px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--z-radius-control);
+
+  &:focus-visible {
+    outline: 2px solid var(--z-brand);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: progress;
+  }
+
+  ::ng-deep p-toggleswitch {
+    pointer-events: none;
+  }
+}
+
+.maint-on {
+  border-color: var(--z-danger);
+  background: color-mix(in srgb, var(--z-danger-soft) 70%, var(--z-surface));
+}
+
+.is-off {
+  border-style: dashed;
+}
+
+.saves {
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--z-ok);
+}

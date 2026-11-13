@@ -14,11 +14,21 @@ export const ROLE_LABELS: Record<Role, string> = {
   finance: 'Finance',
 };
 
+export function isRole(value: unknown): value is Role {
+  return typeof value === 'string' && (ROLES as readonly string[]).includes(value);
+}
+
+export const ROLE_DESCRIPTIONS: Record<Role, string> = {
+  super_admin: 'Everything, including settings, staff and the audit log',
+  ops: 'Orders, riders, stores, delivery slots and stock',
+  catalog: 'Products, categories, banners, coupons and notifications',
+  support: 'Support inbox, knowledge base and customers',
+  finance: 'Payments, refunds, coupons and reports',
+};
+
 export function roleFromClaims(claims: Record<string, unknown>): Role | null {
   const role = claims['role'];
-  if (typeof role === 'string' && (ROLES as readonly string[]).includes(role)) {
-    return role as Role;
-  }
+  if (isRole(role)) return role;
   return claims['admin'] === true ? 'super_admin' : null;
 }
 

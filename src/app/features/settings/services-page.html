@@ -1,0 +1,174 @@
+<z-page-header
+  title="Services & switches"
+  subtitle="Turn costly services off when you don’t need them. Changes reach the app and servers within a minute and are recorded in the audit log."
+>
+  @if (value(); as f) {
+    <div class="text-right">
+      @if (offCount() > 0) {
+        <p-tag severity="warn" [value]="offCount() + ' switched off'" />
+      } @else {
+        <p-tag severity="success" value="All services on" />
+      }
+      @if (f.updatedAt) {
+        <div class="z-caption mt-2">
+          Last change {{ f.updatedAt | when }} by {{ updatedByEmail() }}
+        </div>
+      }
+    </div>
+  }
+</z-page-header>
+
+<z-page-state [status]="status()" [error]="features.error() ?? areas.error()" (retry)="retry()">
+  @if (value(); as f) {
+    <!-- Maintenance -->
+    <section class="z-card p-5 md:p-6 mb-6" [class.maint-on]="f.maintenance.enabled">
+      <div class="flex items-start gap-4">
+        <span class="icon danger"><i class="pi pi-wrench"></i></span>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="text-[16px]">Maintenance mode</h3>
+            @if (f.maintenance.enabled) {
+              <p-tag severity="danger" value="ON — orders stopped" />
+            }
+          </div>
+          <p class="z-muted mt-1">
+            Stops every new order and payment across all areas. Orders already placed carry on.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="switch"
+          role="switch"
+          [attr.aria-checked]="f.maintenance.enabled"
+          aria-label="Maintenance mode"
+          [disabled]="saving() !== null"
+          (click)="toggleMaintenance()"
+        >
+          <p-toggleswitch [ngModel]="f.maintenance.enabled" [readonly]="true" tabindex="-1" />
+        </button>
+      </div>
+      <div class="mt-4 md:pl-14">
+        <label for="maint-msg" class="font-bold text-[13px]">Message customers see</label>
+        <textarea
+          pTextarea
+          id="maint-msg"
+          rows="2"
+          class="w-full mt-2"
+          [maxlength]="maxMessage"
+          placeholder="Zyppi is taking a short break for maintenance. Please try again soon."
+          [ngModel]="message()"
+          (ngModelChange)="message.set($event)"
+        ></textarea>
+        <div class="flex items-center justify-between mt-2 gap-3">
+          <span class="z-caption"
+            >{{ message().length }}/{{ maxMessage }} · Empty uses the default text</span
+          >
+          <p-button
+            label="Save message"
+            size="small"
+            [outlined]="true"
+            [disabled]="!messageDirty()"
+            [loading]="saving() === 'maintenance'"
+            (onClick)="saveMessage()"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- Costly services -->
+    <h3 class="text-[16px] mb-3">Costly services</h3>
+    <div class="grid gap-4 md:grid-cols-2 mb-8">
+      @for (s of switches; track s.id) {
+        <section class="z-card p-5 flex flex-col gap-3" [class.is-off]="!isOn(s)">
+          <div class="flex items-start gap-4">
+            <span class="icon"><i [class]="s.icon"></i></span>
+            <div class="flex-1 min-w-0">
+              <h4 class="font-extrabold text-[15px]">{{ s.title }}</h4>
+              <div class="z-caption mt-1">{{ isOn(s) ? 'On' : 'Off' }}</div>
+            </div>
+            <button
+              type="button"
+              class="switch"
+              role="switch"
+              [attr.aria-checked]="isOn(s)"
+              [attr.aria-label]="s.title"
+              [disabled]="saving() !== null"
+              (click)="toggle(s)"
+            >
+              @if (saving() === s.id) {
+                <i class="pi pi-spin pi-spinner z-muted"></i>
+              } @else {
+                <p-toggleswitch [ngModel]="isOn(s)" [readonly]="true" tabindex="-1" />
+              }
+            </button>
+          </div>
+          <p class="text-[13px] z-muted"><b>When off:</b> {{ s.whenOff }}</p>
+          <p class="saves"><i class="pi pi-wallet"></i> Saves: {{ s.saves }}</p>
+        </section>
+      }
+    </div>
+
+    <!-- Ordering controls -->
+    <h3 class="text-[16px] mb-3">Ordering</h3>
+    <div class="grid gap-4 md:grid-cols-2">
+      <section class="z-card p-5">
+        <h4 class="font-extrabold text-[15px]">Paused areas</h4>
+        <p class="z-muted text-[13px] mt-1">
+          New orders are refused in these areas (“store closed”). Customers who already paid still
+          get their order.
+        </p>
+        <p-multiselect
+          class="w-full mt-4"
+          [options]="areaOptions()"
+          [ngModel]="closedAreas()"
+          (ngModelChange)="closedAreas.set($event)"
+          placeholder="No area paused"
+          display="chip"
+          [filter]="false"
+          [showToggleAll]="false"
+          ariaLabel="Paused areas"
+          emptyMessage="No service areas yet"
+          appendTo="body"
+        />
+        <div class="flex justify-end mt-3">
+          <p-button
+            label="Save areas"
+            size="small"
+            [disabled]="!areasDirty()"
+            [loading]="saving() === 'areas'"
+            (onClick)="saveAreas()"
+          />
+        </div>
+      </section>
+
+      <section class="z-card p-5">
+        <h4 class="font-extrabold text-[15px]">Minimum app version</h4>
+        <p class="z-muted text-[13px] mt-1">
+          Older app versions are asked to update before ordering. Leave empty to allow every
+          version.
+        </p>
+        <input
+          pInputText
+          class="w-full mt-4"
+          placeholder="e.g. 1.4.0"
+          aria-label="Minimum app version"
+          [invalid]="!versionValid()"
+          [ngModel]="version()"
+          (ngModelChange)="version.set($event)"
+        />
+        @if (!versionValid()) {
+          <small class="text-[var(--z-danger)]">Use the x.y.z format, e.g. 1.4.0</small>
+        }
+        <div class="flex justify-end mt-3">
+          <p-button
+            label="Save version"
+            size="small"
+            [disabled]="!versionDirty() || !versionValid()"
+            [loading]="saving() === 'version'"
+            (onClick)="saveVersion()"
+          />
+        </div>
+      </section>
+    </div>
+  }
+</z-page-state>
