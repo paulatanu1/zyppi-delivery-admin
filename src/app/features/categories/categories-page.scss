@@ -1,0 +1,81 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  margin: 2px 0;
+  border-radius: var(--z-radius-control);
+  background: var(--z-surface);
+
+  &.active {
+    background: var(--z-brand-soft);
+  }
+}
+
+.cdk-drag-preview {
+  box-shadow: var(--z-shadow);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.35;
+}
+
+.cdk-drop-list-dragging .row:not(.cdk-drag-placeholder) {
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.handle {
+  all: unset;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 36px;
+  cursor: grab;
+  color: var(--z-ink-3);
+  border-radius: 8px;
+
+  &:focus-visible {
+    outline: 2px solid var(--z-brand);
+  }
+}
+
+.pick {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  border-radius: 8px;
+
+  &:focus-visible {
+    outline: 2px solid var(--z-brand);
+  }
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  overflow: hidden;
+
+  img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+  }
+}
+
+.color {
+  width: 44px;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--z-line-2);
+  border-radius: 10px;
+  background: var(--z-surface);
+  cursor: pointer;
+}

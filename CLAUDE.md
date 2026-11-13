@@ -10,7 +10,8 @@ Angular 22 + NG-ZORRO 22 admin for the Zyppi grocery app. Firebase project `zipp
 - Standalone components, signals, `OnPush`, the new control flow, and lazy routes per feature. Selector prefix `z-`.
 - Layout: `core/` (auth, firebase, theme), `shared/` (ui, pipes), `features/<name>/`, `layout/`.
 - Components never import `firebase/*`. Each feature has a `<feature>.api.ts` service that uses the DI tokens in `core/firebase/firebase.ts`.
-- Orders, payments, stock and order status change **only through Cloud Functions callables**. Never write `orders`, `paymentIntents` or `inventory` directly. The same goes for anything audited.
+- Orders, payments, stock, products, categories and order status change **only through Cloud Functions callables** (`adminSaveProduct`, `adminImportProducts`, `adminSaveCategory`, `adminAdjustStock`, …). The rules block direct writes. The same goes for anything audited.
+- Spreadsheets: `xlsx` (SheetJS, installed from cdn.sheetjs.com because the npm copy is outdated). Always `await import('xlsx')` so it stays out of the initial bundle.
 - Money is `int` paise, formatted only with the `rupees` pipe or `formatPaise`.
 - UI comes from NG-ZORRO (`ng-zorro-antd/*` standalone modules). Register new icons in `core/theme/icons.ts`. Confirm dialogs go through `shared/ui/confirm.ts` and toasts through `NzMessageService`.
 - No literal colours in components. Use the `--z-*` CSS variables (`src/styles.scss`), the Less variables in `src/themes/*.less`, or Tailwind with those variables. Brand surfaces use the `.z-brand` class, which carries the texture.

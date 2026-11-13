@@ -1,0 +1,186 @@
+<z-page-header
+  title="Categories"
+  subtitle="The app’s category tiles and, inside each, the sub-categories of the left menu. Drag to reorder."
+>
+  <button nz-button nzType="primary" (click)="openNew(null)">
+    <span nz-icon nzType="plus"></span>New category
+  </button>
+</z-page-header>
+
+<z-page-state
+  [status]="status()"
+  [error]="categories.error() ?? products.error()"
+  [empty]="top().length === 0"
+  emptyTitle="No categories yet"
+  emptyText="Add the first one with New category."
+  (retry)="retry()"
+>
+  <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+    <section class="z-card p-3">
+      <div class="z-overline px-2 py-2">Categories · {{ top().length }}</div>
+      <ul class="list-none p-0 m-0" cdkDropList (cdkDropListDropped)="drop($event, null)">
+        @for (c of top(); track c.id) {
+          <li class="row" cdkDrag [class.active]="selected()?.id === c.id">
+            <button
+              type="button"
+              class="handle"
+              cdkDragHandle
+              [attr.aria-label]="'Drag to reorder ' + c.name"
+            >
+              <span nz-icon nzType="holder"></span>
+            </button>
+            <button type="button" class="pick" (click)="selectedId.set(c.id)">
+              <span class="tile" [style.background]="swatch(c)">
+                @if (c.imageUrl) {
+                  <img [src]="c.imageUrl" alt="" />
+                }
+              </span>
+              <span class="min-w-0 text-left">
+                <span class="block font-bold truncate">{{ c.name }}</span>
+                <span class="block z-caption">{{ count(c.id) }} products</span>
+              </span>
+            </button>
+            <button
+              nz-button
+              nzType="text"
+              nzShape="circle"
+              [attr.aria-label]="'Edit ' + c.name"
+              (click)="openEdit(c)"
+            >
+              <span nz-icon nzType="edit"></span>
+            </button>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="z-card p-3">
+      @if (selected(); as s) {
+        <div class="flex items-center gap-2 px-2 py-2">
+          <div class="z-overline flex-1">{{ s.name }} › sub-categories · {{ subs().length }}</div>
+          <button nz-button nzSize="small" (click)="openNew(s.id)">
+            <span nz-icon nzType="plus"></span>Add
+          </button>
+        </div>
+        @if (subs().length === 0) {
+          <p class="z-muted px-2 py-6 text-center">
+            No sub-categories. Products here show without a left menu in the app.
+          </p>
+        }
+        <ul class="list-none p-0 m-0" cdkDropList (cdkDropListDropped)="drop($event, s.id)">
+          @for (c of subs(); track c.id) {
+            <li class="row" cdkDrag>
+              <button
+                type="button"
+                class="handle"
+                cdkDragHandle
+                [attr.aria-label]="'Drag to reorder ' + c.name"
+              >
+                <span nz-icon nzType="holder"></span>
+              </button>
+              <span class="tile" [style.background]="swatch(c)">
+                @if (c.imageUrl) {
+                  <img [src]="c.imageUrl" alt="" />
+                }
+              </span>
+              <span class="flex-1 min-w-0">
+                <span class="block font-bold truncate">{{ c.name }}</span>
+                <span class="block z-caption">{{ count(c.id) }} products</span>
+              </span>
+              <button
+                nz-button
+                nzType="text"
+                nzShape="circle"
+                [attr.aria-label]="'Edit ' + c.name"
+                (click)="openEdit(c)"
+              >
+                <span nz-icon nzType="edit"></span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+</z-page-state>
+
+<nz-modal
+  [nzVisible]="!!draft()"
+  [nzTitle]="
+    draft()?.id ? 'Edit category' : draft()?.parentId ? 'New sub-category' : 'New category'
+  "
+  [nzFooter]="footer"
+  [nzCentered]="true"
+  (nzOnCancel)="draft.set(null)"
+>
+  <ng-container *nzModalContent>
+    @if (draft(); as d) {
+      <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
+          <label for="c-name" class="font-bold text-[13px]">Name</label>
+          <input
+            nz-input
+            id="c-name"
+            maxlength="60"
+            [ngModel]="d.name"
+            (ngModelChange)="patch({ name: $event })"
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="c-parent" class="font-bold text-[13px]">Inside</label>
+          <nz-select
+            nzId="c-parent"
+            [nzOptions]="parentOptions()"
+            [nzDisabled]="hasChildren()"
+            [ngModel]="d.parentId"
+            (ngModelChange)="patch({ parentId: $event })"
+          />
+          @if (hasChildren()) {
+            <small class="z-caption">Has sub-categories, so it stays top level.</small>
+          }
+        </div>
+        <z-image-picker
+          folder="categories"
+          [url]="d.imageUrl"
+          (urlChange)="patch({ imageUrl: $event })"
+          hint="Shown on the category tile. Transparent PNG works best."
+        />
+        <div class="grid grid-cols-2 gap-4">
+          <label class="flex items-center gap-3">
+            <input
+              type="color"
+              class="color"
+              [ngModel]="d.tile"
+              (ngModelChange)="patch({ tile: $event })"
+            />
+            <span class="font-bold text-[13px]">Tile colour</span>
+          </label>
+          <label class="flex items-center gap-3">
+            <input
+              type="color"
+              class="color"
+              [ngModel]="d.border"
+              (ngModelChange)="patch({ border: $event })"
+            />
+            <span class="font-bold text-[13px]">Border colour</span>
+          </label>
+        </div>
+        @if (error(); as e) {
+          <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+        }
+      </div>
+    }
+  </ng-container>
+  <ng-template #footer>
+    <div class="flex items-center gap-2">
+      @if (draft()?.id) {
+        <button nz-button nzDanger nzType="text" [disabled]="saving()" (click)="remove()">
+          <span nz-icon nzType="delete"></span>Delete
+        </button>
+      }
+      <span class="flex-1"></span>
+      <button nz-button (click)="draft.set(null)">Cancel</button>
+      <button nz-button nzType="primary" [nzLoading]="saving()" (click)="save()">Save</button>
+    </div>
+  </ng-template>
+</nz-modal>

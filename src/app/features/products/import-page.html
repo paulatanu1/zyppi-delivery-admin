@@ -1,0 +1,281 @@
+<z-page-header
+  title="Bulk upload products"
+  subtitle="Add or update many products from a spreadsheet. One row per size; rows with the same key become one product."
+>
+  <a nz-button routerLink="/catalog/products"
+    ><span nz-icon nzType="arrow-left"></span>Back to products</a
+  >
+</z-page-header>
+
+<nz-steps [nzCurrent]="step()" class="mb-6" nzSize="small">
+  <nz-step nzTitle="Template" />
+  <nz-step nzTitle="Upload" />
+  <nz-step nzTitle="Review" />
+  <nz-step nzTitle="Import" />
+</nz-steps>
+
+@switch (step()) {
+  @case (0) {
+    <section class="z-card p-5 md:p-6">
+      <h3 class="text-[16px]">1. Fill in the template</h3>
+      <p class="z-muted mt-1 mb-4">
+        The template has a sample, the list of your categories and these instructions.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-[13px]">
+          <tbody>
+            @for (h of help; track h[0]) {
+              <tr class="border-b border-[var(--z-line)]">
+                <td class="py-2 pr-4 align-top whitespace-nowrap">
+                  <code>{{ h[0] }}</code>
+                </td>
+                <td class="py-2 z-muted">{{ h[1] }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="flex flex-wrap gap-2 mt-5">
+        <button nz-button nzType="primary" (click)="downloadTemplate()">
+          <span nz-icon nzType="download"></span>Download template
+        </button>
+        <button nz-button (click)="step.set(1)">
+          I have a file<span nz-icon nzType="arrow-right"></span>
+        </button>
+      </div>
+    </section>
+  }
+
+  @case (1) {
+    <div class="grid gap-4 lg:grid-cols-2">
+      <section class="z-card p-5">
+        <h3 class="text-[16px] mb-3">2. Spreadsheet</h3>
+        <label
+          class="drop"
+          [class.drag]="dragging()"
+          (dragover)="$event.preventDefault(); dragging.set(true)"
+          (dragleave)="dragging.set(false)"
+          (drop)="onSheetDropped($event)"
+        >
+          <input
+            type="file"
+            class="sr-only"
+            accept=".xlsx,.xls,.csv"
+            (change)="onSheetPicked($event)"
+          />
+          <span nz-icon nzType="file-excel" class="text-[28px] text-[var(--z-ok)]"></span>
+          @if (fileName(); as f) {
+            <span class="font-bold">{{ f }}</span>
+            <span class="z-caption"
+              >{{ summary().rows }} rows · {{ summary().products }} products · click to
+              replace</span
+            >
+          } @else {
+            <span class="font-bold">Drop your .xlsx or .csv here</span>
+            <span class="z-caption">or click to choose · up to 2,000 rows</span>
+          }
+        </label>
+        @if (fileError(); as e) {
+          <nz-alert nzType="error" nzShowIcon [nzMessage]="e" class="block mt-3" />
+        }
+      </section>
+
+      <section class="z-card p-5">
+        <h3 class="text-[16px] mb-1">Photos <span class="z-caption">(optional)</span></h3>
+        <p class="z-caption mb-3">
+          Select the photos named in the <code>image</code> column. They’re shrunk to WebP before
+          upload.
+        </p>
+        <label class="drop">
+          <input
+            type="file"
+            class="sr-only"
+            multiple
+            [accept]="imageTypes"
+            (change)="onImagesPicked($event)"
+          />
+          <span nz-icon nzType="picture" class="text-[28px] text-[var(--z-brand-text)]"></span>
+          <span class="font-bold">
+            {{ images().length ? images().length + ' photo(s) selected' : 'Choose photos' }}
+          </span>
+          <span class="z-caption">JPG, PNG or WebP</span>
+        </label>
+        @if (images().length) {
+          <button nz-button nzType="link" nzSize="small" class="mt-2" (click)="clearImages()">
+            Clear photos
+          </button>
+        }
+      </section>
+    </div>
+    <div class="flex justify-between mt-4">
+      <button nz-button (click)="step.set(0)">Back</button>
+      <button nz-button nzType="primary" [disabled]="!rows().length" (click)="review()">
+        Review {{ summary().rows || '' }} rows<span nz-icon nzType="arrow-right"></span>
+      </button>
+    </div>
+  }
+
+  @case (2) {
+    <div class="grid gap-4 grid-cols-2 md:grid-cols-4 mb-4">
+      <div class="z-card p-4">
+        <div class="z-overline">Products</div>
+        <div class="z-display text-[24px] mt-1">{{ summary().products }}</div>
+      </div>
+      <div class="z-card p-4">
+        <div class="z-overline">Ready</div>
+        <div class="z-display text-[24px] mt-1 text-[var(--z-ok)]">{{ summary().ready }}</div>
+      </div>
+      <div class="z-card p-4">
+        <div class="z-overline">Updates</div>
+        <div class="z-display text-[24px] mt-1">{{ summary().updates }}</div>
+      </div>
+      <div class="z-card p-4">
+        <div class="z-overline">Rows with problems</div>
+        <div
+          class="z-display text-[24px] mt-1"
+          [class.text-[var(--z-danger)]]="summary().problemRows"
+        >
+          {{ summary().problemRows }}
+        </div>
+      </div>
+    </div>
+
+    @if (summary().problemRows) {
+      <nz-alert
+        nzType="warning"
+        nzShowIcon
+        class="block mb-4"
+        nzMessage="Products with a problem row are skipped"
+        nzDescription="Fix them in the file and upload again, or import the ready ones now and download the problem rows afterwards."
+      />
+    }
+
+    <div class="z-card overflow-hidden">
+      <div class="flex items-center gap-3 p-4 border-b border-[var(--z-line)]">
+        <nz-switch
+          [ngModel]="onlyProblems()"
+          (ngModelChange)="onlyProblems.set($event)"
+          aria-label="Only rows with problems"
+        />
+        <span class="font-bold text-[13px]">Only rows with problems</span>
+      </div>
+      <nz-table
+        #t
+        [nzData]="visibleRows()"
+        [nzPageSize]="50"
+        nzSize="small"
+        [nzScroll]="{ x: '820px' }"
+      >
+        <thead>
+          <tr>
+            <th nzWidth="64px">Row</th>
+            <th>Product</th>
+            <th>Size</th>
+            <th>Price</th>
+            <th>MRP</th>
+            <th>Check</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of t.data; track r.row) {
+            <tr>
+              <td class="z-caption">{{ r.row }}</td>
+              <td>
+                <div class="font-bold">{{ rowName(r) }}</div>
+                <div class="z-caption">
+                  @if (r.data.productId) {
+                    <nz-tag nzColor="blue">update</nz-tag>
+                  }
+                  {{ r.data.category }}{{ r.data.subcategory ? ' › ' + r.data.subcategory : '' }}
+                </div>
+              </td>
+              <td>{{ r.data.variant }}</td>
+              <td>{{ r.data.pricePaise ?? null | rupees }}</td>
+              <td>{{ r.data.mrpPaise ?? r.data.pricePaise | rupees }}</td>
+              <td>
+                @if (r.problems.length) {
+                  @for (p of r.problems; track p) {
+                    <div class="text-[12px] text-[var(--z-danger)]">{{ p }}</div>
+                  }
+                } @else if (badGroups().has(r.group)) {
+                  <span class="z-caption">Skipped with its product</span>
+                } @else {
+                  <nz-tag nzColor="success">OK</nz-tag>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </div>
+    <div class="flex justify-between mt-4">
+      <button nz-button (click)="startOver()">Choose another file</button>
+      <button nz-button nzType="primary" [disabled]="!summary().ready" (click)="runImport()">
+        Import {{ summary().ready }} product{{ summary().ready === 1 ? '' : 's' }}
+      </button>
+    </div>
+  }
+
+  @case (3) {
+    <section class="z-card p-5 md:p-6">
+      @if (progress() < 100) {
+        <h3 class="text-[16px]">Importing…</h3>
+        <p class="z-muted mt-1">{{ progressText() }} Keep this tab open.</p>
+        <nz-progress [nzPercent]="progress()" nzStatus="active" class="block mt-4" />
+      } @else {
+        <h3 class="text-[16px]">Import finished</h3>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <nz-tag nzColor="success">{{ result().created }} created</nz-tag>
+          <nz-tag nzColor="blue">{{ result().updated }} updated</nz-tag>
+          <nz-tag [nzColor]="result().failed.length ? 'error' : 'default'"
+            >{{ result().failed.length }} rows not imported</nz-tag
+          >
+        </div>
+        @if (fatal(); as f) {
+          <nz-alert
+            nzType="error"
+            nzShowIcon
+            class="block mt-4"
+            nzMessage="The import stopped"
+            [nzDescription]="f"
+          />
+        }
+        @if (result().failed.length) {
+          <nz-table
+            #f
+            [nzData]="result().failed"
+            [nzPageSize]="20"
+            nzSize="small"
+            class="block mt-4"
+          >
+            <thead>
+              <tr>
+                <th nzWidth="64px">Row</th>
+                <th>Product</th>
+                <th>Why</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (x of f.data; track x.row) {
+                <tr>
+                  <td class="z-caption">{{ x.row }}</td>
+                  <td class="font-bold">{{ x.name }}</td>
+                  <td class="text-[12px] text-[var(--z-danger)]">{{ x.message }}</td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        }
+        <div class="flex flex-wrap gap-2 mt-5">
+          <a nz-button nzType="primary" routerLink="/catalog/products">View products</a>
+          @if (result().failed.length) {
+            <button nz-button (click)="downloadErrors()">
+              <span nz-icon nzType="download"></span>Download rows to fix
+            </button>
+          }
+          <button nz-button (click)="startOver()">Upload another file</button>
+        </div>
+      }
+    </section>
+  }
+}

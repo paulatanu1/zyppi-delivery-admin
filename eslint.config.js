@@ -36,6 +36,20 @@ module.exports = defineConfig([
   {
     files: ['**/*.html'],
     extends: [angular.configs.templateRecommended, angular.configs.templateAccessibility],
-    rules: {},
+    rules: {
+      // NG-ZORRO form controls count as controls inside a <label>.
+      '@angular-eslint/template/label-has-associated-control': [
+        'error',
+        {
+          controlComponents: [
+            'nz-switch',
+            'nz-select',
+            'nz-input-number',
+            'nz-segmented',
+            'nz-checkbox',
+          ],
+        },
+      ],
+    },
   },
 ]);

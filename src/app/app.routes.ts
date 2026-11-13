@@ -21,6 +21,44 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
       {
+        path: 'catalog',
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'products' },
+          {
+            path: 'products',
+            canActivate: [roleGuard],
+            data: { roles: ['catalog'], heading: 'Catalog' },
+            title: 'Products · Zyppi Admin',
+            loadComponent: () =>
+              import('./features/products/products-page').then((m) => m.ProductsPage),
+          },
+          {
+            path: 'products/import',
+            canActivate: [roleGuard],
+            data: { roles: ['catalog'], heading: 'Catalog' },
+            title: 'Bulk upload · Zyppi Admin',
+            loadComponent: () =>
+              import('./features/products/import-page').then((m) => m.ImportPage),
+          },
+          {
+            path: 'categories',
+            canActivate: [roleGuard],
+            data: { roles: ['catalog'], heading: 'Catalog' },
+            title: 'Categories · Zyppi Admin',
+            loadComponent: () =>
+              import('./features/categories/categories-page').then((m) => m.CategoriesPage),
+          },
+          {
+            path: 'inventory',
+            canActivate: [roleGuard],
+            data: { roles: ['ops', 'catalog'], heading: 'Operations' },
+            title: 'Inventory · Zyppi Admin',
+            loadComponent: () =>
+              import('./features/inventory/inventory-page').then((m) => m.InventoryPage),
+          },
+        ],
+      },
+      {
         path: 'settings',
         canActivate: [roleGuard],
         data: { roles: [] }, // super_admin only

@@ -1,0 +1,296 @@
+<z-page-header
+  title="Inventory"
+  subtitle="Stock per dark store. Every change is recorded with who made it and why."
+>
+  <div class="flex flex-wrap gap-2">
+    <nz-select
+      class="min-w-[200px]"
+      nzPlaceHolder="Choose a store"
+      aria-label="Store"
+      [nzOptions]="storeOptions()"
+      [ngModel]="storeId()"
+      (ngModelChange)="storeId.set($event)"
+    />
+    <button nz-button [disabled]="status() !== 'ready'" (click)="downloadSheet()">
+      <span nz-icon nzType="download"></span>Stock sheet
+    </button>
+    <input
+      #countInput
+      type="file"
+      class="sr-only"
+      tabindex="-1"
+      aria-hidden="true"
+      accept=".xlsx,.xls,.csv"
+      (change)="onCountPicked($event)"
+    />
+    <button nz-button [disabled]="status() !== 'ready'" (click)="countInput.click()">
+      <span nz-icon nzType="upload"></span>Upload counts
+    </button>
+  </div>
+</z-page-header>
+
+@if (countError(); as e) {
+  <nz-alert
+    nzType="error"
+    nzShowIcon
+    nzCloseable
+    class="block mb-4"
+    [nzMessage]="e"
+    (nzOnClose)="countError.set(null)"
+  />
+}
+
+<z-page-state
+  [status]="status()"
+  [error]="stores.error() ?? products.error() ?? stockError()"
+  [empty]="!storeOptions().length || !lines().length"
+  [emptyTitle]="!storeOptions().length ? 'No stores yet' : 'No products yet'"
+  [emptyText]="
+    !storeOptions().length ? 'Stores are set up under Store settings.' : 'Add products first.'
+  "
+  (retry)="retry()"
+>
+  <div class="grid gap-4 grid-cols-2 md:grid-cols-4 mb-4">
+    <div class="z-card p-4">
+      <div class="z-overline">Items in app</div>
+      <div class="z-display text-[24px] mt-1">{{ kpis().skus }}</div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Units in stock</div>
+      <div class="z-display text-[24px] mt-1">{{ kpis().units }}</div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Low (under {{ low }})</div>
+      <div class="z-display text-[24px] mt-1 text-[var(--z-warn)]">{{ kpis().low }}</div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Out of stock</div>
+      <div class="z-display text-[24px] mt-1 text-[var(--z-danger)]">{{ kpis().out }}</div>
+    </div>
+  </div>
+
+  <div class="z-card p-4 mb-4 flex flex-wrap gap-4 items-center">
+    <nz-input-wrapper class="flex-1 min-w-[220px]">
+      <span nzInputPrefix nz-icon nzType="search" class="z-muted"></span>
+      <input
+        nz-input
+        placeholder="Search products"
+        aria-label="Search products"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+    </nz-input-wrapper>
+    <label class="flex items-center gap-2 font-bold text-[13px]">
+      <nz-switch nzSize="small" [ngModel]="lowOnly()" (ngModelChange)="lowOnly.set($event)" />
+      Low & out of stock only
+    </label>
+  </div>
+
+  <div class="z-card overflow-hidden">
+    <nz-table
+      #t
+      [nzData]="visible()"
+      [nzPageSize]="50"
+      [nzScroll]="{ x: '720px' }"
+      [nzNoResult]="none"
+    >
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th nzWidth="120px">Size</th>
+          <th nzWidth="150px">In stock</th>
+          <th nzWidth="230px"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (l of t.data; track l.variantId) {
+          <tr>
+            <td>
+              <div class="flex items-center gap-3">
+                @if (l.imageUrl) {
+                  <img class="thumb" [src]="l.imageUrl" alt="" loading="lazy" />
+                } @else {
+                  <span class="thumb"></span>
+                }
+                <div class="min-w-0">
+                  <div class="font-bold truncate">{{ l.name }}</div>
+                  @if (!l.isActive) {
+                    <span class="z-caption">Hidden in app</span>
+                  }
+                </div>
+              </div>
+            </td>
+            <td>{{ l.size }}</td>
+            <td>
+              <span class="qty">{{ l.quantity }}</span>
+              @if (l.quantity === 0) {
+                <nz-tag nzColor="error" class="ml-2">Out</nz-tag>
+              } @else if (l.quantity < low) {
+                <nz-tag nzColor="warning" class="ml-2">Low</nz-tag>
+              }
+            </td>
+            <td>
+              <div class="flex gap-1 justify-end">
+                <button
+                  nz-button
+                  nzSize="small"
+                  (click)="openAdjust(l, 'add')"
+                  [attr.aria-label]="'Add stock for ' + l.name + ' ' + l.size"
+                >
+                  <span nz-icon nzType="plus"></span>Add
+                </button>
+                <button
+                  nz-button
+                  nzSize="small"
+                  (click)="openAdjust(l, 'remove')"
+                  [attr.aria-label]="'Remove stock for ' + l.name + ' ' + l.size"
+                >
+                  <span nz-icon nzType="minus"></span>
+                </button>
+                <button nz-button nzSize="small" (click)="openAdjust(l, 'set')">Set</button>
+                <button
+                  nz-button
+                  nzSize="small"
+                  nzType="text"
+                  (click)="openHistory(l)"
+                  [attr.aria-label]="'History for ' + l.name + ' ' + l.size"
+                >
+                  <span nz-icon nzType="history"></span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+    <ng-template #none><div class="py-8 z-muted">Nothing matches.</div></ng-template>
+  </div>
+</z-page-state>
+
+<!-- Adjust -->
+<nz-modal
+  [nzVisible]="!!adjusting()"
+  [nzTitle]="adjusting() ? adjusting()!.name + ' · ' + adjusting()!.size : ''"
+  [nzFooter]="adjustFooter"
+  [nzCentered]="true"
+  (nzOnCancel)="adjusting.set(null)"
+>
+  <ng-container *nzModalContent>
+    @if (adjusting(); as l) {
+      <div class="flex flex-col gap-4">
+        <div class="z-caption">{{ storeName() }} · now {{ l.quantity }} in stock</div>
+        <nz-segmented
+          [nzOptions]="modeOptions"
+          [ngModel]="mode()"
+          (ngModelChange)="mode.set($event)"
+          aria-label="Change type"
+        />
+        <div class="flex items-center gap-3">
+          <nz-input-number
+            [nzMin]="0"
+            [nzMax]="100000"
+            [nzPrecision]="0"
+            nzPlaceHolder="Units"
+            aria-label="Units"
+            [ngModel]="amount()"
+            (ngModelChange)="amount.set($event)"
+          />
+          @if (preview() !== null) {
+            <span class="z-muted"
+              >→ <b>{{ preview() }}</b> in stock</span
+            >
+          }
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="s-reason" class="font-bold text-[13px]">Reason</label>
+          <nz-select
+            nzId="s-reason"
+            [nzOptions]="reasons"
+            [ngModel]="reason()"
+            (ngModelChange)="reason.set($event)"
+          />
+        </div>
+        <input
+          nz-input
+          placeholder="Note (optional), e.g. invoice number"
+          maxlength="200"
+          aria-label="Note"
+          [ngModel]="note()"
+          (ngModelChange)="note.set($event)"
+        />
+        @if (adjustError(); as e) {
+          <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+        }
+      </div>
+    }
+  </ng-container>
+  <ng-template #adjustFooter>
+    <button nz-button (click)="adjusting.set(null)">Cancel</button>
+    <button
+      nz-button
+      nzType="primary"
+      [nzLoading]="saving()"
+      [disabled]="amount() === null"
+      (click)="saveAdjust()"
+    >
+      Save
+    </button>
+  </ng-template>
+</nz-modal>
+
+<!-- Count upload confirm -->
+<nz-modal
+  [nzVisible]="!!countRows()"
+  nzTitle="Apply stock counts?"
+  [nzCentered]="true"
+  [nzOkText]="'Apply ' + (countRows()?.length ?? 0) + ' counts'"
+  [nzOkLoading]="countSaving()"
+  (nzOnOk)="applyCounts()"
+  (nzOnCancel)="countRows.set(null)"
+>
+  <ng-container *nzModalContent>
+    <p>
+      {{ countRows()?.length }} items in <b>{{ storeName() }}</b> get the counted quantity from your
+      sheet. Each change is recorded as a stock count.
+    </p>
+  </ng-container>
+</nz-modal>
+
+<!-- History -->
+<nz-drawer
+  [nzVisible]="!!history()"
+  [nzWidth]="420"
+  [nzTitle]="history() ? history()!.name + ' · ' + history()!.size : ''"
+  (nzOnClose)="history.set(null)"
+>
+  <ng-container *nzDrawerContent>
+    @if (historyError(); as e) {
+      <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+    } @else if (movements() === null) {
+      <p class="z-muted">Loading…</p>
+    } @else if (!movements()!.length) {
+      <p class="z-muted">No changes recorded for this store yet.</p>
+    } @else {
+      <ol class="list-none p-0 m-0 flex flex-col gap-3">
+        @for (m of movements(); track m.id) {
+          <li class="z-card p-3">
+            <div class="flex items-center gap-2">
+              <span
+                class="font-extrabold"
+                [class.text-[var(--z-ok)]]="m.delta > 0"
+                [class.text-[var(--z-danger)]]="m.delta < 0"
+              >
+                {{ m.delta > 0 ? '+' : '' }}{{ m.delta }}
+              </span>
+              <span class="z-muted">{{ m.before }} → {{ m.after }}</span>
+              <span class="z-caption ml-auto">{{ m.at | when }}</span>
+            </div>
+            <div class="z-caption mt-1">
+              {{ reasonLabel(m.reason) }}{{ m.note ? ' · ' + m.note : '' }} · {{ m.actorEmail }}
+            </div>
+          </li>
+        }
+      </ol>
+    }
+  </ng-container>
+</nz-drawer>

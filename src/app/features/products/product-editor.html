@@ -1,0 +1,181 @@
+<nz-drawer
+  [nzVisible]="open()"
+  [nzWidth]="width()"
+  [nzTitle]="isNew() ? 'New product' : 'Edit product'"
+  [nzFooter]="footer"
+  [nzMaskClosable]="false"
+  (nzOnClose)="closed.emit()"
+>
+  <ng-container *nzDrawerContent>
+    <div class="flex flex-col gap-5">
+      <z-image-picker [(url)]="imageUrl" folder="products" />
+
+      <div class="flex flex-col gap-2">
+        <label for="p-name" class="font-bold text-[13px]">Name</label>
+        <input
+          nz-input
+          id="p-name"
+          maxlength="120"
+          placeholder="e.g. Amul Butter"
+          [ngModel]="name()"
+          (ngModelChange)="name.set($event)"
+        />
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="flex flex-col gap-2">
+          <label for="p-cat" class="font-bold text-[13px]">Category</label>
+          <nz-select
+            nzId="p-cat"
+            nzShowSearch
+            nzPlaceHolder="Pick a category"
+            [nzOptions]="topOptions()"
+            [ngModel]="categoryId()"
+            (ngModelChange)="setCategory($event)"
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="p-sub" class="font-bold text-[13px]">Sub-category</label>
+          <nz-select
+            nzId="p-sub"
+            nzAllowClear
+            [nzPlaceHolder]="subOptions().length ? 'Optional' : 'None for this category'"
+            [nzDisabled]="!subOptions().length"
+            [nzOptions]="subOptions()"
+            [ngModel]="subcategoryId()"
+            (ngModelChange)="subcategoryId.set($event ?? null)"
+          />
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="p-desc" class="font-bold text-[13px]">Description</label>
+        <textarea
+          nz-input
+          id="p-desc"
+          rows="3"
+          maxlength="2000"
+          placeholder="What customers should know: brand, pack, storage…"
+          [ngModel]="description()"
+          (ngModelChange)="description.set($event)"
+        ></textarea>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-bold text-[13px]">Sizes & prices</span>
+          <span class="z-caption">Prices in ₹ · MRP blank = no discount</span>
+        </div>
+        <div class="flex flex-col gap-3">
+          @for (v of variants(); track $index; let i = $index) {
+            <div class="variant">
+              <input
+                nz-input
+                class="label"
+                placeholder="Size, e.g. 500 g"
+                maxlength="40"
+                [attr.aria-label]="'Size for variant ' + (i + 1)"
+                [ngModel]="v.label"
+                (ngModelChange)="patchVariant(i, { label: $event })"
+              />
+              <nz-input-number
+                class="!w-full"
+                nzPlaceHolder="Price"
+                [nzMin]="0"
+                [nzPrecision]="2"
+                [nzStep]="1"
+                [attr.aria-label]="'Price for variant ' + (i + 1)"
+                [ngModel]="v.price"
+                (ngModelChange)="patchVariant(i, { price: $event })"
+              >
+                <span nzInputPrefix>₹</span>
+              </nz-input-number>
+              <nz-input-number
+                class="!w-full"
+                nzPlaceHolder="MRP"
+                [nzMin]="0"
+                [nzPrecision]="2"
+                [nzStep]="1"
+                [attr.aria-label]="'MRP for variant ' + (i + 1)"
+                [ngModel]="v.mrp"
+                (ngModelChange)="patchVariant(i, { mrp: $event })"
+              >
+                <span nzInputPrefix>₹</span>
+              </nz-input-number>
+              <button
+                nz-button
+                nzType="text"
+                nzDanger
+                nzShape="circle"
+                [disabled]="variants().length === 1"
+                [attr.aria-label]="'Remove variant ' + (i + 1)"
+                (click)="removeVariant(i)"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </div>
+            @if (discount(v) > 0) {
+              <div class="z-caption -mt-2">
+                {{ discount(v) }}% off · customer pays {{ v.price! * 100 | rupees }}
+              </div>
+            }
+          }
+        </div>
+        <button
+          nz-button
+          nzType="dashed"
+          nzBlock
+          class="mt-3"
+          [disabled]="variants().length >= 20"
+          (click)="addVariant()"
+        >
+          <span nz-icon nzType="plus"></span>Add size
+        </button>
+        @if (!isNew()) {
+          <p class="z-caption mt-2">
+            Removing a size hides it from the app; its stock rows stay in Inventory.
+          </p>
+        }
+      </div>
+
+      <div class="z-card p-4 flex items-center gap-4">
+        <div class="flex-1">
+          <div class="font-bold">Show in the app</div>
+          <div class="z-caption">Off hides it from browsing and search without deleting it.</div>
+        </div>
+        <nz-switch
+          [ngModel]="isActive()"
+          (ngModelChange)="isActive.set($event)"
+          aria-label="Show in the app"
+        />
+      </div>
+
+      @if (submitted() && problems().length) {
+        <nz-alert
+          nzType="warning"
+          nzShowIcon
+          [nzMessage]="'Fix these to save'"
+          [nzDescription]="problemList"
+        />
+        <ng-template #problemList>
+          <ul class="m-0 pl-4">
+            @for (p of problems(); track p) {
+              <li>{{ p }}</li>
+            }
+          </ul>
+        </ng-template>
+      }
+      @if (error(); as e) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+      }
+    </div>
+  </ng-container>
+  <ng-template #footer>
+    <div class="flex justify-end gap-2">
+      <button nz-button (click)="closed.emit()">Cancel</button>
+      <button nz-button nzType="primary" [nzLoading]="saving()" (click)="save()">
+        {{ isNew() ? 'Create product' : 'Save changes' }}
+      </button>
+    </div>
+  </ng-template>
+</nz-drawer>

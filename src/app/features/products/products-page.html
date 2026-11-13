@@ -1,0 +1,126 @@
+<z-page-header
+  title="Products"
+  subtitle="Everything customers can buy. Changes show in the app straight away."
+>
+  <div class="flex flex-wrap gap-2">
+    <a nz-button routerLink="/catalog/products/import">
+      <span nz-icon nzType="upload"></span>Bulk upload
+    </a>
+    <button nz-button nzType="primary" (click)="editing.set('new')">
+      <span nz-icon nzType="plus"></span>New product
+    </button>
+  </div>
+</z-page-header>
+
+<z-page-state
+  [status]="status()"
+  [error]="products.error() ?? categories.error()"
+  [empty]="counts().all === 0"
+  emptyTitle="No products yet"
+  emptyText="Add one with New product, or upload a spreadsheet with Bulk upload."
+  (retry)="retry()"
+>
+  <div class="z-card p-4 mb-4 flex flex-wrap gap-3 items-center">
+    <nz-input-wrapper class="flex-1 min-w-[220px]">
+      <span nzInputPrefix nz-icon nzType="search" class="z-muted"></span>
+      <input
+        nz-input
+        placeholder="Search by name"
+        aria-label="Search products"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+    </nz-input-wrapper>
+    <nz-select
+      class="min-w-[220px]"
+      nzShowSearch
+      nzAllowClear
+      nzPlaceHolder="All categories"
+      aria-label="Filter by category"
+      [nzOptions]="categoryOptions()"
+      [ngModel]="categoryFilter()"
+      (ngModelChange)="categoryFilter.set($event ?? null)"
+    />
+    <nz-segmented
+      [nzOptions]="statusOptions()"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="statusFilter.set($event)"
+      aria-label="Filter by status"
+    />
+  </div>
+
+  <div class="z-card overflow-hidden">
+    <nz-table
+      #table
+      [nzData]="filtered()"
+      [nzPageSize]="25"
+      [nzShowSizeChanger]="true"
+      [nzScroll]="{ x: '760px' }"
+      [nzNoResult]="noResult"
+    >
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Category</th>
+          <th nzWidth="150px">Price</th>
+          <th nzWidth="110px">Status</th>
+          <th nzWidth="170px">Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of table.data; track p.id) {
+          <tr
+            class="row"
+            tabindex="0"
+            (click)="editing.set(p)"
+            (keydown.enter)="editing.set(p)"
+            [attr.aria-label]="'Edit ' + p.name"
+          >
+            <td>
+              <div class="flex items-center gap-3">
+                @if (p.imageUrl) {
+                  <img class="thumb" [src]="p.imageUrl" alt="" loading="lazy" />
+                } @else {
+                  <span class="thumb empty"><span nz-icon nzType="picture"></span></span>
+                }
+                <div class="min-w-0">
+                  <div class="font-bold truncate">{{ p.name }}</div>
+                  <div class="z-caption truncate">
+                    {{ p.variants.length }} size{{ p.variants.length === 1 ? '' : 's' }} ·
+                    {{ p.variants.map((v) => v.label).join(', ') }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="z-muted">{{ path(p) }}</td>
+            <td>
+              @if (priceRange(p); as r) {
+                <span class="font-bold">{{ r[0] | rupees }}</span>
+                @if (r[1] !== r[0]) {
+                  <span class="z-muted"> – {{ r[1] | rupees }}</span>
+                }
+              }
+            </td>
+            <td>
+              @if (p.isActive) {
+                <nz-tag nzColor="success">In app</nz-tag>
+              } @else {
+                <nz-tag>Hidden</nz-tag>
+              }
+            </td>
+            <td class="z-caption">{{ p.updatedAt | when }}</td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+    <ng-template #noResult>
+      <div class="py-8 z-muted">No products match these filters.</div>
+    </ng-template>
+  </div>
+</z-page-state>
+
+<z-product-editor
+  [product]="editing()"
+  [categories]="categories.value() ?? []"
+  (closed)="editing.set(null)"
+/>
