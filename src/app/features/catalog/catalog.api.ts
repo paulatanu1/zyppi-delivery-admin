@@ -78,7 +78,9 @@ export interface Movement {
   delta: number;
   before: number;
   after: number;
-  reason: StockReason;
+  /** Staff reasons, plus `order` / `order_cancel` written by orders. */
+  reason: StockReason | 'order' | 'order_cancel';
+  orderId: string | null;
   note: string | null;
   actorEmail: string | null;
   at: Timestamp | null;
@@ -155,6 +157,7 @@ export class CatalogApi {
       after: d.get('after') ?? 0,
       reason: d.get('reason'),
       note: d.get('note') ?? null,
+      orderId: d.get('orderId') ?? null,
       actorEmail: d.get('actorEmail') ?? null,
       at: d.get('at') instanceof Timestamp ? d.get('at') : null,
     }));

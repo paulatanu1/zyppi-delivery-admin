@@ -39,10 +39,19 @@ export class AuthService {
 
   constructor() {
     onIdTokenChanged(this.auth, async (user) => {
-      this._session.set(user ? await toSession(user) : null);
-      if (!this._ready()) {
-        this._ready.set(true);
-        this.readyResolve();
+      try {
+        this._session.set(user ? await toSession(user) : null);
+      } catch {
+        // The saved sign-in is no longer valid (access removed, account
+        // disabled or deleted, tokens revoked): start from the login page
+        // instead of hanging on a blank screen.
+        this._session.set(null);
+        await signOut(this.auth).catch(() => undefined);
+      } finally {
+        if (!this._ready()) {
+          this._ready.set(true);
+          this.readyResolve();
+        }
       }
     });
   }

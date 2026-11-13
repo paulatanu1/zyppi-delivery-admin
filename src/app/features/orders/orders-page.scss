@@ -1,0 +1,40 @@
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.column {
+  background: color-mix(in srgb, var(--z-surface-2) 70%, transparent);
+  border: 1px solid var(--z-line);
+  border-radius: var(--z-radius-card);
+  padding: 10px;
+  min-height: 240px;
+}
+
+.card {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  cursor: pointer;
+  border-radius: var(--z-radius-tile);
+  transition:
+    transform 0.12s,
+    border-color 0.12s;
+
+  &:hover {
+    border-color: var(--z-brand);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--z-brand);
+  }
+
+  &.late {
+    border-left: 3px solid var(--z-danger);
+  }
+}

@@ -1,0 +1,160 @@
+<z-page-header title="Orders" subtitle="Live. New orders appear here the moment they’re placed.">
+  <div class="flex flex-wrap items-center gap-3">
+    <label class="flex items-center gap-2 font-bold text-[13px]">
+      <nz-switch nzSize="small" [ngModel]="sound()" (ngModelChange)="toggleSound($event)" />
+      Sound
+    </label>
+    <nz-segmented
+      [nzOptions]="viewOptions"
+      [ngModel]="view()"
+      (ngModelChange)="view.set($event)"
+      aria-label="View"
+    />
+  </div>
+</z-page-header>
+
+<div class="z-card p-4 mb-4 flex flex-wrap gap-3 items-center">
+  <nz-segmented
+    [nzOptions]="rangeOptions"
+    [ngModel]="range()"
+    (ngModelChange)="range.set($event)"
+    aria-label="Date range"
+  />
+  <nz-select
+    class="min-w-[170px]"
+    nzAllowClear
+    nzPlaceHolder="All areas"
+    aria-label="Area"
+    [nzOptions]="areaOptions()"
+    [ngModel]="areaFilter()"
+    (ngModelChange)="areaFilter.set($event ?? null)"
+  />
+  <nz-select
+    class="min-w-[190px]"
+    aria-label="Payment"
+    [nzOptions]="paymentOptions"
+    [ngModel]="paymentFilter()"
+    (ngModelChange)="paymentFilter.set($event)"
+  />
+  <nz-input-wrapper class="flex-1 min-w-[200px]">
+    <span nzInputPrefix nz-icon nzType="search" class="z-muted"></span>
+    <input
+      nz-input
+      placeholder="Order #, address or rider"
+      aria-label="Search orders"
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+    />
+  </nz-input-wrapper>
+</div>
+
+<z-page-state
+  [status]="status()"
+  [error]="error()"
+  [empty]="(orders() ?? []).length === 0"
+  emptyTitle="No orders in this period"
+  emptyText="New orders show up here instantly — keep this tab open with sound on."
+  (retry)="retry()"
+>
+  <div class="grid gap-4 grid-cols-2 md:grid-cols-4 mb-4">
+    <div class="z-card p-4">
+      <div class="z-overline">Orders</div>
+      <div class="z-display text-[24px] mt-1">{{ totals().count }}</div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Sales</div>
+      <div class="z-display text-[24px] mt-1">{{ totals().gmv | rupees }}</div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Still open</div>
+      <div class="z-display text-[24px] mt-1 text-[var(--z-brand-text)]">{{ totals().open }}</div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Cancelled</div>
+      <div class="z-display text-[24px] mt-1 text-[var(--z-danger)]">{{ totals().cancelled }}</div>
+    </div>
+  </div>
+
+  @if (view() === 'board') {
+    <div class="board">
+      @for (s of columns; track s) {
+        <section class="column">
+          <header class="flex items-center gap-2 px-1 pb-2">
+            <nz-tag [nzColor]="meta[s].color">{{ meta[s].label }}</nz-tag>
+            <span class="z-caption">{{ byStatus().get(s)!.length }}</span>
+          </header>
+          <div class="flex flex-col gap-2">
+            @for (o of byStatus().get(s); track o.id) {
+              <button type="button" class="card z-card" [class.late]="late(o)" (click)="open(o)">
+                <div class="flex items-center gap-2">
+                  <span class="font-extrabold">#{{ o.shortId }}</span>
+                  <span class="z-caption ml-auto" [class.text-[var(--z-danger)]]="late(o)">{{
+                    waited(o)
+                  }}</span>
+                </div>
+                <div class="z-caption mt-1 truncate">
+                  {{ areaName(o.serviceAreaId) }} · {{ o.addressText }}
+                </div>
+                <div class="flex items-center gap-2 mt-2">
+                  <span class="font-bold">{{ o.totalPaise | rupees }}</span>
+                  <span class="z-caption">{{ o.items.length }} items</span>
+                  <nz-tag
+                    class="!ml-auto !mr-0"
+                    [nzColor]="o.paymentMethod === 'Cash on delivery' ? 'orange' : 'cyan'"
+                  >
+                    {{ o.paymentMethod === 'Cash on delivery' ? 'COD' : 'Paid' }}
+                  </nz-tag>
+                </div>
+                @if (o.riderName) {
+                  <div class="z-caption mt-1">
+                    <span nz-icon nzType="car"></span> {{ o.riderName }}
+                  </div>
+                }
+              </button>
+            } @empty {
+              <div class="z-caption text-center py-6">Nothing here</div>
+            }
+          </div>
+        </section>
+      }
+    </div>
+    @if (totals().cancelled) {
+      <p class="z-caption mt-3">{{ totals().cancelled }} cancelled — switch to List to see them.</p>
+    }
+  } @else {
+    <div class="z-card overflow-hidden">
+      <nz-table #t [nzData]="filtered()" [nzPageSize]="50" [nzScroll]="{ x: '860px' }">
+        <thead>
+          <tr>
+            <th nzWidth="120px">Order</th>
+            <th nzWidth="170px">Placed</th>
+            <th>Deliver to</th>
+            <th nzWidth="110px">Total</th>
+            <th nzWidth="120px">Payment</th>
+            <th nzWidth="120px">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (o of t.data; track o.id) {
+            <tr class="cursor-pointer" tabindex="0" (click)="open(o)" (keydown.enter)="open(o)">
+              <td class="font-extrabold">#{{ o.shortId }}</td>
+              <td class="z-caption">{{ o.placedAt | when }}</td>
+              <td>
+                <div class="truncate max-w-[340px]">
+                  {{ areaName(o.serviceAreaId) }} · {{ o.addressText }}
+                </div>
+              </td>
+              <td class="font-bold">{{ o.totalPaise | rupees }}</td>
+              <td>{{ o.paymentMethod === 'Cash on delivery' ? 'COD' : o.paymentMethod }}</td>
+              <td>
+                <nz-tag [nzColor]="meta[o.status].color">{{ meta[o.status].label }}</nz-tag>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </div>
+  }
+</z-page-state>
+
+<z-order-drawer [orderId]="id() ?? null" [areaNames]="areaNames()" (closed)="close()" />

@@ -21,6 +21,28 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
       {
+        path: 'orders',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'support'], heading: 'Operations' },
+        title: 'Orders · Zyppi Admin',
+        loadComponent: () => import('./features/orders/orders-page').then((m) => m.OrdersPage),
+      },
+      {
+        path: 'orders/:id',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'support'], heading: 'Operations' },
+        title: 'Order · Zyppi Admin',
+        loadComponent: () => import('./features/orders/orders-page').then((m) => m.OrdersPage),
+      },
+      {
+        path: 'payments',
+        canActivate: [roleGuard],
+        data: { roles: ['finance'], heading: 'Money' },
+        title: 'Payments · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/payments/payments-page').then((m) => m.PaymentsPage),
+      },
+      {
         path: 'catalog',
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'products' },

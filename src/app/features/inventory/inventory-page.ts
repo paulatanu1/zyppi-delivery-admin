@@ -33,6 +33,7 @@ import {
   StockReason,
 } from '../catalog/catalog.api';
 import { LOW_STOCK, StockRow } from '../catalog/catalog.models';
+import { shortOrderId } from '../orders/orders.models';
 
 interface Line {
   productId: string;
@@ -263,8 +264,11 @@ export class InventoryPage {
     }
   }
 
-  reasonLabel(r: StockReason): string {
-    return STOCK_REASONS.find((x) => x.value === r)?.label ?? r;
+  reasonLabel(m: Movement): string {
+    if (m.reason === 'order') return `Sold · order #${shortOrderId(m.orderId ?? '')}`;
+    if (m.reason === 'order_cancel')
+      return `Back from cancelled order #${shortOrderId(m.orderId ?? '')}`;
+    return STOCK_REASONS.find((x) => x.value === m.reason)?.label ?? m.reason;
   }
 
   // ---- Count sheet --------------------------------------------------------
