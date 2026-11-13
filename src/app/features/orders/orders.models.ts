@@ -69,6 +69,7 @@ export interface Order {
   totalPaise: number;
   couponCode: string | null;
   etaMinutes: number | null;
+  riderId: string | null;
   riderName: string | null;
   riderPhone: string | null;
   cancelReason: string | null;
@@ -139,6 +140,7 @@ export function toOrder(id: string, d: Record<string, unknown>): Order {
     totalPaise: num(d['totalPaise']),
     couponCode: str(d['couponCode']) || null,
     etaMinutes: typeof d['etaMinutes'] === 'number' ? d['etaMinutes'] : null,
+    riderId: str(d['riderId']) || null,
     riderName: str(d['riderName']) || null,
     riderPhone: str(d['riderPhone']) || null,
     cancelReason: str(d['cancelReason']) || null,

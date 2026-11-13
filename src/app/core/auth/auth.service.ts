@@ -16,7 +16,10 @@ export interface Session {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  phoneNumber: string | null;
   role: Role | null;
+  /** Approved delivery partner (custom claim set by adminReviewRider). */
+  rider: boolean;
 }
 
 /**
@@ -96,7 +99,9 @@ async function toSession(user: User, forceRefresh = false): Promise<Session> {
     email: user.email,
     displayName: user.displayName,
     photoURL: user.photoURL,
+    phoneNumber: user.phoneNumber,
     role: roleFromClaims(token.claims),
+    rider: token.claims['rider'] === true,
   };
 }
 

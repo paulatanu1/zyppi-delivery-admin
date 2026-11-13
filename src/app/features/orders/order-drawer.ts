@@ -26,6 +26,8 @@ import { AuthService } from '../../core/auth/auth.service';
 import { hasRole } from '../../core/auth/roles';
 import { RupeesPipe } from '../../shared/pipes/rupees.pipe';
 import { WhenPipe } from '../../shared/pipes/when.pipe';
+import { RidersApi } from '../riders/riders.api';
+import { Rider } from '../riders/riders.models';
 import { downloadInvoice, printPackingSlip } from './invoice';
 import { Customer, OrdersApi, REFUND_META, Refund } from './orders.api';
 import {
@@ -82,6 +84,7 @@ export class OrderDrawer {
   private readonly api = inject(OrdersApi);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(NzMessageService);
+  private readonly riders = inject(RidersApi);
 
   readonly orderId = input<string | null>(null);
   readonly areaNames = input<Map<string, string>>(new Map());
@@ -95,6 +98,9 @@ export class OrderDrawer {
 
   readonly riderName = signal('');
   readonly riderPhone = signal('');
+  /** Approved riders (loaded once per drawer open); '__manual' = someone else. */
+  readonly riderList = signal<Rider[]>([]);
+  readonly riderChoice = signal<string | null>(null);
 
   readonly cancelOpen = signal(false);
   readonly cancelPreset = signal<string | null>(null);
@@ -119,6 +125,20 @@ export class OrderDrawer {
     const o = this.order();
     if (!o || !isOnline(o) || o.paymentStatus !== 'succeeded') return 0;
     return Math.max(0, o.totalPaise - o.refundedPaise);
+  });
+  /** Riders of the order's area first, then the rest. */
+  readonly riderOptions = computed(() => {
+    const area = this.order()?.serviceAreaId;
+    const list = [...this.riderList()].sort(
+      (a, b) => Number(b.serviceAreaId === area) - Number(a.serviceAreaId === area),
+    );
+    return [
+      ...list.map((r) => ({
+        label: `${r.fullName} · ${r.phone}${r.serviceAreaId === area ? '' : ' (other area)'}`,
+        value: r.uid,
+      })),
+      { label: 'Someone else (type name & phone)', value: '__manual' },
+    ];
   });
   readonly cancelReason = computed(() =>
     this.cancelPreset() === 'Other' ? this.cancelText().trim() : (this.cancelPreset() ?? ''),
@@ -148,6 +168,13 @@ export class OrderDrawer {
               firstLoad = false;
               this.riderName.set(o.riderName ?? '');
               this.riderPhone.set(o.riderPhone ?? '');
+              this.riderChoice.set(o.riderId ?? (o.riderName ? '__manual' : null));
+              if (this.canOperate()) {
+                void this.riders
+                  .approved()
+                  .then((r) => this.riderList.set(r))
+                  .catch(() => undefined);
+              }
               void this.api.customer(o.userId).then((c) => this.customer.set(c));
             }
           },
@@ -176,15 +203,21 @@ export class OrderDrawer {
 
   async saveRider(): Promise<void> {
     const o = this.order();
+    const choice = this.riderChoice();
     if (!o) return;
     await this.run('rider', async () => {
-      await this.api.updateStatus({
-        orderId: o.id,
-        status: o.status,
-        riderName: this.riderName(),
-        riderPhone: this.riderPhone(),
-      });
-      this.toast.success('Rider saved');
+      if (choice && choice !== '__manual') {
+        await this.api.updateStatus({ orderId: o.id, status: o.status, riderId: choice });
+      } else {
+        await this.api.updateStatus({
+          orderId: o.id,
+          status: o.status,
+          riderId: null,
+          riderName: choice ? this.riderName() : '',
+          riderPhone: choice ? this.riderPhone() : '',
+        });
+      }
+      this.toast.success(choice ? 'Rider assigned' : 'Rider removed');
     });
   }
 

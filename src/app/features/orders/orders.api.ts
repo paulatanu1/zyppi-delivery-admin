@@ -111,6 +111,7 @@ export class OrdersApi {
     reason?: string;
     riderName?: string;
     riderPhone?: string;
+    riderId?: string | null;
   }): Promise<{ ok: true; refund?: { refundId: string; status: string } }> {
     return this.callables.call('adminUpdateOrderStatus', input);
   }

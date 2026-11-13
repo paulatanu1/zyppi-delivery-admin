@@ -1,0 +1,453 @@
+<div class="page z-backdrop">
+  <header class="z-brand">
+    <div class="max-w-[720px] mx-auto px-4 py-5 flex items-center gap-3">
+      <div class="logo z-display">Z</div>
+      <div class="flex-1">
+        <div class="z-display text-[18px]">Ride with Zyppi</div>
+        <div class="text-[12px] opacity-80">
+          Deliver groceries in Purulia, Raghunathpur & Chelyama
+        </div>
+      </div>
+      <button
+        nz-button
+        nzType="text"
+        nzShape="circle"
+        class="!text-white"
+        [attr.aria-label]="theme.isDark() ? 'Light theme' : 'Dark theme'"
+        (click)="theme.toggle()"
+      >
+        <span nz-icon [nzType]="theme.isDark() ? 'sun' : 'moon'"></span>
+      </button>
+      @if (session()) {
+        <button nz-button nzType="text" class="!text-white" (click)="signOut()">Sign out</button>
+      }
+    </div>
+  </header>
+
+  <main class="max-w-[720px] mx-auto px-4 py-6">
+    @if (!ready()) {
+      <div class="py-20 text-center"><nz-spin nzSimple /></div>
+    } @else if (!session()) {
+      <!-- Sign in -->
+      <section class="z-card p-6">
+        <h1 class="text-[24px]">Become a delivery partner</h1>
+        <p class="z-muted mt-1 mb-5">
+          Flexible hours, weekly payouts, deliveries close to home. Sign in to apply — it takes
+          about 10 minutes.
+        </p>
+
+        @if (otpOn()) {
+          @if (!codeSent()) {
+            <label for="rp-phone" class="font-bold text-[13px]">Mobile number</label>
+            <nz-input-wrapper class="w-full mt-2">
+              <span nzInputPrefix class="z-muted">+91</span>
+              <input
+                nz-input
+                id="rp-phone"
+                inputmode="numeric"
+                maxlength="10"
+                autocomplete="tel-national"
+                placeholder="98xxxxxxxx"
+                [ngModel]="phone10()"
+                (ngModelChange)="phone10.set($event)"
+                (keydown.enter)="sendCode()"
+              />
+            </nz-input-wrapper>
+            <button
+              id="otp-send"
+              nz-button
+              nzType="primary"
+              nzBlock
+              nzSize="large"
+              class="z-brand-btn mt-4"
+              [nzLoading]="busy()"
+              (click)="sendCode()"
+            >
+              Send OTP
+            </button>
+          } @else {
+            <label for="rp-code" class="font-bold text-[13px]"
+              >Code sent to +91 {{ phone10() }}</label
+            >
+            <input
+              nz-input
+              id="rp-code"
+              class="mt-2 tracking-[.4em] text-center text-[18px]"
+              inputmode="numeric"
+              maxlength="6"
+              autocomplete="one-time-code"
+              placeholder="••••••"
+              [ngModel]="code()"
+              (ngModelChange)="code.set($event)"
+              (keydown.enter)="verify()"
+            />
+            <button
+              nz-button
+              nzType="primary"
+              nzBlock
+              nzSize="large"
+              class="z-brand-btn mt-4"
+              [nzLoading]="busy()"
+              (click)="verify()"
+            >
+              Verify & continue
+            </button>
+            <button nz-button nzType="link" class="mt-2" (click)="codeSent.set(false)">
+              Change number
+            </button>
+          }
+          <div class="flex items-center gap-3 my-5 z-caption">
+            <span class="flex-1 border-t border-[var(--z-line)]"></span>or<span
+              class="flex-1 border-t border-[var(--z-line)]"
+            ></span>
+          </div>
+        }
+        <button
+          nz-button
+          nzBlock
+          nzSize="large"
+          [nzLoading]="busy() && !codeSent()"
+          (click)="google()"
+        >
+          Continue with Google
+        </button>
+        @if (error(); as e) {
+          <nz-alert nzType="error" nzShowIcon class="block mt-4" [nzMessage]="e" />
+        }
+      </section>
+    } @else if (rider() === undefined) {
+      <div class="py-20 text-center"><nz-spin nzSimple /></div>
+    } @else if (showForm()) {
+      <!-- Application -->
+      <nz-steps [nzCurrent]="step()" nzSize="small" class="mb-5">
+        <nz-step nzTitle="You" />
+        <nz-step nzTitle="Vehicle" />
+        <nz-step nzTitle="Documents" />
+        <nz-step nzTitle="Payouts" />
+      </nz-steps>
+
+      @if (rider()?.reviewNote && editing()) {
+        <nz-alert
+          nzType="warning"
+          nzShowIcon
+          class="block mb-4"
+          nzMessage="What to fix"
+          [nzDescription]="rider()!.reviewNote!"
+        />
+      }
+
+      <section class="z-card p-5 flex flex-col gap-4">
+        @switch (step()) {
+          @case (0) {
+            <div class="field">
+              <label for="rp-name">Full name (as on Aadhaar)</label>
+              <input
+                nz-input
+                id="rp-name"
+                maxlength="80"
+                autocomplete="name"
+                [ngModel]="form().fullName"
+                (ngModelChange)="patch({ fullName: $event })"
+              />
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="field">
+                <label for="rp-mobile">Mobile number</label>
+                <input
+                  nz-input
+                  id="rp-mobile"
+                  inputmode="numeric"
+                  maxlength="10"
+                  [disabled]="!!session()?.phoneNumber"
+                  [ngModel]="form().phone"
+                  (ngModelChange)="patch({ phone: $event })"
+                />
+              </div>
+              <div class="field">
+                <label for="rp-dob">Date of birth</label>
+                <input
+                  nz-input
+                  id="rp-dob"
+                  type="date"
+                  [max]="maxDob"
+                  [ngModel]="form().dob"
+                  (ngModelChange)="patch({ dob: $event })"
+                />
+              </div>
+            </div>
+            <div class="field">
+              <label for="rp-gender">Gender (optional)</label>
+              <nz-select
+                nzId="rp-gender"
+                nzAllowClear
+                nzPlaceHolder="Prefer not to say"
+                [nzOptions]="genderOptions"
+                [ngModel]="form().gender"
+                (ngModelChange)="patch({ gender: $event ?? null })"
+              />
+            </div>
+            <div class="field">
+              <label for="rp-address">Home address</label>
+              <textarea
+                nz-input
+                id="rp-address"
+                rows="2"
+                maxlength="300"
+                autocomplete="street-address"
+                [ngModel]="form().address"
+                (ngModelChange)="patch({ address: $event })"
+              ></textarea>
+            </div>
+            <div class="field">
+              <label for="rp-area">Where do you want to deliver?</label>
+              <nz-select
+                nzId="rp-area"
+                nzPlaceHolder="Choose a town"
+                [nzOptions]="areas()"
+                [ngModel]="form().serviceAreaId || null"
+                (ngModelChange)="patch({ serviceAreaId: $event })"
+              />
+            </div>
+          }
+          @case (1) {
+            <div class="field">
+              <span class="lbl">Your vehicle</span>
+              <div class="grid grid-cols-2 gap-2 mt-1">
+                @for (v of vehicles; track v.value) {
+                  <button
+                    type="button"
+                    class="choice"
+                    [class.on]="form().vehicleType === v.value"
+                    [attr.aria-pressed]="form().vehicleType === v.value"
+                    (click)="patch({ vehicleType: v.value })"
+                  >
+                    {{ v.label }}
+                  </button>
+                }
+              </div>
+            </div>
+            @if (motor()) {
+              <div class="field">
+                <label for="rp-vno">Vehicle number</label>
+                <input
+                  nz-input
+                  id="rp-vno"
+                  maxlength="15"
+                  placeholder="WB 56 AB 1234"
+                  class="uppercase"
+                  [ngModel]="form().vehicleNumber"
+                  (ngModelChange)="patch({ vehicleNumber: $event })"
+                />
+              </div>
+              <div class="field">
+                <label for="rp-dl">Driving licence number</label>
+                <input
+                  nz-input
+                  id="rp-dl"
+                  maxlength="20"
+                  placeholder="WB56 20190001234"
+                  class="uppercase"
+                  [ngModel]="form().drivingLicenceNumber"
+                  (ngModelChange)="patch({ drivingLicenceNumber: $event })"
+                />
+              </div>
+            } @else if (form().vehicleType === 'cycle') {
+              <p class="z-muted">No licence needed for a bicycle.</p>
+            }
+          }
+          @case (2) {
+            <p class="z-muted">
+              Clear photos in good light. Only Zyppi’s verification team can see them.
+            </p>
+            @for (d of docs(); track d.key) {
+              <z-kyc-upload
+                [uid]="session()!.uid"
+                [key]="d.key"
+                [label]="d.label"
+                [hint]="d.hint"
+                [path]="form().docs[d.key]"
+                (uploaded)="setDoc(d.key, $event)"
+              />
+            }
+          }
+          @case (3) {
+            <p class="z-muted">Where should we send your earnings?</p>
+            <nz-segmented
+              [nzOptions]="payoutOptions"
+              [ngModel]="payout().method"
+              (ngModelChange)="patchPayout({ method: $event })"
+              aria-label="Payout method"
+            />
+            @if (payout().method === 'upi') {
+              <div class="field">
+                <label for="rp-upi">UPI ID</label>
+                <input
+                  nz-input
+                  id="rp-upi"
+                  maxlength="120"
+                  placeholder="name@okaxis"
+                  autocapitalize="off"
+                  [ngModel]="payout().upiId"
+                  (ngModelChange)="patchPayout({ upiId: $event })"
+                />
+              </div>
+            } @else {
+              <div class="field">
+                <label for="rp-acname">Account holder name</label>
+                <input
+                  nz-input
+                  id="rp-acname"
+                  maxlength="80"
+                  [ngModel]="payout().accountName"
+                  (ngModelChange)="patchPayout({ accountName: $event })"
+                />
+              </div>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div class="field">
+                  <label for="rp-acno">Account number</label>
+                  <input
+                    nz-input
+                    id="rp-acno"
+                    inputmode="numeric"
+                    maxlength="20"
+                    [ngModel]="payout().accountNumber"
+                    (ngModelChange)="patchPayout({ accountNumber: $event })"
+                  />
+                </div>
+                <div class="field">
+                  <label for="rp-ifsc">IFSC</label>
+                  <input
+                    nz-input
+                    id="rp-ifsc"
+                    maxlength="11"
+                    class="uppercase"
+                    placeholder="SBIN0001234"
+                    [ngModel]="payout().ifsc"
+                    (ngModelChange)="patchPayout({ ifsc: $event })"
+                  />
+                </div>
+              </div>
+            }
+            <p class="z-caption">
+              By submitting you confirm the details and documents are yours and correct.
+            </p>
+          }
+        }
+
+        @if (problems().length) {
+          <nz-alert
+            nzType="warning"
+            nzShowIcon
+            nzMessage="Please fix"
+            [nzDescription]="problemList"
+          />
+          <ng-template #problemList>
+            <ul class="m-0 pl-4">
+              @for (p of problems(); track p) {
+                <li>{{ p }}</li>
+              }
+            </ul>
+          </ng-template>
+        }
+        @if (error(); as e) {
+          <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+        }
+
+        <div class="flex items-center gap-2 pt-2">
+          @if (step() > 0) {
+            <button nz-button (click)="back()">Back</button>
+          }
+          <span class="flex-1 z-caption text-right">{{ saved() }}</span>
+          @if (step() < 3) {
+            <button nz-button nzType="primary" [nzLoading]="busy()" (click)="next()">
+              Save & continue
+            </button>
+          } @else {
+            <button
+              nz-button
+              nzType="primary"
+              class="z-brand-btn"
+              [nzLoading]="busy()"
+              (click)="submit()"
+            >
+              Submit application
+            </button>
+          }
+        </div>
+      </section>
+    } @else if (rider(); as r) {
+      <!-- Status -->
+      <section class="z-card p-2">
+        @switch (r.status) {
+          @case ('submitted') {
+            <nz-result
+              nzStatus="info"
+              nzTitle="Application received"
+              nzSubTitle="Our team checks your documents, usually within 2 working days. This page updates by itself."
+            />
+          }
+          @case ('approved') {
+            <nz-result
+              nzStatus="success"
+              [nzTitle]="'Welcome aboard, ' + r.fullName.split(' ')[0] + '!'"
+              nzSubTitle="You’re an approved Zyppi rider. Your area manager will call you about your first shift."
+            >
+              <div nz-result-extra>
+                <div class="grid grid-cols-3 gap-3 text-left">
+                  <div class="z-card p-3">
+                    <div class="z-overline">Deliveries</div>
+                    <div class="z-display text-[22px]">{{ r.deliveredCount }}</div>
+                  </div>
+                  <div class="z-card p-3">
+                    <div class="z-overline">On time</div>
+                    <div class="z-display text-[22px]">
+                      {{
+                        r.deliveredCount
+                          ? ((r.onTimeCount / r.deliveredCount) * 100).toFixed(0) + '%'
+                          : '—'
+                      }}
+                    </div>
+                  </div>
+                  <div class="z-card p-3">
+                    <div class="z-overline">Cash with you</div>
+                    <div class="z-display text-[22px]">{{ r.codBalancePaise | rupees }}</div>
+                  </div>
+                </div>
+              </div>
+            </nz-result>
+          }
+          @case ('changes_requested') {
+            <nz-result
+              nzStatus="warning"
+              nzTitle="Please update your application"
+              [nzSubTitle]="r.reviewNote ?? ''"
+            >
+              <div nz-result-extra>
+                <button nz-button nzType="primary" (click)="edit()">Update application</button>
+              </div>
+            </nz-result>
+          }
+          @case ('rejected') {
+            <nz-result
+              nzStatus="error"
+              nzTitle="We couldn’t approve your application"
+              [nzSubTitle]="r.reviewNote ?? ''"
+            >
+              <div nz-result-extra><button nz-button (click)="edit()">Apply again</button></div>
+            </nz-result>
+          }
+          @case ('suspended') {
+            <nz-result
+              nzStatus="warning"
+              nzTitle="Your account is paused"
+              [nzSubTitle]="(r.reviewNote ?? '') + ' Please contact your area manager.'"
+            />
+          }
+        }
+      </section>
+      <p class="z-caption text-center mt-4">
+        {{ r.fullName }} · {{ areaName(r.serviceAreaId) }} · status: {{ meta[r.status].label }}
+      </p>
+    }
+  </main>
+</div>

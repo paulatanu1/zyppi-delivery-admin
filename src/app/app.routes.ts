@@ -9,6 +9,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login').then((m) => m.Login),
   },
   {
+    // Public rider sign-up and status ("Ride with Zyppi").
+    path: 'rider',
+    title: 'Ride with Zyppi',
+    loadComponent: () => import('./features/rider-portal/rider-portal').then((m) => m.RiderPortal),
+  },
+  {
     path: '',
     canActivate: [adminGuard],
     loadComponent: () => import('./layout/shell').then((m) => m.Shell),
@@ -33,6 +39,20 @@ export const routes: Routes = [
         data: { roles: ['ops', 'support'], heading: 'Operations' },
         title: 'Order · Zyppi Admin',
         loadComponent: () => import('./features/orders/orders-page').then((m) => m.OrdersPage),
+      },
+      {
+        path: 'riders',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'finance'], heading: 'Operations' },
+        title: 'Riders · Zyppi Admin',
+        loadComponent: () => import('./features/riders/riders-page').then((m) => m.RidersPage),
+      },
+      {
+        path: 'riders/:id',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'finance'], heading: 'Operations' },
+        title: 'Rider · Zyppi Admin',
+        loadComponent: () => import('./features/riders/riders-page').then((m) => m.RidersPage),
       },
       {
         path: 'payments',
