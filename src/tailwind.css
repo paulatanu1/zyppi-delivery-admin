@@ -1,0 +1,11 @@
+/* Layer order shared with PrimeNG (providePrimeNG cssLayer) so Tailwind
+   utilities can override component styles without !important. */
+@layer theme, base, primeng, components, utilities;
+@import 'tailwindcss';
+@plugin 'tailwindcss-primeui';
+@custom-variant dark (&:where(.z-dark, .z-dark *));
+
+@theme {
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Sora', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+}

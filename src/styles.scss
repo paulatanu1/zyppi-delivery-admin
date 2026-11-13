@@ -1,0 +1,178 @@
+/* Zyppi admin tokens — mirror zyppi-APP docs/design-tokens.md. Components
+   use these variables (or PrimeNG tokens), never literal colours. */
+:root {
+  --z-bg: #f6f5f2;
+  --z-surface: #ffffff;
+  --z-surface-2: #f0eee9;
+  --z-surface-3: #e8e5df;
+  --z-line: #e4e1da;
+  --z-line-2: #d6d2c9;
+  --z-ink: #141519;
+  --z-ink-2: #55585f;
+  --z-ink-3: #83868d;
+  --z-brand: #673ab7;
+  --z-brand-text: #5e35b1;
+  --z-brand-soft: #ede7f6;
+  --z-brand-soft-2: #d1c4e9;
+  --z-header: #673ab7;
+  --z-blue: #2443d6;
+  --z-blue-soft: #e7ebfd;
+  --z-ok: #138a4a;
+  --z-ok-soft: #e2f4e9;
+  --z-warn: #9a5b00;
+  --z-warn-soft: #fff1cf;
+  --z-danger: #c2263a;
+  --z-danger-soft: #fde8ea;
+  --z-deal: #ffc83d;
+
+  --z-tone-deep: #4527a0;
+  --z-tone-aurora: #9575cd;
+  --z-tone-lilac: #b39ddb;
+  --z-texture-strength: 1;
+
+  --z-radius-badge: 7px;
+  --z-radius-control: 11px;
+  --z-radius-tile: 16px;
+  --z-radius-card: 18px;
+  --z-radius-sheet: 26px;
+
+  --z-sidebar-w: 264px;
+  --z-topbar-h: 64px;
+  --z-shadow: 0 1px 2px rgb(20 21 25 / 4%), 0 8px 24px -12px rgb(69 39 160 / 18%);
+
+  color-scheme: light;
+}
+
+:root.z-dark {
+  --z-bg: #0d0e11;
+  --z-surface: #16171c;
+  --z-surface-2: #1e2026;
+  --z-surface-3: #272930;
+  --z-line: #2a2c33;
+  --z-line-2: #383b43;
+  --z-ink: #f2f2f4;
+  --z-ink-2: #a8aab2;
+  --z-ink-3: #787b84;
+  --z-brand: #7e57c2;
+  --z-brand-text: #b39ddb;
+  --z-brand-soft: #1f1533;
+  --z-brand-soft-2: #2d1f4a;
+  --z-header: #2a1658;
+  --z-blue: #4865f0;
+  --z-blue-soft: #1a2150;
+  --z-ok: #3fd27f;
+  --z-ok-soft: #0f2e1d;
+  --z-warn: #f6b73c;
+  --z-warn-soft: #33270a;
+  --z-danger: #ff6b7d;
+  --z-danger-soft: #3a1218;
+  --z-texture-strength: 0.45;
+  --z-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 12px 32px -16px rgb(0 0 0 / 60%);
+
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--z-bg);
+  color: var(--z-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+.z-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Brand surface: purple fill + three still aurora blobs + film grain —
+   the CSS twin of ZBrandTexture (lib/core/widgets/z_brand_texture.dart). */
+.z-brand {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: #fff;
+  background-color: var(--z-header);
+  background-image:
+    radial-gradient(
+      ellipse 45% 55% at 18% 12%,
+      color-mix(in srgb, var(--z-tone-aurora) calc(var(--z-texture-strength) * 100%), transparent)
+        0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 55% 60% at 78% 62%,
+      color-mix(in srgb, var(--z-tone-deep) calc(var(--z-texture-strength) * 100%), transparent) 0%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 40% 40% at 12% 98%,
+      color-mix(in srgb, var(--z-tone-lilac) calc(var(--z-texture-strength) * 50%), transparent) 0%,
+      transparent 70%
+    );
+}
+
+.z-brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Soft page backdrop: a faint violet wash behind the content. */
+.z-backdrop {
+  background:
+    radial-gradient(60rem 30rem at 100% -10%, var(--z-brand-soft) 0%, transparent 60%),
+    radial-gradient(40rem 24rem at -10% 110%, var(--z-blue-soft) 0%, transparent 60%), var(--z-bg);
+}
+
+.z-card {
+  background: color-mix(in srgb, var(--z-surface) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--z-line);
+  border-radius: var(--z-radius-card);
+  box-shadow: var(--z-shadow);
+}
+
+.z-muted {
+  color: var(--z-ink-2);
+}
+
+.z-caption {
+  color: var(--z-ink-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.z-overline {
+  color: var(--z-ink-3);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

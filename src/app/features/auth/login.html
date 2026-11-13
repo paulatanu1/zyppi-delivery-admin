@@ -1,0 +1,113 @@
+<div class="grid min-h-full lg:grid-cols-[1.1fr_1fr]">
+  <section class="z-brand hidden lg:flex flex-col justify-between p-12">
+    <div class="flex items-center gap-3">
+      <div class="logo z-display">Z</div>
+      <span class="z-display text-xl">Zyppi Admin</span>
+    </div>
+    <div class="max-w-md">
+      <h1 class="text-[40px] leading-[1.1]">Run every order, rider and offer from one place.</h1>
+      <p class="mt-4 text-[15px] opacity-85">
+        Live orders, catalog, riders, payments, notifications and reports for Purulia, Raghunathpur
+        and Chelyama.
+      </p>
+      <ul class="mt-8 space-y-3 text-[14px] font-semibold">
+        <li><i class="pi pi-bolt mr-2"></i>Live order board with instant status updates</li>
+        <li><i class="pi pi-verified mr-2"></i>Rider verification and assignment</li>
+        <li><i class="pi pi-chart-line mr-2"></i>Sales charts and exportable reports</li>
+      </ul>
+    </div>
+    <p class="text-xs opacity-70">Authorised staff only. Every action is logged.</p>
+  </section>
+
+  <section class="z-backdrop flex items-center justify-center p-4 sm:p-8">
+    <div class="w-full max-w-[420px]">
+      <div class="flex justify-end mb-4">
+        <p-button
+          [icon]="theme.isDark() ? 'pi pi-sun' : 'pi pi-moon'"
+          [text]="true"
+          [rounded]="true"
+          severity="secondary"
+          [ariaLabel]="theme.isDark() ? 'Switch to light theme' : 'Switch to dark theme'"
+          (onClick)="theme.toggle()"
+        />
+      </div>
+      <div class="z-card p-6 sm:p-8">
+        <div
+          class="lg:hidden z-brand rounded-[var(--z-radius-tile)] p-4 mb-6 flex items-center gap-3"
+        >
+          <div class="logo z-display">Z</div>
+          <span class="z-display text-lg">Zyppi Admin</span>
+        </div>
+        <h2 class="text-[24px]">{{ mode() === 'signin' ? 'Sign in' : 'Reset password' }}</h2>
+        <p class="z-muted mt-1 mb-6">
+          {{
+            mode() === 'signin'
+              ? 'Use your staff email and password.'
+              : 'We’ll email you a link to set a new password.'
+          }}
+        </p>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4" novalidate>
+          <div class="flex flex-col gap-2">
+            <label for="email" class="font-bold text-[13px]">Email</label>
+            <input
+              pInputText
+              id="email"
+              type="email"
+              autocomplete="username"
+              formControlName="email"
+              [invalid]="showError('email')"
+              placeholder="you@zyppi.in"
+            />
+            @if (showError('email')) {
+              <small class="text-[var(--z-danger)]">Enter a valid email.</small>
+            }
+          </div>
+
+          @if (mode() === 'signin') {
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-baseline">
+                <label for="password" class="font-bold text-[13px]">Password</label>
+                <button type="button" class="link" (click)="switchMode('reset')">
+                  Forgot password?
+                </button>
+              </div>
+              <p-password
+                inputId="password"
+                formControlName="password"
+                [feedback]="false"
+                [toggleMask]="true"
+                [fluid]="true"
+                autocomplete="current-password"
+                [invalid]="showError('password')"
+              />
+              @if (showError('password')) {
+                <small class="text-[var(--z-danger)]">Enter your password (6+ characters).</small>
+              }
+            </div>
+          }
+
+          @if (error(); as e) {
+            <p-message severity="error">{{ e }}</p-message>
+          }
+          @if (info(); as i) {
+            <p-message severity="success">{{ i }}</p-message>
+          }
+
+          <p-button
+            type="submit"
+            [label]="mode() === 'signin' ? 'Sign in' : 'Send reset link'"
+            [loading]="busy()"
+            [fluid]="true"
+            styleClass="z-brand !border-0 !py-3"
+          />
+          @if (mode() === 'reset') {
+            <button type="button" class="link self-center" (click)="switchMode('signin')">
+              Back to sign in
+            </button>
+          }
+        </form>
+      </div>
+    </div>
+  </section>
+</div>
