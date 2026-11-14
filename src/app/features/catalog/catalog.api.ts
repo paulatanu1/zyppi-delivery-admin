@@ -16,7 +16,7 @@ import { Live, liveQuery } from '../../core/firebase/live';
 import { compressImage } from '../../shared/util/image';
 import { Category, Product, StockRow, Store, toCategory, toProduct } from './catalog.models';
 
-export type ImageFolder = 'products' | 'categories' | 'banners';
+export type ImageFolder = 'products' | 'categories' | 'banners' | 'notifications';
 
 export interface ProductPayload {
   id?: string;
@@ -189,10 +189,10 @@ export class CatalogApi {
     return this.callables.call('adminAdjustStock', { items, reason, note });
   }
 
-  /** Compresses to WebP and uploads under catalog/<folder>/, or banners/ (public read). */
+  /** Compresses to WebP and uploads under catalog/<folder>/, banners/ or notifications/ (public read). */
   async uploadImage(file: Blob, folder: ImageFolder): Promise<string> {
     const blob = await compressImage(file);
-    const dir = folder === 'banners' ? 'banners' : `catalog/${folder}`;
+    const dir = folder === 'banners' || folder === 'notifications' ? folder : `catalog/${folder}`;
     const r = ref(this.storage, `${dir}/${crypto.randomUUID()}.webp`);
     await uploadBytes(r, blob, {
       contentType: 'image/webp',

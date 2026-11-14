@@ -49,7 +49,12 @@ export const NAV: NavGroup[] = [
         link: '/catalog/coupons',
         roles: ['catalog', 'finance'],
       },
-      { label: 'Notifications', icon: 'notification', roles: ['catalog'], phase: 'A6' },
+      {
+        label: 'Notifications',
+        icon: 'notification',
+        link: '/catalog/notifications',
+        roles: ['catalog'],
+      },
     ],
   },
   {

@@ -1,0 +1,112 @@
+.row {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--z-brand);
+    outline-offset: -2px;
+  }
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+
+  @media (max-width: 860px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.audience {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--z-radius-control);
+  background: var(--z-surface-2);
+}
+
+.preview {
+  position: sticky;
+  top: 0;
+  align-self: start;
+}
+
+/* A plain Android lock-screen notification, in the panel's own tokens. */
+.phone {
+  min-height: 360px;
+  padding: 18px 12px;
+  border: 8px solid var(--z-surface-3);
+  border-radius: 34px;
+  background: linear-gradient(160deg, var(--z-tone-deep), var(--z-tone-aurora));
+}
+
+.clock {
+  margin: 8px 0 22px;
+  text-align: center;
+  font-size: 40px;
+  font-weight: 300;
+  color: var(--z-surface);
+}
+
+.notif {
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--z-surface);
+  color: var(--z-ink);
+  box-shadow: var(--z-shadow);
+}
+
+.notif-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--z-ink-3);
+}
+
+.app-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--z-brand);
+}
+
+.notif-title {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.notif-body {
+  font-size: 13px;
+  color: var(--z-ink-2);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.notif-image {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  margin-top: 8px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: var(--z-radius-control);
+  background: var(--z-surface-2);
+
+  b {
+    font-size: 18px;
+  }
+}

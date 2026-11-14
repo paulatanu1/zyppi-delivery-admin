@@ -74,6 +74,16 @@ export const routes: Routes = [
             loadComponent: () => import('./features/home/home-page').then((m) => m.HomePage),
           },
           {
+            path: 'notifications',
+            canActivate: [roleGuard],
+            data: { roles: ['catalog'], heading: 'Catalog & growth' },
+            title: 'Notifications · Zyppi Admin',
+            loadComponent: () =>
+              import('./features/notifications/notifications-page').then(
+                (m) => m.NotificationsPage,
+              ),
+          },
+          {
             path: 'coupons',
             canActivate: [roleGuard],
             data: { roles: ['catalog', 'finance'], heading: 'Catalog & growth' },
