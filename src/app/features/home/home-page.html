@@ -1,0 +1,409 @@
+<z-page-header
+  title="Banners & home"
+  subtitle="The app’s Home screen, top to bottom. Drag to reorder. Banners can be scheduled and limited to some areas."
+>
+  <button nz-button nzType="primary" (click)="newCarousel()">
+    <span nz-icon nzType="plus"></span>New banner carousel
+  </button>
+</z-page-header>
+
+<z-page-state
+  [status]="status()"
+  [error]="sections.error() ?? categories.error() ?? products.error() ?? areas.error()"
+  [empty]="ordered().length === 0"
+  emptyTitle="Home is empty"
+  emptyText="Add a banner carousel to start. Other sections come from the catalogue seed."
+  (retry)="retry()"
+>
+  <div class="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
+    <section class="z-card p-3" aria-labelledby="sections-heading">
+      <div id="sections-heading" class="z-overline px-2 py-2">
+        Home sections · {{ ordered().length }}
+      </div>
+      <ul class="list-none p-0 m-0" cdkDropList (cdkDropListDropped)="dropSection($event)">
+        @for (s of ordered(); track s.id) {
+          <li
+            class="row"
+            cdkDrag
+            [class.active]="selected()?.id === s.id"
+            [class.dim]="!s.isActive"
+          >
+            <button
+              type="button"
+              class="handle"
+              cdkDragHandle
+              [attr.aria-label]="'Drag to reorder ' + (s.title || labels[s.type] || s.type)"
+            >
+              <span nz-icon nzType="holder"></span>
+            </button>
+            @if (s.type === 'banner_carousel') {
+              <button type="button" class="pick" (click)="selectedId.set(s.id)">
+                <span class="kind"><span nz-icon nzType="picture"></span></span>
+                <span class="min-w-0 text-left">
+                  <span class="block font-bold truncate">{{ s.title || 'Banner carousel' }}</span>
+                  <span class="block z-caption">
+                    {{ s.banners.length }} banners · {{ liveCount(s) }} live now
+                  </span>
+                </span>
+              </button>
+            } @else {
+              <span class="pick static">
+                <span class="kind"><span nz-icon nzType="appstore"></span></span>
+                <span class="min-w-0">
+                  <span class="block font-bold truncate">{{
+                    s.title || labels[s.type] || s.type
+                  }}</span>
+                  <span class="block z-caption">
+                    {{ labels[s.type] || s.type }} · {{ s.itemCount }} items
+                  </span>
+                </span>
+              </span>
+            }
+            <nz-switch
+              nzSize="small"
+              [ngModel]="s.isActive"
+              (ngModelChange)="toggleSection(s, $event)"
+              [attr.aria-label]="(s.isActive ? 'Hide ' : 'Show ') + (s.title || labels[s.type])"
+            />
+            <button
+              nz-button
+              nzType="text"
+              nzShape="circle"
+              [attr.aria-label]="'Section settings for ' + (s.title || labels[s.type])"
+              (click)="openSection(s)"
+            >
+              <span nz-icon nzType="setting"></span>
+            </button>
+          </li>
+        }
+      </ul>
+      <p class="z-caption px-2 pt-2">
+        Hidden sections stay here but don’t show in the app. Only banner carousels are edited on
+        this page for now.
+      </p>
+    </section>
+
+    <section class="z-card p-3" aria-labelledby="banners-heading">
+      @if (selected(); as s) {
+        <div class="flex flex-wrap items-center gap-2 px-2 py-2">
+          <div id="banners-heading" class="z-overline flex-1">
+            {{ s.title || 'Banner carousel' }} · {{ banners().length }}/{{ maxBanners }} banners
+          </div>
+          @if (!s.isActive) {
+            <nz-tag nzColor="warning">Section hidden</nz-tag>
+          }
+          <button
+            nz-button
+            nzSize="small"
+            [disabled]="banners().length >= maxBanners"
+            (click)="openBanner(-1)"
+          >
+            <span nz-icon nzType="plus"></span>Add banner
+          </button>
+        </div>
+        @if (banners().length === 0) {
+          <p class="z-muted px-2 py-8 text-center">
+            No banners yet. Add one; it shows in the app once the section is on.
+          </p>
+        }
+        <ul class="list-none p-0 m-0" cdkDropList (cdkDropListDropped)="dropBanner($event)">
+          @for (b of banners(); track b.id || $index; let i = $index) {
+            <li class="banner" cdkDrag [class.dim]="stateOf(b) !== 'live'">
+              <button
+                type="button"
+                class="handle"
+                cdkDragHandle
+                [attr.aria-label]="'Drag to reorder ' + b.title"
+              >
+                <span nz-icon nzType="holder"></span>
+              </button>
+              <button
+                type="button"
+                class="mini"
+                (click)="openBanner(i)"
+                [attr.aria-label]="'Edit ' + b.title"
+              >
+                <span class="mini-text">{{ b.title }}</span>
+                @if (b.imageUrl) {
+                  <img [src]="b.imageUrl" alt="" />
+                }
+              </button>
+              <div class="flex-1 min-w-0 flex flex-col gap-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-bold truncate">{{ b.title }}</span>
+                  <nz-tag [nzColor]="states[stateOf(b)].color">{{
+                    states[stateOf(b)].label
+                  }}</nz-tag>
+                </div>
+                <span class="z-caption flex items-center gap-1">
+                  <span nz-icon nzType="clock-circle"></span>{{ schedule(b) }}
+                </span>
+                <span class="z-caption flex items-center gap-1 truncate">
+                  <span nz-icon nzType="environment"></span>{{ areaNames(b) }}
+                  <span aria-hidden="true">·</span>
+                  <span nz-icon nzType="link"></span>
+                  <span class="truncate">{{ linkLabel(b) }}</span>
+                </span>
+              </div>
+              <div class="flex flex-col items-end gap-2">
+                <span class="z-caption whitespace-nowrap">{{ clicksOf(b) }} taps</span>
+                <nz-switch
+                  nzSize="small"
+                  [ngModel]="b.isActive"
+                  (ngModelChange)="toggleBanner(i, $event)"
+                  [attr.aria-label]="(b.isActive ? 'Turn off ' : 'Turn on ') + b.title"
+                />
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="z-muted px-2 py-10 text-center">
+          No banner carousel yet. Add one with New banner carousel.
+        </p>
+      }
+    </section>
+  </div>
+</z-page-state>
+
+<!-- Banner editor with a live phone preview -->
+<nz-modal
+  [nzVisible]="!!editing()"
+  [nzTitle]="editing()?.index === -1 ? 'New banner' : 'Edit banner'"
+  [nzWidth]="880"
+  [nzFooter]="bannerFooter"
+  [nzCentered]="true"
+  [nzMaskClosable]="false"
+  (nzOnCancel)="editing.set(null)"
+>
+  <ng-container *nzModalContent>
+    @if (editing(); as e) {
+      <div class="editor">
+        <div class="flex flex-col gap-4 min-w-0">
+          <div class="flex flex-col gap-2">
+            <label for="b-title" class="font-bold text-[13px]">Headline</label>
+            <input
+              nz-input
+              id="b-title"
+              maxlength="60"
+              placeholder="e.g. Fresh fruits, flat 20% off"
+              [ngModel]="e.banner.title"
+              (ngModelChange)="patch({ title: $event })"
+            />
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="b-cta" class="font-bold text-[13px]">Button text (optional)</label>
+            <input
+              nz-input
+              id="b-cta"
+              maxlength="24"
+              placeholder="Shop now"
+              [ngModel]="e.banner.ctaText"
+              (ngModelChange)="patch({ ctaText: $event })"
+            />
+          </div>
+          <z-image-picker
+            folder="banners"
+            [url]="e.banner.imageUrl"
+            (urlChange)="patch({ imageUrl: $event })"
+            hint="Fills the right side of the card. Transparent PNG, square, 600×600 px or larger."
+          />
+
+          <div class="flex flex-col gap-2">
+            <span class="font-bold text-[13px]" id="b-link-label">Tapping it opens</span>
+            <nz-segmented
+              aria-labelledby="b-link-label"
+              [nzOptions]="linkOptions"
+              [ngModel]="e.banner.linkType"
+              (ngModelChange)="setLinkType($event)"
+            />
+            @switch (e.banner.linkType) {
+              @case ('category') {
+                <nz-select
+                  nzShowSearch
+                  nzPlaceHolder="Pick a category"
+                  aria-label="Category"
+                  [nzOptions]="categoryOptions()"
+                  [ngModel]="e.banner.linkTarget"
+                  (ngModelChange)="patch({ linkTarget: $event })"
+                />
+              }
+              @case ('product') {
+                <nz-select
+                  nzShowSearch
+                  nzPlaceHolder="Search products"
+                  aria-label="Product"
+                  [nzOptions]="productOptions()"
+                  [ngModel]="e.banner.linkTarget"
+                  (ngModelChange)="patch({ linkTarget: $event })"
+                />
+              }
+              @case ('url') {
+                <input
+                  nz-input
+                  aria-label="Web link"
+                  placeholder="https://…"
+                  [ngModel]="e.banner.linkTarget"
+                  (ngModelChange)="patch({ linkTarget: $event })"
+                />
+              }
+            }
+          </div>
+
+          <fieldset class="flex flex-col gap-2 border-0 p-0 m-0">
+            <legend class="font-bold text-[13px] mb-2">Schedule</legend>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="flex flex-col gap-1">
+                <span class="z-caption">Starts (empty = now)</span>
+                <input
+                  nz-input
+                  type="datetime-local"
+                  [ngModel]="local(e.banner.startAt)"
+                  (ngModelChange)="setDate('startAt', $event)"
+                />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="z-caption">Ends (empty = never)</span>
+                <input
+                  nz-input
+                  type="datetime-local"
+                  [ngModel]="local(e.banner.endAt)"
+                  (ngModelChange)="setDate('endAt', $event)"
+                />
+              </label>
+            </div>
+            <small class="z-caption">
+              Your local time. The app shows and removes it on time, without a refresh.
+            </small>
+          </fieldset>
+
+          <div class="flex flex-col gap-2">
+            <label for="b-areas" class="font-bold text-[13px]">Areas</label>
+            <nz-select
+              nzId="b-areas"
+              nzMode="multiple"
+              nzAllowClear
+              nzPlaceHolder="All areas"
+              [nzOptions]="areaOptions()"
+              [ngModel]="e.banner.serviceAreaIds"
+              (ngModelChange)="patch({ serviceAreaIds: $event ?? [] })"
+            />
+            <small class="z-caption">
+              Customers whose location isn’t known yet only see banners for all areas.
+            </small>
+          </div>
+
+          <label class="flex items-center gap-3">
+            <nz-switch
+              [ngModel]="e.banner.isActive"
+              (ngModelChange)="patch({ isActive: $event })"
+            />
+            <span class="font-bold text-[13px]">On</span>
+          </label>
+
+          @if (submitted() && problems().length) {
+            <nz-alert nzType="warning" nzShowIcon [nzMessage]="problemList" />
+            <ng-template #problemList>
+              <ul class="m-0 pl-4">
+                @for (p of problems(); track p) {
+                  <li>{{ p }}</li>
+                }
+              </ul>
+            </ng-template>
+          }
+        </div>
+
+        <aside class="preview" aria-label="Preview in the app">
+          <div class="z-overline mb-2 flex items-center gap-2">
+            <span nz-icon nzType="mobile"></span>Preview
+            <nz-tag [nzColor]="states[stateOf(e.banner)].color">
+              {{ states[stateOf(e.banner)].label }}
+            </nz-tag>
+          </div>
+          <div class="phone">
+            <div class="phone-bar"></div>
+            <div class="card">
+              <div class="card-text">
+                <span class="card-title">{{ e.banner.title || 'Your headline' }}</span>
+                @if (e.banner.ctaText) {
+                  <span class="card-cta">{{ e.banner.ctaText }}</span>
+                }
+              </div>
+              <div class="card-image">
+                @if (e.banner.imageUrl) {
+                  <img [src]="e.banner.imageUrl" alt="" />
+                } @else {
+                  <span nz-icon nzType="picture" class="text-[28px] opacity-40"></span>
+                }
+              </div>
+            </div>
+            <div class="dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+            <div class="ghost"></div>
+            <div class="ghost short"></div>
+          </div>
+        </aside>
+      </div>
+    }
+  </ng-container>
+  <ng-template #bannerFooter>
+    <div class="flex items-center gap-2">
+      @if ((editing()?.index ?? -1) >= 0) {
+        <button nz-button nzDanger nzType="text" [disabled]="saving()" (click)="deleteBanner()">
+          <span nz-icon nzType="delete"></span>Delete
+        </button>
+      }
+      <span class="flex-1"></span>
+      <button nz-button (click)="editing.set(null)">Cancel</button>
+      <button nz-button nzType="primary" [nzLoading]="saving()" (click)="saveBanner()">Save</button>
+    </div>
+  </ng-template>
+</nz-modal>
+
+<!-- Section settings -->
+<nz-modal
+  [nzVisible]="!!sectionDraft()"
+  nzTitle="Section settings"
+  [nzFooter]="sectionFooter"
+  [nzCentered]="true"
+  (nzOnCancel)="sectionDraft.set(null)"
+>
+  <ng-container *nzModalContent>
+    @if (sectionDraft(); as d) {
+      <div class="flex flex-col gap-4">
+        <p class="z-muted m-0">{{ labels[d.type] || d.type }}</p>
+        <div class="flex flex-col gap-2">
+          <label for="s-title" class="font-bold text-[13px]">Title above it (optional)</label>
+          <input
+            nz-input
+            id="s-title"
+            maxlength="60"
+            placeholder="No title"
+            [ngModel]="d.title"
+            (ngModelChange)="patchSection({ title: $event })"
+          />
+        </div>
+        <label class="flex items-center gap-3">
+          <nz-switch [ngModel]="d.isActive" (ngModelChange)="patchSection({ isActive: $event })" />
+          <span class="font-bold text-[13px]">Shown in the app</span>
+        </label>
+        @if (error(); as err) {
+          <nz-alert nzType="error" nzShowIcon [nzMessage]="err" />
+        }
+      </div>
+    }
+  </ng-container>
+  <ng-template #sectionFooter>
+    <div class="flex items-center gap-2">
+      @if (sectionDraft()?.type === 'banner_carousel') {
+        <button nz-button nzDanger nzType="text" [disabled]="saving()" (click)="deleteSection()">
+          <span nz-icon nzType="delete"></span>Delete
+        </button>
+      }
+      <span class="flex-1"></span>
+      <button nz-button (click)="sectionDraft.set(null)">Cancel</button>
+      <button nz-button nzType="primary" [nzLoading]="saving()" (click)="saveSectionDraft()">
+        Save
+      </button>
+    </div>
+  </ng-template>
+</nz-modal>

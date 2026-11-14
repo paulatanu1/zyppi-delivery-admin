@@ -67,6 +67,21 @@ export const routes: Routes = [
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'products' },
           {
+            path: 'home',
+            canActivate: [roleGuard],
+            data: { roles: ['catalog'], heading: 'Catalog & growth' },
+            title: 'Banners & home · Zyppi Admin',
+            loadComponent: () => import('./features/home/home-page').then((m) => m.HomePage),
+          },
+          {
+            path: 'coupons',
+            canActivate: [roleGuard],
+            data: { roles: ['catalog', 'finance'], heading: 'Catalog & growth' },
+            title: 'Coupons · Zyppi Admin',
+            loadComponent: () =>
+              import('./features/coupons/coupons-page').then((m) => m.CouponsPage),
+          },
+          {
             path: 'products',
             canActivate: [roleGuard],
             data: { roles: ['catalog'], heading: 'Catalog' },
