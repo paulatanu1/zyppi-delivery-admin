@@ -1,0 +1,632 @@
+<z-page-header
+  title="Store settings"
+  subtitle="What the app shows and what checkout enforces. Every change is checked on the server and written to the audit log."
+/>
+
+<nz-tabs>
+  <!-- Delivery pricing -->
+  <nz-tab nzTitle="Delivery pricing">
+    <z-page-state [status]="pricing.status()" [error]="pricing.error()" (retry)="pricing.retry()">
+      <form nz-form nzLayout="vertical" class="z-card p-5 max-w-xl" (ngSubmit)="savePricing()">
+        <div class="grid gap-x-4 sm:grid-cols-3">
+          <nz-form-item>
+            <nz-form-label nzFor="fee">Delivery fee (₹)</nz-form-label>
+            <nz-form-control>
+              <nz-input-number
+                nzId="fee"
+                name="fee"
+                class="w-full"
+                [nzMin]="0"
+                [nzMax]="500"
+                [nzStep]="1"
+                [nzPrecision]="2"
+                [ngModel]="fee()"
+                (ngModelChange)="fee.set($event)"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="free">Free above (₹)</nz-form-label>
+            <nz-form-control nzExtra="0 = always free">
+              <nz-input-number
+                nzId="free"
+                name="free"
+                class="w-full"
+                [nzMin]="0"
+                [nzMax]="10000"
+                [nzPrecision]="2"
+                [ngModel]="freeAbove()"
+                (ngModelChange)="freeAbove.set($event)"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="min">Minimum order (₹)</nz-form-label>
+            <nz-form-control nzExtra="0 = no minimum">
+              <nz-input-number
+                nzId="min"
+                name="min"
+                class="w-full"
+                [nzMin]="0"
+                [nzMax]="10000"
+                [nzPrecision]="2"
+                [ngModel]="minOrder()"
+                (ngModelChange)="minOrder.set($event)"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <p class="z-caption mb-4">
+          Item totals under the free-delivery amount pay the fee. The cart shows customers how much
+          more to add.
+        </p>
+        <button nz-button nzType="primary" type="submit" [nzLoading]="busy() === 'pricing'">
+          Save pricing
+        </button>
+      </form>
+    </z-page-state>
+  </nz-tab>
+
+  <!-- Service areas -->
+  <nz-tab nzTitle="Service areas">
+    <div class="flex mb-3">
+      <span class="flex-1 z-muted"
+        >Addresses inside a circle can order from that area’s stores.</span
+      >
+      <button nz-button nzType="primary" (click)="editArea()">
+        <span nz-icon nzType="plus"></span>Add area
+      </button>
+    </div>
+    <z-page-state
+      [status]="areas.status()"
+      [error]="areas.error()"
+      [empty]="(areas.value() ?? []).length === 0"
+      emptyTitle="No service areas"
+      (retry)="areas.retry()"
+    >
+      <div class="z-card overflow-hidden">
+        <nz-table
+          #at
+          [nzData]="areas.value() ?? []"
+          [nzShowPagination]="false"
+          nzSize="middle"
+          [nzScroll]="{ x: '560px' }"
+        >
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Centre</th>
+              <th nzAlign="right">Radius</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of at.data; track a.id) {
+              <tr
+                class="cursor-pointer"
+                tabindex="0"
+                (click)="editArea(a)"
+                (keydown.enter)="editArea(a)"
+              >
+                <td class="font-bold">{{ a.name }}</td>
+                <td class="z-caption">{{ a.centerLat ?? '—' }}, {{ a.centerLng ?? '—' }}</td>
+                <td nzAlign="right">
+                  {{ a.radiusMeters ? (a.radiusMeters / 1000).toFixed(1) + ' km' : '—' }}
+                </td>
+                <td>
+                  <nz-tag [nzColor]="a.isActive ? 'green' : 'default'">{{
+                    a.isActive ? 'Live' : 'Off'
+                  }}</nz-tag>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </z-page-state>
+  </nz-tab>
+
+  <!-- Stores -->
+  <nz-tab nzTitle="Stores & hours">
+    <div class="flex mb-3">
+      <span class="flex-1 z-muted"
+        >Outside its hours a store takes no new orders (India time).</span
+      >
+      <button
+        nz-button
+        nzType="primary"
+        [disabled]="!(areas.value() ?? []).length"
+        (click)="editStore()"
+      >
+        <span nz-icon nzType="plus"></span>Add store
+      </button>
+    </div>
+    <z-page-state
+      [status]="stores.status()"
+      [error]="stores.error()"
+      [empty]="(stores.value() ?? []).length === 0"
+      emptyTitle="No stores"
+      (retry)="stores.retry()"
+    >
+      <div class="z-card overflow-hidden">
+        <nz-table
+          #st
+          [nzData]="stores.value() ?? []"
+          [nzShowPagination]="false"
+          nzSize="middle"
+          [nzScroll]="{ x: '620px' }"
+        >
+          <thead>
+            <tr>
+              <th>Store</th>
+              <th>Area</th>
+              <th>Hours</th>
+              <th>Phone</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of st.data; track s.id) {
+              <tr
+                class="cursor-pointer"
+                tabindex="0"
+                (click)="editStore(s)"
+                (keydown.enter)="editStore(s)"
+              >
+                <td class="font-bold">{{ s.name }}</td>
+                <td>{{ areaNames().get(s.serviceAreaId) ?? '—' }}</td>
+                <td>{{ hours(s) }}</td>
+                <td>{{ s.phone || '—' }}</td>
+                <td>
+                  <nz-tag [nzColor]="s.isActive ? 'green' : 'default'">{{
+                    s.isActive ? 'Open' : 'Off'
+                  }}</nz-tag>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </z-page-state>
+  </nz-tab>
+
+  <!-- Slots -->
+  <nz-tab nzTitle="Delivery slots">
+    <div class="flex mb-3">
+      <span class="flex-1 z-muted">The choices at checkout, in this order.</span>
+      <button nz-button nzType="primary" (click)="editSlot()">
+        <span nz-icon nzType="plus"></span>Add slot
+      </button>
+    </div>
+    <z-page-state
+      [status]="slots.status()"
+      [error]="slots.error()"
+      [empty]="(slots.value() ?? []).length === 0"
+      emptyTitle="No delivery slots"
+      (retry)="slots.retry()"
+    >
+      <div class="z-card overflow-hidden">
+        <nz-table
+          #slt
+          [nzData]="slots.value() ?? []"
+          [nzShowPagination]="false"
+          nzSize="middle"
+          [nzScroll]="{ x: '480px' }"
+        >
+          <thead>
+            <tr>
+              <th>Slot</th>
+              <th nzAlign="right">Delivers in</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of slt.data; track s.id) {
+              <tr
+                class="cursor-pointer"
+                tabindex="0"
+                (click)="editSlot(s)"
+                (keydown.enter)="editSlot(s)"
+              >
+                <td class="font-bold">
+                  {{ s.label }}
+                  @if (s.isExpress) {
+                    <nz-tag nzColor="purple" class="ml-1">Express</nz-tag>
+                  }
+                </td>
+                <td nzAlign="right">{{ s.etaMinutes }} min</td>
+                <td>
+                  <nz-tag [nzColor]="s.isActive ? 'green' : 'default'">{{
+                    s.isActive ? 'Shown' : 'Hidden'
+                  }}</nz-tag>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </z-page-state>
+  </nz-tab>
+
+  <!-- App config -->
+  <nz-tab nzTitle="App & support">
+    <z-page-state
+      [status]="appConfig.status()"
+      [error]="appConfig.error()"
+      (retry)="appConfig.retry()"
+    >
+      @if (app(); as a) {
+        <form nz-form nzLayout="vertical" class="z-card p-5 max-w-xl" (ngSubmit)="saveApp()">
+          <div class="z-overline mb-2">Support contacts (shown in the app’s help)</div>
+          <div class="grid gap-x-4 sm:grid-cols-2">
+            <nz-form-item>
+              <nz-form-label nzFor="sp">Phone</nz-form-label>
+              <nz-form-control>
+                <nz-input-wrapper nzAddonBefore="+91">
+                  <input
+                    nz-input
+                    id="sp"
+                    name="sp"
+                    inputmode="tel"
+                    maxlength="14"
+                    [ngModel]="a.supportPhone"
+                    (ngModelChange)="patchApp((x) => (x.supportPhone = $event))"
+                  />
+                </nz-input-wrapper>
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzFor="wa">WhatsApp</nz-form-label>
+              <nz-form-control>
+                <nz-input-wrapper nzAddonBefore="+91">
+                  <input
+                    nz-input
+                    id="wa"
+                    name="wa"
+                    inputmode="tel"
+                    maxlength="14"
+                    [ngModel]="a.whatsappNumber"
+                    (ngModelChange)="patchApp((x) => (x.whatsappNumber = $event))"
+                  />
+                </nz-input-wrapper>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          <nz-form-item>
+            <nz-form-label nzFor="em">Email</nz-form-label>
+            <nz-form-control>
+              <input
+                nz-input
+                id="em"
+                name="em"
+                type="email"
+                [ngModel]="a.supportEmail"
+                (ngModelChange)="patchApp((x) => (x.supportEmail = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+
+          <div class="z-overline mt-4 mb-2">Announcement bar (top of Home)</div>
+          <label class="flex items-center gap-2 mb-3">
+            <nz-switch
+              name="annOn"
+              [ngModel]="a.announcement.enabled"
+              (ngModelChange)="patchApp((x) => (x.announcement.enabled = $event))"
+            />
+            Show the announcement
+          </label>
+          <nz-form-item>
+            <nz-form-label nzFor="ann">Text</nz-form-label>
+            <nz-form-control [nzExtra]="a.announcement.text.length + '/160'">
+              <input
+                nz-input
+                id="ann"
+                name="ann"
+                maxlength="160"
+                placeholder="Closed on 1 Nov for Diwali. Happy Diwali!"
+                [ngModel]="a.announcement.text"
+                (ngModelChange)="patchApp((x) => (x.announcement.text = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>Style</nz-form-label>
+            <nz-form-control>
+              <nz-segmented
+                name="tone"
+                [nzOptions]="toneOptions"
+                [ngModel]="a.announcement.tone"
+                (ngModelChange)="patchApp((x) => (x.announcement.tone = $event))"
+                aria-label="Announcement style"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <p class="z-caption mb-4">
+            The minimum app version and maintenance mode are under Services &amp; switches (super
+            admin).
+          </p>
+          <button nz-button nzType="primary" type="submit" [nzLoading]="busy() === 'app'">
+            Save
+          </button>
+        </form>
+      }
+    </z-page-state>
+  </nz-tab>
+</nz-tabs>
+
+<!-- Area dialog -->
+<nz-modal
+  [nzVisible]="!!area()"
+  [nzTitle]="area()?.id ? 'Edit service area' : 'New service area'"
+  nzOkText="Save"
+  [nzOkLoading]="busy() === 'area'"
+  [nzWidth]="640"
+  (nzOnOk)="saveArea()"
+  (nzOnCancel)="area.set(null)"
+>
+  <ng-container *nzModalContent>
+    @if (area(); as a) {
+      <form nz-form nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzFor="an">Name</nz-form-label>
+          <nz-form-control>
+            <input
+              nz-input
+              id="an"
+              name="an"
+              [ngModel]="a.name"
+              (ngModelChange)="patchArea((x) => (x.name = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <div class="grid gap-x-3 grid-cols-3">
+          <nz-form-item>
+            <nz-form-label nzFor="alat">Latitude</nz-form-label>
+            <nz-form-control>
+              <nz-input-number
+                nzId="alat"
+                name="alat"
+                class="w-full"
+                [nzPrecision]="5"
+                [nzStep]="0.001"
+                [ngModel]="a.centerLat"
+                (ngModelChange)="patchArea((x) => (x.centerLat = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="alng">Longitude</nz-form-label>
+            <nz-form-control>
+              <nz-input-number
+                nzId="alng"
+                name="alng"
+                class="w-full"
+                [nzPrecision]="5"
+                [nzStep]="0.001"
+                [ngModel]="a.centerLng"
+                (ngModelChange)="patchArea((x) => (x.centerLng = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="ar">Radius (m)</nz-form-label>
+            <nz-form-control>
+              <nz-input-number
+                nzId="ar"
+                name="ar"
+                class="w-full"
+                [nzMin]="300"
+                [nzMax]="50000"
+                [nzStep]="500"
+                [ngModel]="a.radiusMeters"
+                (ngModelChange)="patchArea((x) => (x.radiusMeters = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <p class="z-caption mb-2">
+          Tip: in Google Maps, right-click the town centre and click the coordinates to copy them.
+        </p>
+        @if (areaMap(); as src) {
+          <iframe
+            [src]="src"
+            title="Map of the area centre"
+            class="w-full h-[240px] rounded-[var(--z-radius-tile)] border border-[var(--z-line)]"
+            loading="lazy"
+          ></iframe>
+          <p class="z-caption mt-1">
+            The map shows the centre; the area reaches about the edge of the view.
+          </p>
+        }
+        <label class="flex items-center gap-2 mt-3">
+          <nz-switch
+            name="aon"
+            [ngModel]="a.isActive"
+            (ngModelChange)="patchArea((x) => (x.isActive = $event))"
+          />
+          Live (customers here can order)
+        </label>
+      </form>
+    }
+  </ng-container>
+</nz-modal>
+
+<!-- Store dialog -->
+<nz-modal
+  [nzVisible]="!!store()"
+  [nzTitle]="store()?.id ? 'Edit store' : 'New store'"
+  nzOkText="Save"
+  [nzOkLoading]="busy() === 'store'"
+  (nzOnOk)="saveStore()"
+  (nzOnCancel)="store.set(null)"
+>
+  <ng-container *nzModalContent>
+    @if (store(); as s) {
+      <form nz-form nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzFor="sn">Name</nz-form-label>
+          <nz-form-control>
+            <input
+              nz-input
+              id="sn"
+              name="sn"
+              [ngModel]="s.name"
+              (ngModelChange)="patchStore((x) => (x.name = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label nzFor="sa">Service area</nz-form-label>
+          <nz-form-control>
+            <nz-select
+              nzId="sa"
+              name="sa"
+              [nzOptions]="areaOptions()"
+              [ngModel]="s.serviceAreaId"
+              (ngModelChange)="patchStore((x) => (x.serviceAreaId = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label nzFor="sad">Address</nz-form-label>
+          <nz-form-control>
+            <input
+              nz-input
+              id="sad"
+              name="sad"
+              [ngModel]="s.address"
+              (ngModelChange)="patchStore((x) => (x.address = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label nzFor="sph">Phone</nz-form-label>
+          <nz-form-control>
+            <nz-input-wrapper nzAddonBefore="+91">
+              <input
+                nz-input
+                id="sph"
+                name="sph"
+                inputmode="tel"
+                [ngModel]="s.phone"
+                (ngModelChange)="patchStore((x) => (x.phone = $event))"
+              />
+            </nz-input-wrapper>
+          </nz-form-control>
+        </nz-form-item>
+        <div class="grid gap-x-3 grid-cols-2">
+          <nz-form-item>
+            <nz-form-label nzFor="so">Opens</nz-form-label>
+            <nz-form-control nzExtra="Leave both empty for all day">
+              <input
+                nz-input
+                id="so"
+                name="so"
+                type="time"
+                [ngModel]="s.open"
+                (ngModelChange)="patchStore((x) => (x.open = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="sc">Closes</nz-form-label>
+            <nz-form-control nzExtra="Before opening = past midnight">
+              <input
+                nz-input
+                id="sc"
+                name="sc"
+                type="time"
+                [ngModel]="s.close"
+                (ngModelChange)="patchStore((x) => (x.close = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <label class="flex items-center gap-2">
+          <nz-switch
+            name="son"
+            [ngModel]="s.isActive"
+            (ngModelChange)="patchStore((x) => (x.isActive = $event))"
+          />
+          Taking orders
+        </label>
+      </form>
+    }
+  </ng-container>
+</nz-modal>
+
+<!-- Slot dialog -->
+<nz-modal
+  [nzVisible]="!!slot()"
+  [nzTitle]="slot()?.id ? 'Edit delivery slot' : 'New delivery slot'"
+  nzOkText="Save"
+  [nzOkLoading]="busy() === 'slot'"
+  (nzOnOk)="saveSlot()"
+  (nzOnCancel)="slot.set(null)"
+>
+  <ng-container *nzModalContent>
+    @if (slot(); as s) {
+      <form nz-form nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzFor="ll">Label</nz-form-label>
+          <nz-form-control>
+            <input
+              nz-input
+              id="ll"
+              name="ll"
+              placeholder="Express (10–15 min)"
+              [ngModel]="s.label"
+              (ngModelChange)="patchSlot((x) => (x.label = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <div class="grid gap-x-3 grid-cols-2">
+          <nz-form-item>
+            <nz-form-label nzFor="le">Delivers in (min)</nz-form-label>
+            <nz-form-control>
+              <nz-input-number
+                nzId="le"
+                name="le"
+                class="w-full"
+                [nzMin]="5"
+                [nzMax]="1440"
+                [ngModel]="s.etaMinutes"
+                (ngModelChange)="patchSlot((x) => (x.etaMinutes = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="lo">Order</nz-form-label>
+            <nz-form-control>
+              <nz-input-number
+                nzId="lo"
+                name="lo"
+                class="w-full"
+                [nzMin]="0"
+                [nzMax]="999"
+                [ngModel]="s.sortOrder"
+                (ngModelChange)="patchSlot((x) => (x.sortOrder = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <label class="flex items-center gap-2 mb-2">
+          <nz-switch
+            name="lx"
+            [ngModel]="s.isExpress"
+            (ngModelChange)="patchSlot((x) => (x.isExpress = $event))"
+          />
+          Express
+        </label>
+        <label class="flex items-center gap-2">
+          <nz-switch
+            name="la"
+            [ngModel]="s.isActive"
+            (ngModelChange)="patchSlot((x) => (x.isActive = $event))"
+          />
+          Shown at checkout
+        </label>
+      </form>
+    }
+  </ng-container>
+</nz-modal>

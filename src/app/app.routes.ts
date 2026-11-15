@@ -133,6 +133,51 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'support',
+        canActivate: [roleGuard],
+        data: { roles: ['support'], heading: 'Operations' },
+        title: 'Support · Zyppi Admin',
+        loadComponent: () => import('./features/support/support-page').then((m) => m.SupportPage),
+      },
+      {
+        path: 'support/kb',
+        canActivate: [roleGuard],
+        data: { roles: ['support'], heading: 'Operations' },
+        title: 'Knowledge base · Zyppi Admin',
+        loadComponent: () => import('./features/support/kb-page').then((m) => m.KbPage),
+      },
+      {
+        path: 'support/:id',
+        canActivate: [roleGuard],
+        data: { roles: ['support'], heading: 'Operations' },
+        title: 'Support · Zyppi Admin',
+        loadComponent: () => import('./features/support/support-page').then((m) => m.SupportPage),
+      },
+      {
+        path: 'customers',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'support'], heading: 'Operations' },
+        title: 'Customers · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/customers/customers-page').then((m) => m.CustomersPage),
+      },
+      {
+        path: 'customers/:id',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'support'], heading: 'Operations' },
+        title: 'Customer · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/customers/customers-page').then((m) => m.CustomersPage),
+      },
+      {
+        path: 'store-settings',
+        canActivate: [roleGuard],
+        data: { roles: ['ops'], heading: 'Settings' },
+        title: 'Store settings · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/settings/store-settings-page').then((m) => m.StoreSettingsPage),
+      },
+      {
         path: 'settings',
         canActivate: [roleGuard],
         data: { roles: [] }, // super_admin only

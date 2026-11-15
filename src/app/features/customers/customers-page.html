@@ -1,0 +1,81 @@
+<z-page-header
+  title="Customers"
+  subtitle="Search by phone, email, name or order number. Lifetime value counts orders that weren’t cancelled."
+/>
+
+<form class="flex flex-wrap gap-2 mb-4" (ngSubmit)="reload()">
+  <nz-input-wrapper class="flex-1 min-w-[220px] max-w-md">
+    <span nzInputPrefix nz-icon nzType="search" class="z-muted"></span>
+    <input
+      nz-input
+      name="q"
+      placeholder="98300 12345, name@mail.com, Riya, #3F2A9C1B"
+      aria-label="Search customers"
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+    />
+  </nz-input-wrapper>
+  <button nz-button nzType="primary" type="submit">Search</button>
+  @if (searching()) {
+    <button nz-button type="button" (click)="clear()">Show newest</button>
+  }
+</form>
+
+<z-page-state
+  [status]="status()"
+  [error]="error()"
+  [empty]="rows().length === 0"
+  [emptyTitle]="searching() ? 'No customer matches' : 'No customers yet'"
+  [emptyText]="
+    searching()
+      ? 'Names match from the start (Riya finds Riya Sen). Phone numbers need all 10 digits.'
+      : ''
+  "
+  (retry)="reload()"
+>
+  <div class="z-card overflow-hidden">
+    <nz-table
+      #t
+      [nzData]="rows()"
+      [nzFrontPagination]="false"
+      [nzShowPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '760px' }"
+    >
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Phone</th>
+          <th nzAlign="right">Orders</th>
+          <th nzAlign="right">Lifetime value</th>
+          <th>Last order</th>
+          <th>Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of t.data; track c.id) {
+          <tr class="cursor-pointer" tabindex="0" (click)="open(c)" (keydown.enter)="open(c)">
+            <td>
+              <span class="font-bold">{{ name(c) }}</span>
+              @if (c.blocked) {
+                <nz-tag nzColor="red" class="ml-2">Blocked</nz-tag>
+              }
+            </td>
+            <td>{{ c.phone ?? '—' }}</td>
+            <td nzAlign="right">{{ c.orderCount }}</td>
+            <td nzAlign="right">{{ c.totalSpentPaise | rupees }}</td>
+            <td class="z-caption">{{ c.lastOrderAt | when }}</td>
+            <td class="z-caption">{{ c.createdAt | when }}</td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </div>
+  @if (hasMore()) {
+    <div class="text-center mt-4">
+      <button nz-button [nzLoading]="loadingMore()" (click)="more()">Load more</button>
+    </div>
+  }
+</z-page-state>
+
+<z-customer-drawer [id]="id() ?? null" (closed)="closeDrawer()" />

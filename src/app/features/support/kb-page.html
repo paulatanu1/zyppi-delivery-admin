@@ -1,0 +1,233 @@
+<z-page-header
+  title="Knowledge base"
+  subtitle="What the support bot knows. It matches a customer’s message to the example questions in any of the four languages."
+>
+  <a nz-button routerLink="/support"><span nz-icon nzType="arrow-left"></span>Inbox</a>
+  <button nz-button nzType="primary" (click)="create()">
+    <span nz-icon nzType="plus"></span>New entry
+  </button>
+</z-page-header>
+
+<div class="mb-4 max-w-sm">
+  <nz-input-wrapper>
+    <span nz-icon nzType="search" nzInputPrefix></span>
+    <input
+      nz-input
+      placeholder="Search titles and questions"
+      aria-label="Search the knowledge base"
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+    />
+  </nz-input-wrapper>
+</div>
+
+<z-page-state
+  [status]="entries.status()"
+  [error]="entries.error()"
+  [empty]="filtered().length === 0"
+  [emptyTitle]="search() ? 'No entries match' : 'No entries yet'"
+  emptyText="Add the questions customers ask most, with the answer in each language."
+  (retry)="entries.retry()"
+>
+  <div class="z-card overflow-hidden">
+    <nz-table
+      #t
+      [nzData]="filtered()"
+      [nzPageSize]="25"
+      nzSize="middle"
+      [nzScroll]="{ x: '720px' }"
+    >
+      <thead>
+        <tr>
+          <th>Topic</th>
+          <th>What the bot does</th>
+          <th nzAlign="right">Questions</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (e of t.data; track e.id) {
+          <tr class="cursor-pointer" tabindex="0" (click)="edit(e)" (keydown.enter)="edit(e)">
+            <td>
+              <div class="font-bold">{{ e.title.en || e.id }}</div>
+              <div class="z-caption">
+                {{ e.id }}
+                @if (e.hidden) {
+                  · <nz-tag>not suggested</nz-tag>
+                }
+              </div>
+            </td>
+            <td>{{ actionLabel(e.action) }}</td>
+            <td nzAlign="right">
+              {{
+                e.questions.en.length +
+                  e.questions.bn.length +
+                  e.questions.hi.length +
+                  e.questions.pa.length
+              }}
+            </td>
+            <td class="z-caption">{{ e.updatedAt | when }}</td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </div>
+</z-page-state>
+
+<nz-drawer
+  [nzVisible]="!!draft()"
+  [nzWidth]="'min(720px, 100vw)'"
+  [nzTitle]="draft()?.isNew ? 'New entry' : 'Edit entry'"
+  [nzFooter]="footer"
+  (nzOnClose)="closeDrawer()"
+>
+  <ng-container *nzDrawerContent>
+    @if (draft(); as d) {
+      <form nz-form nzLayout="vertical" (ngSubmit)="save()">
+        <div class="grid gap-x-4 sm:grid-cols-2">
+          <nz-form-item>
+            <nz-form-label nzFor="kb-id">Id</nz-form-label>
+            <nz-form-control nzExtra="Lowercase and _; can’t change later.">
+              <input
+                nz-input
+                id="kb-id"
+                name="id"
+                [disabled]="!d.isNew"
+                [ngModel]="d.id"
+                (ngModelChange)="patch((x) => (x.id = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="kb-action">What the bot does</nz-form-label>
+            <nz-form-control>
+              <nz-select
+                nzId="kb-action"
+                name="action"
+                [ngModel]="d.action"
+                (ngModelChange)="patch((x) => (x.action = $event))"
+              >
+                @for (a of actions; track a.value) {
+                  <nz-option [nzValue]="a.value" [nzLabel]="a.label" />
+                }
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+
+        <nz-tabs>
+          @for (l of langs; track l) {
+            <nz-tab [nzTitle]="tabTitle">
+              <ng-template #tabTitle>
+                {{ langNames[l] }}
+                @if (missing(d, l)) {
+                  <span class="dot" aria-label="needs text"></span>
+                }
+              </ng-template>
+              <nz-form-item>
+                <nz-form-label [nzFor]="'kb-title-' + l"
+                  >Title (shown as a suggestion chip)</nz-form-label
+                >
+                <nz-form-control>
+                  <input
+                    nz-input
+                    [id]="'kb-title-' + l"
+                    [name]="'title-' + l"
+                    maxlength="80"
+                    [ngModel]="d.title[l]"
+                    (ngModelChange)="setTitle(l, $event)"
+                  />
+                </nz-form-control>
+              </nz-form-item>
+              <nz-form-item>
+                <nz-form-label [nzFor]="'kb-q-' + l">Example questions, one per line</nz-form-label>
+                <nz-form-control
+                  nzExtra="How customers actually ask it, typos and Hinglish included."
+                >
+                  <textarea
+                    nz-input
+                    rows="5"
+                    [id]="'kb-q-' + l"
+                    [name]="'q-' + l"
+                    [ngModel]="d.questions[l]"
+                    (ngModelChange)="patch((x) => (x.questions[l] = $event))"
+                  ></textarea>
+                </nz-form-control>
+              </nz-form-item>
+              <nz-form-item>
+                <nz-form-label [nzFor]="'kb-a-' + l">Answer</nz-form-label>
+                <nz-form-control
+                  [nzExtra]="
+                    d.action === 'order_status'
+                      ? 'Optional: the live order status is shown first.'
+                      : ''
+                  "
+                >
+                  <textarea
+                    nz-input
+                    rows="5"
+                    maxlength="1500"
+                    [id]="'kb-a-' + l"
+                    [name]="'a-' + l"
+                    [ngModel]="d.answers[l]"
+                    (ngModelChange)="patch((x) => (x.answers[l] = $event))"
+                  ></textarea>
+                </nz-form-control>
+              </nz-form-item>
+            </nz-tab>
+          }
+        </nz-tabs>
+
+        <nz-form-item>
+          <nz-form-label nzFor="kb-keywords">Extra keywords</nz-form-label>
+          <nz-form-control nzExtra="Comma separated: spellings, brand names.">
+            <input
+              nz-input
+              id="kb-keywords"
+              name="keywords"
+              [ngModel]="d.keywords"
+              (ngModelChange)="patch((x) => (x.keywords = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label nzFor="kb-related">Suggest next</nz-form-label>
+          <nz-form-control>
+            <nz-select
+              nzId="kb-related"
+              name="related"
+              nzMode="multiple"
+              [nzMaxMultipleCount]="6"
+              nzPlaceHolder="Topics offered after this answer"
+              [nzOptions]="relatedOptions()"
+              [ngModel]="d.related"
+              (ngModelChange)="patch((x) => (x.related = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <label class="flex items-center gap-2">
+          <nz-switch
+            name="hidden"
+            [ngModel]="d.hidden"
+            (ngModelChange)="patch((x) => (x.hidden = $event))"
+          />
+          Answer it, but never suggest it as a chip (greetings, thanks)
+        </label>
+      </form>
+    }
+  </ng-container>
+  <ng-template #footer>
+    <div class="flex gap-2 items-center">
+      @if (draft() && !draft()!.isNew) {
+        <button nz-button nzDanger [nzLoading]="deleting()" (click)="remove()">Delete</button>
+      }
+      <span class="flex-1 z-caption">
+        @if (saving()) {
+          Teaching the bot… this can take half a minute.
+        }
+      </span>
+      <button nz-button (click)="closeDrawer()" [disabled]="saving()">Cancel</button>
+      <button nz-button nzType="primary" [nzLoading]="saving()" (click)="save()">Save</button>
+    </div>
+  </ng-template>
+</nz-drawer>
