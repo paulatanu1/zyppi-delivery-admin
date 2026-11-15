@@ -27,6 +27,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
       {
+        path: 'reports',
+        canActivate: [roleGuard],
+        data: { roles: ['finance', 'ops'], heading: 'Overview' },
+        title: 'Reports · Zyppi Admin',
+        loadComponent: () => import('./features/reports/reports-page').then((m) => m.ReportsPage),
+      },
+      {
         path: 'orders',
         canActivate: [roleGuard],
         data: { roles: ['ops', 'support'], heading: 'Operations' },

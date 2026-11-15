@@ -1,0 +1,132 @@
+<z-page-header
+  title="Reports"
+  subtitle="Sales, products, payments, riders, customers and stock. Days are India time; an order counts on the day it was placed."
+/>
+
+<div class="z-card p-4 mb-4 flex flex-wrap items-center gap-3">
+  <div class="flex flex-wrap gap-2" role="group" aria-label="Quick ranges">
+    @for (p of presets; track p.label) {
+      <button
+        nz-button
+        nzSize="small"
+        [nzType]="isPreset(p) ? 'primary' : 'default'"
+        (click)="applyPreset(p)"
+      >
+        {{ p.label }}
+      </button>
+    }
+  </div>
+  <nz-range-picker
+    class="flex-1 min-w-[240px] max-w-[320px]"
+    nzFormat="d MMM yyyy"
+    [nzAllowClear]="false"
+    [nzDisabledDate]="disabledDate"
+    [ngModel]="pickerValue()"
+    (ngModelChange)="onPicker($event)"
+    aria-label="Date range"
+  />
+</div>
+
+<nz-tabs [nzSelectedIndex]="tabIndex()" (nzSelectedIndexChange)="selectTab($event)">
+  @for (t of tabs; track t.key) {
+    <nz-tab [nzTitle]="t.label" />
+  }
+</nz-tabs>
+
+<z-page-state [status]="status()" [error]="error()" (retry)="load()">
+  @if (needsSide()) {
+    <z-page-state [status]="sideStatus()" [error]="sideError()" (retry)="loadSide()" />
+  } @else if (report(); as r) {
+    <div class="flex flex-wrap items-center gap-3 mb-4">
+      <div class="flex-1 min-w-[200px]">
+        <div class="font-extrabold text-[17px]">{{ r.title }}</div>
+        <div class="z-caption">{{ r.subtitle }}</div>
+      </div>
+      @if (grained()) {
+        <nz-segmented
+          nzSize="small"
+          [nzOptions]="grainOptions"
+          [ngModel]="grain()"
+          (ngModelChange)="grain.set($event)"
+          aria-label="Group by"
+        />
+      }
+      <div class="flex gap-2">
+        <button
+          nz-button
+          [nzLoading]="exporting() === 'xlsx'"
+          [disabled]="!r.rows.length"
+          (click)="export('xlsx')"
+        >
+          <span nz-icon nzType="file-excel"></span>XLSX
+        </button>
+        <button
+          nz-button
+          [nzLoading]="exporting() === 'csv'"
+          [disabled]="!r.rows.length"
+          (click)="export('csv')"
+        >
+          <span nz-icon nzType="download"></span>CSV
+        </button>
+        <button
+          nz-button
+          [nzLoading]="exporting() === 'pdf'"
+          [disabled]="!r.rows.length"
+          (click)="export('pdf')"
+        >
+          <span nz-icon nzType="file-pdf"></span>PDF
+        </button>
+      </div>
+    </div>
+
+    <z-page-state
+      status="ready"
+      [empty]="r.rows.length === 0"
+      emptyTitle="Nothing in this period"
+      emptyText="Try a wider range. Orders from before reports were switched on appear once the stats backfill has run."
+    >
+      @if (chart(); as c) {
+        <div class="z-card p-4 mb-4">
+          <z-chart [options]="c" [height]="280" [label]="r.title" />
+        </div>
+      }
+      <div class="z-card overflow-hidden">
+        <nz-table
+          #t
+          [nzData]="r.rows"
+          [nzFrontPagination]="r.rows.length > 50"
+          [nzPageSize]="50"
+          [nzShowPagination]="r.rows.length > 50"
+          nzSize="middle"
+          [nzScroll]="{ x: r.columns.length * 120 + 'px' }"
+        >
+          <thead>
+            <tr>
+              @for (c of r.columns; track c.key) {
+                <th [nzAlign]="align(c)">{{ c.label }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of t.data; track $index) {
+              <tr>
+                @for (c of r.columns; track c.key) {
+                  <td [nzAlign]="align(c)" [class.font-bold]="$first">
+                    {{ cell(c, row[c.key]) }}
+                  </td>
+                }
+              </tr>
+            }
+            @if (r.total; as total) {
+              <tr class="total">
+                @for (c of r.columns; track c.key) {
+                  <td [nzAlign]="align(c)">{{ cell(c, total[c.key]) }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </z-page-state>
+  }
+</z-page-state>

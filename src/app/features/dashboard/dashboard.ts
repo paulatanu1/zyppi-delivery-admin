@@ -1,59 +1,106 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzSegmentedModule } from 'ng-zorro-antd/segmented';
+import { NzSwitchModule } from 'ng-zorro-antd/switch';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 import { AuthService } from '../../core/auth/auth.service';
 import { ROLE_LABELS, hasRole } from '../../core/auth/roles';
-import { NAV } from '../../layout/nav';
+import { friendlyFirestoreError } from '../../core/firebase/live';
+import { Chart } from '../../shared/charts/chart';
+import { RupeesPipe, formatPaise } from '../../shared/pipes/rupees.pipe';
+import { WhenPipe } from '../../shared/pipes/when.pipe';
+import { PageState } from '../../shared/ui/page-state';
+import { LOW_STOCK } from '../catalog/catalog.models';
+import { STATUS_META } from '../orders/orders.models';
+import { hourChart, methodChart, ordersGmvChart, rankChart } from '../reports/charts';
+import { productReport } from '../reports/reports.models';
+import { StatsApi } from '../reports/stats.api';
+import {
+  DayStats,
+  addDays,
+  aov,
+  cancelRate,
+  istDay,
+  series,
+  sumDays,
+} from '../reports/stats.models';
+
+const SOUND_KEY = 'zyppi-admin.order-sound';
+
+export interface Kpi {
+  label: string;
+  value: string;
+  hint: string;
+  tone?: 'warn' | 'danger' | 'ok';
+}
 
 /**
- * Phase A0 landing page. KPIs and charts arrive in A7 once the `stats/*`
- * counters exist; until then it shows the user's role and the roadmap.
+ * Today at a glance from `stats/*` (no order scans), the open-order
+ * pipeline, and a live feed of new orders with an optional chime.
  */
 @Component({
   selector: 'z-dashboard',
-  imports: [NzIconModule],
+  imports: [
+    Chart,
+    FormsModule,
+    NzButtonModule,
+    NzIconModule,
+    NzSegmentedModule,
+    NzSwitchModule,
+    NzTagModule,
+    PageState,
+    RouterLink,
+    RupeesPipe,
+    WhenPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <section class="z-brand rounded-[var(--z-radius-sheet)] p-6 md:p-10">
-      <p class="text-[11px] font-extrabold tracking-[.08em] uppercase opacity-80">
-        {{ roleLabel() }}
-      </p>
-      <h2 class="text-[28px] md:text-[34px] mt-2">{{ greeting() }}</h2>
-      <p class="mt-2 opacity-85 max-w-xl">
-        The new Zyppi admin is being built module by module. Modules you can use are live in the
-        sidebar; the rest show when they’re coming.
-      </p>
-    </section>
-
-    <h3 class="text-[17px] mt-8 mb-4">Your modules</h3>
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      @for (m of modules(); track m.label) {
-        <div class="z-card p-5 flex items-start gap-4">
-          <span class="icon"><span nz-icon [nzType]="m.icon"></span></span>
-          <div class="min-w-0">
-            <div class="font-extrabold">{{ m.label }}</div>
-            <div class="z-caption mt-1">
-              {{ m.link ? 'Live' : 'Phase ' + m.phase }}
-            </div>
-          </div>
-        </div>
-      }
-    </div>
-  `,
+  templateUrl: './dashboard.html',
   styles: `
-    .icon {
-      display: grid;
-      place-items: center;
-      flex: none;
-      width: 40px;
-      height: 40px;
-      border-radius: var(--z-radius-control);
-      background: var(--z-brand-soft);
-      color: var(--z-brand-text);
+    .tone-ok {
+      color: var(--z-ok);
+    }
+    .tone-warn {
+      color: var(--z-warn);
+    }
+    .tone-danger {
+      color: var(--z-danger);
     }
   `,
 })
 export class Dashboard {
   private readonly auth = inject(AuthService);
+  private readonly api = inject(StatsApi);
+
+  protected readonly meta = STATUS_META;
+  protected readonly today = istDay();
+  private readonly from30 = addDays(this.today, -29);
+
+  /** Last 30 days of counters, live (today's doc included). */
+  readonly days = this.api.watchDays(this.from30, this.today);
+  readonly open = this.api.watchOpenOrders();
+  readonly latest = this.api.watchLatestOrders(8);
+
+  readonly span = signal<7 | 14 | 30>(14);
+  protected readonly spanOptions = [
+    { label: '7 days', value: 7 },
+    { label: '14 days', value: 14 },
+    { label: '30 days', value: 30 },
+  ];
+  readonly lowStock = signal<number | null>(null);
+  readonly areaRows = signal<{ name: string; value: number }[] | null>(null);
+  readonly sideError = signal<string | null>(null);
+  readonly sound = signal(readSound());
 
   readonly roleLabel = computed(() => {
     const r = this.auth.role();
@@ -63,15 +110,185 @@ export class Dashboard {
   readonly greeting = computed(() => {
     const h = new Date().getHours();
     const part = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-    const s = this.auth.session();
-    const name = s?.displayName?.split(' ')[0];
+    const name = this.auth.session()?.displayName?.split(' ')[0];
     return name ? `${part}, ${name}` : part;
   });
 
-  readonly modules = computed(() => {
-    const role = this.auth.role();
-    return NAV.flatMap((g) => g.items).filter(
-      (i) => i.link !== '/dashboard' && hasRole(role, i.roles),
-    );
+  readonly canReports = computed(() => hasRole(this.auth.role(), ['finance', 'ops']));
+  readonly canOrders = computed(() => hasRole(this.auth.role(), ['ops', 'support']));
+
+  readonly todayStats = computed<DayStats>(
+    () => (this.days.value() ?? []).find((d) => d.date === this.today) ?? sumDays([], this.today),
+  );
+
+  private readonly yesterday = computed(
+    () => (this.days.value() ?? []).find((d) => d.date === addDays(this.today, -1)) ?? null,
+  );
+
+  readonly kpis = computed<Kpi[]>(() => {
+    const t = this.todayStats();
+    const y = this.yesterday();
+    const openReady = this.open.status() === 'ready';
+    const open = this.open.value() ?? [];
+    const pending = open.filter((o) => o.status !== 'out_for_delivery').length;
+    const riders = new Set(
+      open.filter((o) => o.status === 'out_for_delivery' && o.riderId).map((o) => o.riderId),
+    ).size;
+    const low = this.lowStock();
+    return [
+      {
+        label: 'Orders today',
+        value: String(t.orders),
+        hint: y ? `yesterday ${y.orders}` : 'none yesterday',
+      },
+      {
+        label: 'GMV today',
+        value: formatPaise(t.gmvPaise),
+        hint: y ? `yesterday ${formatPaise(y.gmvPaise)}` : 'none yesterday',
+      },
+      {
+        label: 'Avg order value',
+        value: formatPaise(aov(t)),
+        hint: y ? `yesterday ${formatPaise(aov(y))}` : 'none yesterday',
+      },
+      {
+        label: 'To pack or send',
+        value: openReady ? String(pending) : '—',
+        hint: 'new and packed orders',
+        tone: pending > 0 ? 'warn' : undefined,
+      },
+      {
+        label: 'Cancelled today',
+        value: String(t.cancelled),
+        hint: `${cancelRate(t)}% of placed`,
+        tone: t.cancelled > 0 ? 'danger' : undefined,
+      },
+      {
+        label: 'First-time customers',
+        value: String(t.newCustomers),
+        hint: `${t.repeatOrders} repeat orders`,
+        tone: t.newCustomers > 0 ? 'ok' : undefined,
+      },
+      {
+        label: 'Riders on the road',
+        value: openReady ? String(riders) : '—',
+        hint: 'with an order out for delivery',
+      },
+      {
+        label: 'Low stock',
+        value: low == null ? '—' : String(low),
+        hint: `store items under ${LOW_STOCK}`,
+        tone: low ? 'warn' : undefined,
+      },
+    ];
   });
+
+  private readonly spanFrom = computed(() => addDays(this.today, -(this.span() - 1)));
+  private readonly spanDays = computed(() =>
+    (this.days.value() ?? []).filter((d) => d.date >= this.spanFrom()),
+  );
+  private readonly spanTotal = computed(() => sumDays(this.spanDays()));
+
+  readonly hasOrders = computed(() => this.spanTotal().placed > 0);
+  readonly trendChart = computed(() =>
+    ordersGmvChart(series(this.spanDays(), this.spanFrom(), this.today, 'day'), 'day'),
+  );
+  readonly methodChart = computed(() => methodChart(this.spanTotal()));
+  readonly hourChart = computed(() => hourChart(this.spanTotal()));
+  readonly topProducts = computed(() =>
+    productReport(this.spanTotal(), this.spanFrom(), this.today, 8).rows.map((r) => ({
+      name: r['product'] as string,
+      value: r['sales'] as number,
+    })),
+  );
+  readonly topChart = computed(() => rankChart(this.topProducts(), true, 2));
+  readonly areaChart = computed(() => rankChart(this.areaRows() ?? [], true, 1));
+
+  constructor() {
+    void this.loadSide();
+
+    // Chime when a new order lands on top of the feed (not on first load).
+    let seen: string | null = null;
+    effect(() => {
+      const top = this.latest.value()?.[0];
+      if (!top) return;
+      if (seen && top.id !== seen && top.status === 'placed' && this.sound()) chime();
+      seen = top.id;
+    });
+    inject(DestroyRef).onDestroy(() => {
+      void audio?.close();
+      audio = null;
+    });
+  }
+
+  /** Low-stock count and the area comparison (last 30 days); one-shot reads. */
+  async loadSide(): Promise<void> {
+    this.sideError.set(null);
+    try {
+      const [low, names, areas] = await Promise.all([
+        this.api.lowStockCount(LOW_STOCK),
+        this.api.areaNames(),
+        this.api.areaDays(this.from30, this.today),
+      ]);
+      this.lowStock.set(low);
+      const by = new Map<string, number>();
+      for (const d of areas) if (d.areaId) by.set(d.areaId, (by.get(d.areaId) ?? 0) + d.gmvPaise);
+      this.areaRows.set(
+        [...by]
+          .filter(([, v]) => v > 0)
+          .map(([id, value]) => ({ name: names.get(id) ?? id, value })),
+      );
+    } catch (e) {
+      this.sideError.set(friendlyFirestoreError(e));
+    }
+  }
+
+  retryAll(): void {
+    this.days.retry();
+    this.open.retry();
+    this.latest.retry();
+    void this.loadSide();
+  }
+
+  toggleSound(on: boolean): void {
+    this.sound.set(on);
+    try {
+      localStorage.setItem(SOUND_KEY, on ? '1' : '0');
+    } catch {
+      // Storage blocked: the choice lasts for this tab only.
+    }
+    if (on) chime(); // a click unlocks audio, and confirms it works
+  }
+}
+
+function readSound(): boolean {
+  try {
+    return localStorage.getItem(SOUND_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+let audio: AudioContext | null = null;
+
+/** A short two-note chime made with Web Audio (no sound file). */
+function chime(): void {
+  try {
+    audio ??= new AudioContext();
+    const t = audio.currentTime;
+    for (const [i, f] of [880, 1320].entries()) {
+      const start = t + i * 0.14;
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.2, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
+      osc.connect(gain).connect(audio.destination);
+      osc.start(start);
+      osc.stop(start + 0.32);
+    }
+  } catch {
+    // No Web Audio: stay quiet.
+  }
 }

@@ -1,0 +1,140 @@
+<section class="z-brand rounded-[var(--z-radius-sheet)] p-6 md:p-8 flex flex-wrap items-end gap-4">
+  <div class="flex-1 min-w-[220px]">
+    <p class="text-[11px] font-extrabold tracking-[.08em] uppercase opacity-80">
+      {{ roleLabel() }}
+    </p>
+    <h2 class="text-[26px] md:text-[32px] mt-1">{{ greeting() }}</h2>
+    <p class="mt-1 opacity-85">Today so far, India time. Updates live as orders come in.</p>
+  </div>
+  @if (canReports()) {
+    <a nz-button routerLink="/reports"><span nz-icon nzType="bar-chart"></span>Reports</a>
+  }
+</section>
+
+<z-page-state
+  class="block mt-6"
+  [status]="days.status()"
+  [error]="days.error()"
+  (retry)="retryAll()"
+>
+  <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
+    @for (k of kpis(); track k.label) {
+      <div class="z-card p-4">
+        <div class="z-overline">{{ k.label }}</div>
+        <div
+          class="z-display text-[24px] mt-1"
+          [class.tone-ok]="k.tone === 'ok'"
+          [class.tone-warn]="k.tone === 'warn'"
+          [class.tone-danger]="k.tone === 'danger'"
+        >
+          {{ k.value }}
+        </div>
+        <div class="z-caption">{{ k.hint }}</div>
+      </div>
+    }
+  </div>
+
+  <div class="flex flex-wrap items-center gap-3 mt-8 mb-4">
+    <h3 class="text-[17px] flex-1">Trends</h3>
+    <nz-segmented
+      nzSize="small"
+      [nzOptions]="spanOptions"
+      [ngModel]="span()"
+      (ngModelChange)="span.set($event)"
+      aria-label="Period"
+    />
+  </div>
+
+  @if (!hasOrders()) {
+    <z-page-state
+      status="ready"
+      [empty]="true"
+      emptyTitle="No orders in this period"
+      emptyText="Charts fill in as orders are placed. Orders from before reports were switched on appear once the stats backfill has run."
+    />
+  } @else {
+    <div class="grid gap-4 lg:grid-cols-3">
+      <div class="z-card p-4 lg:col-span-2">
+        <div class="font-extrabold mb-2">Orders and GMV</div>
+        <z-chart [options]="trendChart()" [height]="280" label="Orders and GMV per day" />
+      </div>
+      <div class="z-card p-4">
+        <div class="font-extrabold mb-2">Payment methods</div>
+        <z-chart [options]="methodChart()" [height]="280" label="Payment method split by amount" />
+      </div>
+      <div class="z-card p-4 lg:col-span-2">
+        <div class="font-extrabold mb-2">Orders by hour</div>
+        <z-chart [options]="hourChart()" [height]="240" label="Orders by hour of day" />
+      </div>
+      <div class="z-card p-4">
+        <div class="font-extrabold mb-2">Top products</div>
+        @if (topProducts().length) {
+          <z-chart [options]="topChart()" [height]="240" label="Top products by sales" />
+        } @else {
+          <p class="z-muted py-10 text-center">No products sold.</p>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="grid gap-4 lg:grid-cols-3 mt-4">
+    <div class="z-card p-4">
+      <div class="font-extrabold mb-2">Areas, last 30 days</div>
+      @if (sideError()) {
+        <div class="py-6 text-center" role="alert">
+          <p class="z-muted">{{ sideError() }}</p>
+          <button nz-button nzSize="small" class="mt-2" (click)="loadSide()">
+            <span nz-icon nzType="reload"></span>Try again
+          </button>
+        </div>
+      } @else if (areaRows() === null) {
+        <p class="z-muted py-10 text-center" aria-busy="true">Loading…</p>
+      } @else if (areaRows()!.length === 0) {
+        <p class="z-muted py-10 text-center">No area sales yet.</p>
+      } @else {
+        <z-chart [options]="areaChart()" [height]="240" label="GMV by service area" />
+      }
+    </div>
+
+    <div class="z-card p-4 lg:col-span-2">
+      <div class="flex flex-wrap items-center gap-3 mb-2">
+        <div class="font-extrabold flex-1">Latest orders</div>
+        <label class="z-caption flex items-center gap-2 cursor-pointer">
+          <nz-switch
+            nzSize="small"
+            [ngModel]="sound()"
+            (ngModelChange)="toggleSound($event)"
+            aria-label="Chime on new orders"
+          />
+          Chime on new orders
+        </label>
+      </div>
+      <z-page-state
+        [status]="latest.status()"
+        [error]="latest.error()"
+        [empty]="(latest.value() ?? []).length === 0"
+        emptyTitle="No orders yet"
+        (retry)="latest.retry()"
+      >
+        <ul class="list-none p-0 m-0" aria-live="polite">
+          @for (o of latest.value(); track o.id) {
+            <li class="border-t border-[var(--z-line)] first:border-t-0">
+              <a
+                [routerLink]="canOrders() ? ['/orders', o.id] : null"
+                class="flex flex-wrap items-center gap-3 py-2.5 text-inherit"
+              >
+                <span class="font-bold">#{{ o.shortId }}</span>
+                <nz-tag [nzColor]="meta[o.status].color">{{ meta[o.status].label }}</nz-tag>
+                <span class="z-caption flex-1 min-w-[140px]">
+                  {{ o.items.length }} items · {{ o.paymentMethod }}
+                </span>
+                <span class="font-bold">{{ o.totalPaise | rupees }}</span>
+                <span class="z-caption w-[150px] text-right">{{ o.placedAt | when }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </z-page-state>
+    </div>
+  </div>
+</z-page-state>
