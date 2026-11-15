@@ -3,7 +3,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { IMAGE_TYPES, MAX_IMAGE_BYTES } from '../../shared/util/image';
-import { CatalogApi } from './catalog.api';
+import { CatalogApi, ImageFolder } from './catalog.api';
 
 /** Square image slot: click or drop a photo → compressed WebP upload → URL. */
 @Component({
@@ -80,7 +80,7 @@ import { CatalogApi } from './catalog.api';
 export class ImagePicker {
   private readonly api = inject(CatalogApi);
   readonly url = model<string | null>(null);
-  readonly folder = input<'products' | 'categories'>('products');
+  readonly folder = input<ImageFolder>('products');
   readonly hint = input('Square photo on a plain background works best. JPG, PNG or WebP.');
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);

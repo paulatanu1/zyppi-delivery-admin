@@ -1,0 +1,56 @@
+:host {
+  display: block;
+}
+
+.page {
+  min-height: 100vh;
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--z-radius-control);
+  background: rgb(255 255 255 / 16%);
+  border: 1px solid rgb(255 255 255 / 24%);
+  font-size: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label,
+  .lbl {
+    font-weight: 700;
+    font-size: 13px;
+  }
+}
+
+.choice {
+  all: unset;
+  box-sizing: border-box;
+  padding: 14px;
+  text-align: center;
+  font-weight: 700;
+  border: 1.5px solid var(--z-line-2);
+  border-radius: var(--z-radius-tile);
+  background: var(--z-surface);
+  cursor: pointer;
+
+  &.on {
+    border-color: var(--z-brand);
+    background: var(--z-brand-soft);
+    color: var(--z-brand-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--z-brand);
+  }
+}
+
+.uppercase {
+  text-transform: uppercase;
+}

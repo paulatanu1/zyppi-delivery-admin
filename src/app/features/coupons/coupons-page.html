@@ -1,0 +1,314 @@
+<z-page-header
+  title="Coupons"
+  subtitle="Codes customers type in the cart. The server checks every rule again when they order."
+>
+  <button nz-button nzType="primary" (click)="openNew()">
+    <span nz-icon nzType="plus"></span>New coupon
+  </button>
+</z-page-header>
+
+<z-page-state
+  [status]="status()"
+  [error]="coupons.error() ?? areas.error()"
+  [empty]="withState().length === 0"
+  emptyTitle="No coupons yet"
+  emptyText="Create one with New coupon: flat or percent off, with limits and dates."
+  (retry)="retry()"
+>
+  <div class="z-card p-4 mb-4 flex flex-wrap gap-3 items-center">
+    <nz-input-wrapper class="flex-1 min-w-[200px]">
+      <span nzInputPrefix nz-icon nzType="search" class="z-muted"></span>
+      <input
+        nz-input
+        placeholder="Search code or description"
+        aria-label="Search coupons"
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)"
+      />
+    </nz-input-wrapper>
+    <nz-segmented
+      [nzOptions]="filterOptions()"
+      [ngModel]="filter()"
+      (ngModelChange)="filter.set($event)"
+      aria-label="Filter by status"
+    />
+  </div>
+
+  <div class="z-card overflow-hidden">
+    <nz-table
+      #table
+      [nzData]="filtered()"
+      [nzPageSize]="25"
+      [nzScroll]="{ x: '900px' }"
+      [nzNoResult]="noResult"
+    >
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Offer</th>
+          <th nzWidth="110px">Min order</th>
+          <th>Valid</th>
+          <th nzWidth="120px">Uses</th>
+          <th nzWidth="130px">Given away</th>
+          <th nzWidth="100px">Status</th>
+          <th nzWidth="70px"><span class="sr-only">On</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (x of table.data; track x.c.code) {
+          <tr
+            class="row"
+            tabindex="0"
+            (click)="openEdit(x.c)"
+            (keydown.enter)="openEdit(x.c)"
+            [attr.aria-label]="'Edit ' + x.c.code"
+          >
+            <td>
+              <span class="code">{{ x.c.code }}</span>
+              <span class="block z-caption truncate max-w-[220px]">{{ x.c.description }}</span>
+            </td>
+            <td>
+              <span class="font-bold">{{ offer(x.c) }}</span>
+              @if (rules(x.c).length) {
+                <span class="block z-caption">{{ rules(x.c).join(' · ') }}</span>
+              }
+            </td>
+            <td>{{ x.c.minOrderPaise ? (x.c.minOrderPaise | rupees) : '—' }}</td>
+            <td class="z-caption">{{ validity(x.c) }}</td>
+            <td>
+              {{ x.c.usedCount }}
+              <span class="z-caption">/ {{ x.c.usageLimit ?? '∞' }}</span>
+            </td>
+            <td>{{ x.c.totalDiscountPaise | rupees }}</td>
+            <td>
+              <nz-tag [nzColor]="states[x.state].color">{{ states[x.state].label }}</nz-tag>
+            </td>
+            <td (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+              <nz-switch
+                nzSize="small"
+                [ngModel]="x.c.isActive"
+                (ngModelChange)="toggle(x.c, $event)"
+                [attr.aria-label]="(x.c.isActive ? 'Turn off ' : 'Turn on ') + x.c.code"
+              />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+    <ng-template #noResult>
+      <p class="z-muted py-6 text-center">No coupons match.</p>
+    </ng-template>
+  </div>
+</z-page-state>
+
+<nz-drawer
+  [nzVisible]="!!draft()"
+  [nzWidth]="width()"
+  [nzTitle]="draft()?.isNew ? 'New coupon' : 'Edit ' + draft()?.code"
+  [nzFooter]="footer"
+  [nzMaskClosable]="false"
+  (nzOnClose)="draft.set(null)"
+>
+  <ng-container *nzDrawerContent>
+    @if (draft(); as d) {
+      <div class="flex flex-col gap-5">
+        <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] items-end">
+          <div class="flex flex-col gap-2">
+            <label for="c-code" class="font-bold text-[13px]">Code</label>
+            <input
+              nz-input
+              id="c-code"
+              class="code uppercase"
+              maxlength="20"
+              placeholder="e.g. FRESH20"
+              [disabled]="!d.isNew"
+              [ngModel]="d.code"
+              (ngModelChange)="patch({ code: $event.toUpperCase() })"
+            />
+          </div>
+          <label class="flex items-center gap-3 pb-1">
+            <nz-switch [ngModel]="d.isActive" (ngModelChange)="patch({ isActive: $event })" />
+            <span class="font-bold text-[13px]">On</span>
+          </label>
+        </div>
+        @if (!d.isNew) {
+          <small class="z-caption -mt-3">
+            The code can’t change. Used {{ used() }} time{{ used() === 1 ? '' : 's' }} so far.
+          </small>
+        }
+
+        <div class="flex flex-col gap-2">
+          <label for="c-desc" class="font-bold text-[13px]">What customers see</label>
+          <input
+            nz-input
+            id="c-desc"
+            maxlength="120"
+            placeholder="e.g. 20% off fresh fruit, up to ₹100"
+            [ngModel]="d.description"
+            (ngModelChange)="patch({ description: $event })"
+          />
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <span class="font-bold text-[13px]" id="c-type-label">Discount</span>
+          <nz-segmented
+            aria-labelledby="c-type-label"
+            [nzOptions]="typeOptions"
+            [ngModel]="d.type"
+            (ngModelChange)="patch({ type: $event })"
+          />
+          <div class="grid gap-4 sm:grid-cols-2">
+            @if (d.type === 'flat') {
+              <label class="flex flex-col gap-1">
+                <span class="z-caption">Amount off (₹)</span>
+                <nz-input-number
+                  class="w-full"
+                  [nzMin]="1"
+                  [nzMax]="10000"
+                  [nzStep]="10"
+                  [ngModel]="d.discount"
+                  (ngModelChange)="patch({ discount: $event })"
+                />
+              </label>
+            } @else {
+              <label class="flex flex-col gap-1">
+                <span class="z-caption">Percent off</span>
+                <nz-input-number
+                  class="w-full"
+                  [nzMin]="1"
+                  [nzMax]="90"
+                  [nzPrecision]="0"
+                  [ngModel]="d.percent"
+                  (ngModelChange)="patch({ percent: $event })"
+                />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="z-caption">Up to (₹, empty = no cap)</span>
+                <nz-input-number
+                  class="w-full"
+                  [nzMin]="1"
+                  [nzMax]="10000"
+                  [nzStep]="10"
+                  [ngModel]="d.maxDiscount"
+                  (ngModelChange)="patch({ maxDiscount: $event })"
+                />
+              </label>
+            }
+            <label class="flex flex-col gap-1">
+              <span class="z-caption">Minimum item total (₹, optional)</span>
+              <nz-input-number
+                class="w-full"
+                [nzMin]="0"
+                [nzStep]="50"
+                [ngModel]="d.minOrder"
+                (ngModelChange)="patch({ minOrder: $event })"
+              />
+            </label>
+          </div>
+          <p class="z-muted m-0">
+            Customers see: <span class="font-bold">{{ preview() }}</span>
+            @if (d.minOrder) {
+              on orders of {{ d.minOrder * 100 | rupees }} or more
+            }
+          </p>
+        </div>
+
+        <fieldset class="flex flex-col gap-2 border-0 p-0 m-0">
+          <legend class="font-bold text-[13px] mb-2">Valid</legend>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label class="flex flex-col gap-1">
+              <span class="z-caption">From (empty = now)</span>
+              <input
+                nz-input
+                type="datetime-local"
+                [ngModel]="local(d.startAt)"
+                (ngModelChange)="setDate('startAt', $event)"
+              />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="z-caption">Until (empty = no end)</span>
+              <input
+                nz-input
+                type="datetime-local"
+                [ngModel]="local(d.expiresAt)"
+                (ngModelChange)="setDate('expiresAt', $event)"
+              />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="flex flex-col gap-3 border-0 p-0 m-0">
+          <legend class="font-bold text-[13px] mb-2">Limits</legend>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="flex flex-col gap-1">
+              <span class="z-caption">Total uses (empty = unlimited)</span>
+              <nz-input-number
+                class="w-full"
+                [nzMin]="1"
+                [nzPrecision]="0"
+                [ngModel]="d.usageLimit"
+                (ngModelChange)="patch({ usageLimit: $event })"
+              />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="z-caption">Per customer (empty = unlimited)</span>
+              <nz-input-number
+                class="w-full"
+                [nzMin]="1"
+                [nzPrecision]="0"
+                [ngModel]="d.perUserLimit"
+                (ngModelChange)="patch({ perUserLimit: $event })"
+              />
+            </label>
+          </div>
+          <label class="flex items-center gap-3">
+            <nz-switch
+              [ngModel]="d.firstOrderOnly"
+              (ngModelChange)="patch({ firstOrderOnly: $event })"
+            />
+            <span>First order only (customers with no earlier order)</span>
+          </label>
+          <div class="flex flex-col gap-2">
+            <label for="c-areas" class="z-caption">Areas</label>
+            <nz-select
+              nzId="c-areas"
+              nzMode="multiple"
+              nzAllowClear
+              nzPlaceHolder="All areas"
+              [nzOptions]="areaOptions()"
+              [ngModel]="d.serviceAreaIds"
+              (ngModelChange)="patch({ serviceAreaIds: $event ?? [] })"
+            />
+          </div>
+          <small class="z-caption"> A cancelled order gives its use back. </small>
+        </fieldset>
+
+        @if (submitted() && problems().length) {
+          <nz-alert nzType="warning" nzShowIcon [nzMessage]="problemList" />
+          <ng-template #problemList>
+            <ul class="m-0 pl-4">
+              @for (p of problems(); track p) {
+                <li>{{ p }}</li>
+              }
+            </ul>
+          </ng-template>
+        }
+        @if (error(); as e) {
+          <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+        }
+      </div>
+    }
+  </ng-container>
+  <ng-template #footer>
+    <div class="flex items-center gap-2">
+      @if (draft() && !draft()!.isNew) {
+        <button nz-button nzDanger nzType="text" [disabled]="saving()" (click)="remove()">
+          <span nz-icon nzType="delete"></span>Delete
+        </button>
+      }
+      <span class="flex-1"></span>
+      <button nz-button (click)="draft.set(null)">Cancel</button>
+      <button nz-button nzType="primary" [nzLoading]="saving()" (click)="save()">Save</button>
+    </div>
+  </ng-template>
+</nz-drawer>

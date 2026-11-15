@@ -1,0 +1,449 @@
+<z-page-header
+  title="Notifications"
+  subtitle="Offer pushes to customers who allow them, in their own language. Order updates are sent automatically."
+>
+  <button nz-button nzType="primary" (click)="openNew()">
+    <span nz-icon nzType="plus"></span>New campaign
+  </button>
+</z-page-header>
+
+<z-page-state
+  [status]="status()"
+  [error]="campaigns.error() ?? templates.error() ?? areas.error()"
+  (retry)="retry()"
+>
+  <nz-tabs>
+    <nz-tab [nzTitle]="'Campaigns · ' + (campaigns.value()?.length ?? 0)">
+      @if (!campaigns.value()?.length) {
+        <div class="z-card py-10 text-center">
+          <p class="font-bold">No campaigns yet</p>
+          <p class="z-muted mt-1">Write one with New campaign. Send a test to your phone first.</p>
+        </div>
+      } @else {
+        <div class="z-card overflow-hidden">
+          <nz-table
+            #table
+            [nzData]="campaigns.value() ?? []"
+            [nzPageSize]="20"
+            [nzScroll]="{ x: '860px' }"
+          >
+            <thead>
+              <tr>
+                <th>Campaign</th>
+                <th>Audience</th>
+                <th nzWidth="110px">Status</th>
+                <th nzWidth="90px">Sent</th>
+                <th nzWidth="90px">Opened</th>
+                <th nzWidth="190px">When</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of table.data; track c.id) {
+                <tr
+                  class="row"
+                  tabindex="0"
+                  (click)="open(c)"
+                  (keydown.enter)="open(c)"
+                  [attr.aria-label]="'Open ' + c.name"
+                >
+                  <td>
+                    <span class="font-bold block">{{ c.name }}</span>
+                    <span class="z-caption block truncate max-w-[280px]">{{ c.copy.title }}</span>
+                  </td>
+                  <td class="z-caption">{{ segmentText(c.segment) }}</td>
+                  <td>
+                    <nz-tag [nzColor]="statusLabels[c.status].color">
+                      {{ statusLabels[c.status].label }}
+                    </nz-tag>
+                  </td>
+                  <td>
+                    {{ c.stats.sent }}
+                    @if (c.stats.failed) {
+                      <span class="z-caption block">{{ c.stats.failed }} failed</span>
+                    }
+                  </td>
+                  <td>
+                    {{ c.stats.opened }}
+                    <span class="z-caption block">{{ rate(c) }}</span>
+                  </td>
+                  <td class="z-caption">{{ when(c) }}</td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        </div>
+      }
+    </nz-tab>
+
+    <nz-tab [nzTitle]="'Templates · ' + (templates.value()?.length ?? 0)">
+      @if (!templates.value()?.length) {
+        <div class="z-card py-10 text-center">
+          <p class="font-bold">No templates yet</p>
+          <p class="z-muted mt-1">
+            In the composer, use Save as template to keep text you send often.
+          </p>
+        </div>
+      } @else {
+        <ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 list-none p-0 m-0">
+          @for (t of templates.value(); track t.id) {
+            <li class="z-card p-4 flex flex-col gap-2">
+              <span class="font-bold">{{ t.name }}</span>
+              <span class="text-[13px]">{{ t.copy.title }}</span>
+              <span class="z-caption line-clamp-2">{{ t.copy.body }}</span>
+              <span class="z-caption">
+                English{{ t.translations.bn ? ' · বাংলা' : ''
+                }}{{ t.translations.hi ? ' · हिन्दी' : '' }}{{ t.translations.pa ? ' · ਪੰਜਾਬੀ' : '' }}
+              </span>
+              <div class="flex gap-2 mt-auto pt-2">
+                <button nz-button nzSize="small" nzType="primary" (click)="openNew(t)">Use</button>
+                <button nz-button nzSize="small" nzDanger nzType="text" (click)="deleteTemplate(t)">
+                  <span nz-icon nzType="delete"></span>Delete
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </nz-tab>
+  </nz-tabs>
+</z-page-state>
+
+<!-- Composer -->
+<nz-drawer
+  [nzVisible]="!!draft()"
+  [nzWidth]="width()"
+  [nzTitle]="editingCampaign() ? 'Edit campaign' : 'New campaign'"
+  [nzFooter]="footer"
+  [nzMaskClosable]="false"
+  (nzOnClose)="close()"
+>
+  <ng-container *nzDrawerContent>
+    @if (draft(); as d) {
+      <div class="composer">
+        <div class="flex flex-col gap-5 min-w-0">
+          <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px] items-end">
+            <div class="flex flex-col gap-2">
+              <label for="n-name" class="font-bold text-[13px]">Name (only staff see it)</label>
+              <input
+                nz-input
+                id="n-name"
+                maxlength="80"
+                placeholder="e.g. Weekend mango offer"
+                [ngModel]="d.name"
+                (ngModelChange)="patch({ name: $event })"
+              />
+            </div>
+            @if (templateOptions().length) {
+              <nz-select
+                nzAllowClear
+                nzPlaceHolder="Start from a template"
+                aria-label="Start from a template"
+                [nzOptions]="templateOptions()"
+                [ngModel]="null"
+                (ngModelChange)="useTemplate($event)"
+              />
+            }
+          </div>
+
+          <section class="flex flex-col gap-3" aria-labelledby="n-copy">
+            <div class="flex flex-wrap items-center gap-3">
+              <span id="n-copy" class="font-bold text-[13px] flex-1">Message</span>
+              <nz-segmented
+                aria-label="Language"
+                [nzOptions]="langs"
+                [ngModel]="lang()"
+                (ngModelChange)="lang.set($event)"
+              />
+            </div>
+            @if (lang() !== 'en' && !hasCopy(lang())) {
+              <small class="z-caption -mt-1"> Empty = these customers get the English text. </small>
+            }
+            <div class="flex flex-col gap-1">
+              <input
+                nz-input
+                aria-label="Title"
+                maxlength="65"
+                placeholder="Title, e.g. Fresh mangoes are in"
+                [ngModel]="d.copy[lang()].title"
+                (ngModelChange)="patchCopy('title', $event)"
+              />
+              <small class="z-caption text-right">{{ d.copy[lang()].title.length }}/65</small>
+            </div>
+            <div class="flex flex-col gap-1">
+              <textarea
+                nz-input
+                rows="3"
+                aria-label="Message"
+                maxlength="240"
+                placeholder="Message, e.g. 20% off till Sunday. Tap to shop 🥭"
+                [ngModel]="d.copy[lang()].body"
+                (ngModelChange)="patchCopy('body', $event)"
+              ></textarea>
+              <small class="z-caption text-right">{{ d.copy[lang()].body.length }}/240</small>
+            </div>
+          </section>
+
+          <z-image-picker
+            folder="notifications"
+            [url]="d.imageUrl"
+            (urlChange)="patch({ imageUrl: $event })"
+            hint="Optional. Shown when the notification is expanded. Landscape 2:1, e.g. 1000×500."
+          />
+
+          <div class="flex flex-col gap-2">
+            <span class="font-bold text-[13px]" id="n-link">Tapping it opens</span>
+            <nz-segmented
+              aria-labelledby="n-link"
+              [nzOptions]="linkOptions"
+              [ngModel]="d.linkType"
+              (ngModelChange)="setLinkType($event)"
+            />
+            @switch (d.linkType) {
+              @case ('product') {
+                <nz-select
+                  nzShowSearch
+                  nzPlaceHolder="Search products"
+                  aria-label="Product"
+                  [nzOptions]="productOptions()"
+                  [ngModel]="d.linkTarget"
+                  (ngModelChange)="patch({ linkTarget: $event })"
+                />
+              }
+              @case ('category') {
+                <nz-select
+                  nzShowSearch
+                  nzPlaceHolder="Pick a category"
+                  aria-label="Category"
+                  [nzOptions]="categoryOptions()"
+                  [ngModel]="d.linkTarget"
+                  (ngModelChange)="patch({ linkTarget: $event })"
+                />
+              }
+              @case ('coupon') {
+                <nz-select
+                  nzShowSearch
+                  nzPlaceHolder="Pick a live coupon"
+                  aria-label="Coupon"
+                  [nzOptions]="coupons()"
+                  [ngModel]="d.linkTarget"
+                  (ngModelChange)="patch({ linkTarget: $event })"
+                />
+                <small class="z-caption">Opens the cart with the code applied.</small>
+              }
+              @case ('url') {
+                <input
+                  nz-input
+                  aria-label="Web link"
+                  placeholder="https://…"
+                  [ngModel]="d.linkTarget"
+                  (ngModelChange)="patch({ linkTarget: $event })"
+                />
+              }
+            }
+          </div>
+
+          <fieldset class="flex flex-col gap-3 border-0 p-0 m-0">
+            <legend class="font-bold text-[13px] mb-2">Who gets it</legend>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <nz-select
+                nzMode="multiple"
+                nzAllowClear
+                nzPlaceHolder="All areas"
+                aria-label="Areas"
+                [nzOptions]="areaOptions()"
+                [ngModel]="d.segment.serviceAreaIds"
+                (ngModelChange)="patchSegment({ serviceAreaIds: $event ?? [] })"
+              />
+              <nz-select
+                nzMode="multiple"
+                nzAllowClear
+                nzPlaceHolder="All languages"
+                aria-label="Languages"
+                [nzOptions]="langs"
+                [ngModel]="d.segment.langs"
+                (ngModelChange)="patchSegment({ langs: $event ?? [] })"
+              />
+            </div>
+            <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px]">
+              <nz-select
+                aria-label="Order behaviour"
+                [nzOptions]="behaviours"
+                [ngModel]="d.segment.behaviour"
+                (ngModelChange)="patchSegment({ behaviour: $event, value: null })"
+              />
+              @if (unit(); as u) {
+                <nz-input-number
+                  class="w-full"
+                  [nzMin]="1"
+                  [nzPrecision]="u === '₹' ? 2 : 0"
+                  [nzPlaceHolder]="u === '₹' ? '₹' : u"
+                  [attr.aria-label]="u === '₹' ? 'Amount in rupees' : 'Number of ' + u"
+                  [ngModel]="d.segment.value"
+                  (ngModelChange)="patchSegment({ value: $event })"
+                />
+              }
+            </div>
+            <div class="audience">
+              <button nz-button nzSize="small" [nzLoading]="counting()" (click)="countAudience()">
+                <span nz-icon nzType="team"></span>Count audience
+              </button>
+              @if (audience(); as a) {
+                <span>
+                  <span class="font-bold">{{ a.count }}</span>
+                  customer{{ a.count === 1 ? '' : 's' }}
+                </span>
+                <span class="z-caption">
+                  @for (l of langs; track l.value) {
+                    @if (langCount(l.value)) {
+                      {{ l.label }} {{ langCount(l.value) }}&nbsp;
+                    }
+                  }
+                </span>
+              } @else {
+                <span class="z-caption"
+                  >Only customers who turned on offers, with the app installed.</span
+                >
+              }
+            </div>
+          </fieldset>
+
+          <fieldset class="flex flex-col gap-2 border-0 p-0 m-0">
+            <legend class="font-bold text-[13px] mb-2">Test on a phone</legend>
+            <div class="flex flex-wrap gap-2">
+              <input
+                nz-input
+                class="flex-1 min-w-[180px]"
+                type="tel"
+                aria-label="Test phone number"
+                placeholder="Phone signed in to the app, e.g. 98000 11111"
+                [ngModel]="testPhone()"
+                (ngModelChange)="testPhone.set($event)"
+              />
+              <button nz-button [nzLoading]="busy() === 'test'" (click)="sendTest()">
+                <span nz-icon nzType="mobile"></span>Send test
+              </button>
+            </div>
+            <small class="z-caption"
+              >Sends to that phone only, even if it hasn’t allowed offers.</small
+            >
+          </fieldset>
+
+          @if (submitted() && problems().length) {
+            <nz-alert nzType="warning" nzShowIcon [nzMessage]="problemList" />
+            <ng-template #problemList>
+              <ul class="m-0 pl-4">
+                @for (p of problems(); track p) {
+                  <li>{{ p }}</li>
+                }
+              </ul>
+            </ng-template>
+          }
+          @if (error(); as e) {
+            <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+          }
+        </div>
+
+        <aside class="preview" aria-label="Preview on Android">
+          <div class="z-overline mb-2 flex items-center gap-2">
+            <span nz-icon nzType="mobile"></span>Android preview
+          </div>
+          <div class="phone">
+            <div class="clock">9:41</div>
+            <div class="notif">
+              <div class="notif-head"><span class="app-dot"></span>Zyppi · now</div>
+              <div class="notif-title">{{ previewCopy().title || 'Title' }}</div>
+              <div class="notif-body">{{ previewCopy().body || 'Your message shows here.' }}</div>
+              @if (d.imageUrl) {
+                <img class="notif-image" [src]="d.imageUrl" alt="" />
+              }
+            </div>
+          </div>
+        </aside>
+      </div>
+    }
+  </ng-container>
+  <ng-template #footer>
+    <div class="flex flex-wrap items-center gap-2">
+      @if (editingCampaign(); as c) {
+        <button nz-button nzDanger nzType="text" (click)="cancelScheduled(c)">
+          {{ c.status === 'scheduled' ? 'Cancel send' : 'Discard' }}
+        </button>
+      }
+      <button
+        nz-button
+        nzType="text"
+        [nzLoading]="busy() === 'template'"
+        (click)="saveAsTemplate()"
+      >
+        Save as template
+      </button>
+      <span class="flex-1"></span>
+      <button nz-button [nzLoading]="busy() === 'save'" (click)="saveDraft()">Save draft</button>
+      <span class="flex items-center gap-1">
+        <input
+          nz-input
+          type="datetime-local"
+          class="w-[200px]"
+          aria-label="Send at"
+          [ngModel]="sendAt()"
+          (ngModelChange)="sendAt.set($event)"
+        />
+        <button nz-button [nzLoading]="busy() === 'schedule'" (click)="schedule()">
+          <span nz-icon nzType="clock-circle"></span>Schedule
+        </button>
+      </span>
+      <button nz-button nzType="primary" [nzLoading]="busy() === 'send'" (click)="sendNow()">
+        <span nz-icon nzType="notification"></span>Send now
+      </button>
+    </div>
+  </ng-template>
+</nz-drawer>
+
+<!-- A sent / failed / cancelled campaign -->
+<nz-drawer
+  [nzVisible]="!!viewing()"
+  [nzWidth]="width()"
+  [nzTitle]="viewing()?.name ?? ''"
+  (nzOnClose)="viewing.set(null)"
+>
+  <ng-container *nzDrawerContent>
+    @if (viewing(); as c) {
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center gap-2">
+          <nz-tag [nzColor]="statusLabels[c.status].color">{{
+            statusLabels[c.status].label
+          }}</nz-tag>
+          <span class="z-caption">{{ when(c) }}</span>
+        </div>
+        @if (c.failureReason) {
+          <nz-alert nzType="error" nzShowIcon [nzMessage]="c.failureReason" />
+        }
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="stat">
+            <span class="z-caption">Audience</span><b>{{ c.stats.targeted }}</b>
+          </div>
+          <div class="stat">
+            <span class="z-caption">Delivered</span><b>{{ c.stats.sent }}</b>
+          </div>
+          <div class="stat">
+            <span class="z-caption">Failed</span><b>{{ c.stats.failed }}</b>
+          </div>
+          <div class="stat">
+            <span class="z-caption">Opened</span><b>{{ c.stats.opened }} · {{ rate(c) }}</b>
+          </div>
+        </div>
+        <div class="z-card p-4 flex flex-col gap-1">
+          <span class="font-bold">{{ c.copy.title }}</span>
+          <span>{{ c.copy.body }}</span>
+          <span class="z-caption mt-2">{{ segmentText(c.segment) }}</span>
+          @if (c.createdByEmail) {
+            <span class="z-caption">By {{ c.createdByEmail }}</span>
+          }
+        </div>
+        <button nz-button class="self-start" (click)="duplicate(c)">
+          <span nz-icon nzType="copy"></span>Duplicate
+        </button>
+      </div>
+    }
+  </ng-container>
+</nz-drawer>

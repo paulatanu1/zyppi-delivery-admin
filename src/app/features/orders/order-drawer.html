@@ -171,28 +171,42 @@
           @if (o.status !== 'delivered' && o.status !== 'cancelled' && canOperate()) {
             <div class="section">
               <div class="z-overline mb-2">Rider</div>
-              <div class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                <input
-                  nz-input
-                  placeholder="Name"
-                  aria-label="Rider name"
-                  maxlength="80"
-                  [ngModel]="riderName()"
-                  (ngModelChange)="riderName.set($event)"
-                />
-                <input
-                  nz-input
-                  placeholder="Phone"
-                  aria-label="Rider phone"
-                  maxlength="15"
-                  inputmode="tel"
-                  [ngModel]="riderPhone()"
-                  (ngModelChange)="riderPhone.set($event)"
+              <div class="flex gap-2">
+                <nz-select
+                  class="flex-1"
+                  nzShowSearch
+                  nzAllowClear
+                  nzPlaceHolder="Assign a rider"
+                  aria-label="Rider"
+                  [nzOptions]="riderOptions()"
+                  [ngModel]="riderChoice()"
+                  (ngModelChange)="riderChoice.set($event ?? null)"
                 />
                 <button nz-button [nzLoading]="busy() === 'rider'" (click)="saveRider()">
                   Save
                 </button>
               </div>
+              @if (riderChoice() === '__manual') {
+                <div class="grid gap-2 sm:grid-cols-2 mt-2">
+                  <input
+                    nz-input
+                    placeholder="Name"
+                    aria-label="Rider name"
+                    maxlength="80"
+                    [ngModel]="riderName()"
+                    (ngModelChange)="riderName.set($event)"
+                  />
+                  <input
+                    nz-input
+                    placeholder="Phone"
+                    aria-label="Rider phone"
+                    maxlength="15"
+                    inputmode="tel"
+                    [ngModel]="riderPhone()"
+                    (ngModelChange)="riderPhone.set($event)"
+                  />
+                </div>
+              }
               <p class="z-caption mt-1">Shown to the customer on the tracking screen.</p>
             </div>
           } @else if (o.riderName) {

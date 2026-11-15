@@ -1,0 +1,287 @@
+<nz-drawer
+  [nzVisible]="!!uid()"
+  [nzWidth]="width()"
+  [nzTitle]="title"
+  [nzFooter]="footer"
+  (nzOnClose)="closed.emit()"
+>
+  <ng-template #title>
+    @if (rider(); as r) {
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="z-display text-[18px]">{{ r.fullName || 'Rider' }}</span>
+        <nz-tag [nzColor]="meta[r.status].color">{{ meta[r.status].label }}</nz-tag>
+      </div>
+    } @else {
+      Rider
+    }
+  </ng-template>
+
+  <ng-container *nzDrawerContent>
+    @switch (rider()) {
+      @case (undefined) {
+        <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 8 }" />
+      }
+      @case (null) {
+        <nz-alert nzType="warning" nzShowIcon nzMessage="Rider not found or you can’t see it." />
+      }
+      @default {
+        @if (rider(); as r) {
+          @if (r.reviewNote) {
+            <nz-alert
+              nzType="info"
+              nzShowIcon
+              class="block mb-3"
+              [nzMessage]="'Last note to rider: ' + r.reviewNote"
+            />
+          }
+
+          <div class="facts pb-4">
+            <span class="z-muted">Mobile</span
+            ><a [href]="'tel:' + r.phone" class="font-bold">{{ r.phone }}</a>
+            <span class="z-muted">Date of birth</span><span>{{ r.dob }} · {{ age() }}</span>
+            <span class="z-muted">Address</span><span>{{ r.address }}</span>
+            <span class="z-muted">Area</span
+            ><span>{{ areaNames().get(r.serviceAreaId) ?? r.serviceAreaId }}</span>
+            <span class="z-muted">Vehicle</span
+            ><span>{{ vehicle(r.vehicleType) }} {{ r.vehicleNumber }}</span>
+            @if (r.drivingLicenceNumber) {
+              <span class="z-muted">Licence no.</span><span>{{ r.drivingLicenceNumber }}</span>
+            }
+            <span class="z-muted">Payouts</span>
+            <span>
+              @if (payout(); as p) {
+                @if (p.method === 'upi') {
+                  UPI {{ p.upiId }}
+                } @else {
+                  {{ p.accountName }} · A/c {{ p.accountNumber }} · {{ p.ifsc }}
+                }
+              } @else if (r.payout) {
+                @if (r.payout.method === 'upi') {
+                  UPI {{ r.payout.upiId }}
+                } @else {
+                  Bank ••{{ r.payout.accountLast4 }} · {{ r.payout.ifsc }}
+                }
+              } @else {
+                —
+              }
+            </span>
+            <span class="z-muted">Applied</span><span>{{ r.submittedAt | when }}</span>
+          </div>
+
+          <div class="section">
+            <div class="z-overline mb-2">Documents · click to zoom and rotate</div>
+            <nz-image-group>
+              <div class="docs">
+                @for (d of docs(); track d.key) {
+                  <figure class="doc m-0">
+                    @if (d.pdf) {
+                      <a
+                        [href]="d.url"
+                        target="_blank"
+                        rel="noopener"
+                        class="grid place-items-center h-[120px] font-bold"
+                        >Open PDF</a
+                      >
+                    } @else if (d.url) {
+                      <img nz-image [nzSrc]="d.url" [alt]="d.label" />
+                    } @else {
+                      <div class="grid place-items-center h-[120px] z-caption">Can’t load</div>
+                    }
+                    <figcaption class="px-2 py-1 text-[12px] font-bold">{{ d.label }}</figcaption>
+                  </figure>
+                } @empty {
+                  <p class="z-muted">No documents uploaded.</p>
+                }
+              </div>
+            </nz-image-group>
+          </div>
+
+          @if (r.status === 'submitted' && canReview()) {
+            <div class="section">
+              <div class="z-overline mb-2">Checklist</div>
+              <div class="flex flex-col gap-2">
+                @for (c of checklist(); track c.key) {
+                  <div
+                    nz-checkbox
+                    [ngModel]="checks()[c.key]"
+                    (ngModelChange)="toggleCheck(c.key, $event)"
+                  >
+                    {{ c.label }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (r.status === 'approved' || r.status === 'suspended') {
+            <div class="section">
+              <div class="z-overline mb-2">Performance</div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="z-card p-3">
+                  <div class="z-caption">Deliveries</div>
+                  <div class="z-display text-[20px]">{{ r.deliveredCount }}</div>
+                </div>
+                <div class="z-card p-3">
+                  <div class="z-caption">On time</div>
+                  <div class="z-display text-[20px]">
+                    {{ onTime(r) === null ? '—' : onTime(r) + '%' }}
+                  </div>
+                </div>
+                <div class="z-card p-3">
+                  <div class="z-caption">Cash held</div>
+                  <div
+                    class="z-display text-[20px]"
+                    [class.text-[var(--z-warn)]]="r.codBalancePaise > 0"
+                  >
+                    {{ r.codBalancePaise | rupees }}
+                  </div>
+                </div>
+              </div>
+              @if (canSettle() && r.codBalancePaise > 0) {
+                <button nz-button class="mt-3" (click)="openSettle()">
+                  <span nz-icon nzType="wallet"></span>Record cash received
+                </button>
+              }
+              @if (cash().length) {
+                <ul class="list-none p-0 m-0 mt-3 flex flex-col gap-1">
+                  @for (c of cash(); track c.id) {
+                    <li class="flex items-center gap-2 text-[13px]">
+                      <span class="font-bold" [class.text-[var(--z-ok)]]="c.amountPaise < 0"
+                        >{{ c.amountPaise > 0 ? '+' : '−'
+                        }}{{ (c.amountPaise > 0 ? c.amountPaise : -c.amountPaise) | rupees }}</span
+                      >
+                      <span class="z-muted">{{
+                        c.type === 'collected'
+                          ? 'Collected · #' + short(c.orderId ?? '')
+                          : 'Handed over' + (c.note ? ' · ' + c.note : '')
+                      }}</span>
+                      <span class="z-caption ml-auto">{{ c.at | when }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          }
+
+          <div class="section">
+            <div class="z-overline mb-2">History</div>
+            <ul class="list-none p-0 m-0 flex flex-col gap-1">
+              @for (e of events(); track e.id) {
+                <li class="text-[13px]">
+                  <b>{{ eventLabel(e.type) }}</b> <span class="z-caption">{{ e.at | when }}</span>
+                  @if (e.note) {
+                    <span class="z-muted"> · {{ e.note }}</span>
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      }
+    }
+  </ng-container>
+
+  <ng-template #footer>
+    @if (rider(); as r) {
+      @if (canReview()) {
+        <div class="flex flex-wrap justify-end gap-2">
+          @switch (r.status) {
+            @case ('submitted') {
+              <button nz-button nzDanger (click)="ask('reject')">Reject</button>
+              <button nz-button (click)="ask('request_changes')">Ask for changes</button>
+              <button
+                nz-button
+                nzType="primary"
+                [disabled]="!allChecked()"
+                (click)="ask('approve')"
+              >
+                Approve
+              </button>
+            }
+            @case ('approved') {
+              <button nz-button nzDanger (click)="ask('suspend')">Suspend</button>
+            }
+            @case ('suspended') {
+              <button nz-button nzType="primary" (click)="ask('reinstate')">Reinstate</button>
+            }
+          }
+        </div>
+        @if (r.status === 'submitted' && !allChecked()) {
+          <div class="z-caption text-right mt-1">Tick every checklist item to approve.</div>
+        }
+      }
+    }
+  </ng-template>
+</nz-drawer>
+
+<nz-modal
+  [nzVisible]="!!action()"
+  [nzTitle]="action() ? copy[action()!].title : ''"
+  [nzCentered]="true"
+  [nzOkText]="action() ? copy[action()!].ok : 'OK'"
+  [nzOkDanger]="!!action() && !!copy[action()!].danger"
+  [nzOkLoading]="busy()"
+  (nzOnOk)="confirm()"
+  (nzOnCancel)="action.set(null)"
+>
+  <ng-container *nzModalContent>
+    <div class="flex flex-col gap-3">
+      @if (action() === 'approve') {
+        <p>The rider can be assigned to orders straight away.</p>
+      } @else if (action() === 'reinstate') {
+        <p>The rider can be assigned to orders again.</p>
+      }
+      @if (action() && copy[action()!].reason) {
+        <p class="z-muted">The rider sees this message on their status page.</p>
+        <textarea
+          nz-input
+          rows="3"
+          maxlength="500"
+          aria-label="Reason"
+          [placeholder]="copy[action()!].placeholder ?? ''"
+          [ngModel]="reason()"
+          (ngModelChange)="reason.set($event)"
+        ></textarea>
+      }
+      @if (dialogError(); as e) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+      }
+    </div>
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="settleOpen()"
+  nzTitle="Record cash received"
+  [nzCentered]="true"
+  nzOkText="Record"
+  [nzOkLoading]="busy()"
+  (nzOnOk)="settle()"
+  (nzOnCancel)="settleOpen.set(false)"
+>
+  <ng-container *nzModalContent>
+    <div class="flex flex-col gap-3">
+      <p class="z-muted">Cash the rider handed to the store from cash-on-delivery orders.</p>
+      <nz-input-number
+        class="!w-full"
+        [nzMin]="1"
+        [nzPrecision]="2"
+        aria-label="Amount"
+        [ngModel]="settleRupees()"
+        (ngModelChange)="settleRupees.set($event)"
+        ><span nzInputPrefix>₹</span></nz-input-number
+      >
+      <input
+        nz-input
+        maxlength="200"
+        placeholder="Note (optional)"
+        aria-label="Note"
+        [ngModel]="settleNote()"
+        (ngModelChange)="settleNote.set($event)"
+      />
+      @if (dialogError(); as e) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+      }
+    </div>
+  </ng-container>
+</nz-modal>

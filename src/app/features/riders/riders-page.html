@@ -1,0 +1,121 @@
+<z-page-header
+  title="Riders"
+  subtitle="Delivery partners apply themselves; you verify their documents and approve them here."
+>
+  <div class="z-card px-3 py-2 text-[13px] flex items-center gap-2">
+    <span class="z-muted">Sign-up link:</span>
+    <a [href]="portalUrl" target="_blank" rel="noopener" class="font-bold">{{ portalUrl }}</a>
+    <button type="button" class="copy" aria-label="Copy sign-up link" (click)="copyPortal()">
+      <span nz-icon nzType="copy"></span>
+    </button>
+  </div>
+</z-page-header>
+
+<z-page-state
+  [status]="riders.status()"
+  [error]="riders.error()"
+  [empty]="(riders.value() ?? []).length === 0"
+  emptyTitle="No rider applications yet"
+  emptyText="Share the sign-up link above with people who want to deliver for Zyppi."
+  (retry)="riders.retry()"
+>
+  <div class="grid gap-4 grid-cols-2 md:grid-cols-4 mb-4">
+    <div class="z-card p-4">
+      <div class="z-overline">To review</div>
+      <div class="z-display text-[24px] mt-1 text-[var(--z-brand-text)]">
+        {{ groups().review.length }}
+      </div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Active riders</div>
+      <div class="z-display text-[24px] mt-1">{{ groups().active.length }}</div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Cash with riders</div>
+      <div class="z-display text-[24px] mt-1">{{ cashHeld() | rupees }}</div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Other</div>
+      <div class="z-display text-[24px] mt-1">{{ groups().other.length }}</div>
+    </div>
+  </div>
+
+  <div class="z-card overflow-hidden">
+    <div class="px-4 pt-2 flex flex-wrap items-center gap-3">
+      <nz-tabs
+        class="flex-1"
+        [nzSelectedIndex]="tabIndex()"
+        (nzSelectedIndexChange)="setTab($event)"
+      >
+        <nz-tab [nzTitle]="t1"
+          ><ng-template #t1
+            >To review <nz-badge [nzCount]="groups().review.length" nzSize="small" /></ng-template
+        ></nz-tab>
+        <nz-tab nzTitle="Active"></nz-tab>
+        <nz-tab nzTitle="Others"></nz-tab>
+      </nz-tabs>
+      <nz-input-wrapper class="min-w-[220px] mb-2">
+        <span nzInputPrefix nz-icon nzType="search" class="z-muted"></span>
+        <input
+          nz-input
+          placeholder="Name, phone or vehicle"
+          aria-label="Search riders"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+        />
+      </nz-input-wrapper>
+    </div>
+    <nz-table
+      #t
+      [nzData]="visible()"
+      [nzPageSize]="25"
+      [nzScroll]="{ x: '820px' }"
+      [nzNoResult]="none"
+    >
+      <thead>
+        <tr>
+          <th>Rider</th>
+          <th>Area</th>
+          <th>Vehicle</th>
+          @if (tab() === 'active') {
+            <th>Deliveries</th>
+            <th>On time</th>
+            <th>Cash held</th>
+          } @else {
+            <th>Status</th>
+            <th>Applied</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of t.data; track r.uid) {
+          <tr class="cursor-pointer" tabindex="0" (click)="open(r)" (keydown.enter)="open(r)">
+            <td>
+              <div class="font-bold">{{ r.fullName || 'Unnamed' }}</div>
+              <div class="z-caption">{{ r.phone }}</div>
+            </td>
+            <td>{{ areaNames().get(r.serviceAreaId) ?? '—' }}</td>
+            <td>
+              {{ vehicle(r.vehicleType) }} <span class="z-caption">{{ r.vehicleNumber }}</span>
+            </td>
+            @if (tab() === 'active') {
+              <td class="font-bold">{{ r.deliveredCount }}</td>
+              <td>{{ onTime(r) === null ? '—' : onTime(r) + '%' }}</td>
+              <td [class.text-[var(--z-warn)]]="r.codBalancePaise > 0" class="font-bold">
+                {{ r.codBalancePaise | rupees }}
+              </td>
+            } @else {
+              <td>
+                <nz-tag [nzColor]="meta[r.status].color">{{ meta[r.status].label }}</nz-tag>
+              </td>
+              <td class="z-caption">{{ r.submittedAt | when }}</td>
+            }
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+    <ng-template #none><div class="py-8 z-muted">Nobody here.</div></ng-template>
+  </div>
+</z-page-state>
+
+<z-rider-drawer [uid]="id() ?? null" [areaNames]="areaNames()" (closed)="close()" />

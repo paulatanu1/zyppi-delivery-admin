@@ -9,6 +9,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login').then((m) => m.Login),
   },
   {
+    // Public rider sign-up and status ("Ride with Zyppi").
+    path: 'rider',
+    title: 'Ride with Zyppi',
+    loadComponent: () => import('./features/rider-portal/rider-portal').then((m) => m.RiderPortal),
+  },
+  {
     path: '',
     canActivate: [adminGuard],
     loadComponent: () => import('./layout/shell').then((m) => m.Shell),
@@ -35,6 +41,20 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/orders-page').then((m) => m.OrdersPage),
       },
       {
+        path: 'riders',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'finance'], heading: 'Operations' },
+        title: 'Riders · Zyppi Admin',
+        loadComponent: () => import('./features/riders/riders-page').then((m) => m.RidersPage),
+      },
+      {
+        path: 'riders/:id',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'finance'], heading: 'Operations' },
+        title: 'Rider · Zyppi Admin',
+        loadComponent: () => import('./features/riders/riders-page').then((m) => m.RidersPage),
+      },
+      {
         path: 'payments',
         canActivate: [roleGuard],
         data: { roles: ['finance'], heading: 'Money' },
@@ -46,6 +66,31 @@ export const routes: Routes = [
         path: 'catalog',
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'products' },
+          {
+            path: 'home',
+            canActivate: [roleGuard],
+            data: { roles: ['catalog'], heading: 'Catalog & growth' },
+            title: 'Banners & home · Zyppi Admin',
+            loadComponent: () => import('./features/home/home-page').then((m) => m.HomePage),
+          },
+          {
+            path: 'notifications',
+            canActivate: [roleGuard],
+            data: { roles: ['catalog'], heading: 'Catalog & growth' },
+            title: 'Notifications · Zyppi Admin',
+            loadComponent: () =>
+              import('./features/notifications/notifications-page').then(
+                (m) => m.NotificationsPage,
+              ),
+          },
+          {
+            path: 'coupons',
+            canActivate: [roleGuard],
+            data: { roles: ['catalog', 'finance'], heading: 'Catalog & growth' },
+            title: 'Coupons · Zyppi Admin',
+            loadComponent: () =>
+              import('./features/coupons/coupons-page').then((m) => m.CouponsPage),
+          },
           {
             path: 'products',
             canActivate: [roleGuard],

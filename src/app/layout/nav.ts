@@ -31,7 +31,7 @@ export const NAV: NavGroup[] = [
     label: 'Operations',
     items: [
       { label: 'Orders', icon: 'shopping', link: '/orders', roles: ['ops', 'support'] },
-      { label: 'Riders', icon: 'car', roles: ['ops'], phase: 'A4' },
+      { label: 'Riders', icon: 'car', link: '/riders', roles: ['ops', 'finance'] },
       { label: 'Inventory', icon: 'inbox', link: '/catalog/inventory', roles: ['ops', 'catalog'] },
       { label: 'Customers', icon: 'team', roles: ['ops', 'support'], phase: 'A8' },
       { label: 'Support', icon: 'message', roles: ['support'], phase: 'A8' },
@@ -42,9 +42,19 @@ export const NAV: NavGroup[] = [
     items: [
       { label: 'Products', icon: 'tag', link: '/catalog/products', roles: ['catalog'] },
       { label: 'Categories', icon: 'apartment', link: '/catalog/categories', roles: ['catalog'] },
-      { label: 'Banners & home', icon: 'picture', roles: ['catalog'], phase: 'A5' },
-      { label: 'Coupons', icon: 'gift', roles: ['catalog', 'finance'], phase: 'A5' },
-      { label: 'Notifications', icon: 'notification', roles: ['catalog'], phase: 'A6' },
+      { label: 'Banners & home', icon: 'picture', link: '/catalog/home', roles: ['catalog'] },
+      {
+        label: 'Coupons',
+        icon: 'gift',
+        link: '/catalog/coupons',
+        roles: ['catalog', 'finance'],
+      },
+      {
+        label: 'Notifications',
+        icon: 'notification',
+        link: '/catalog/notifications',
+        roles: ['catalog'],
+      },
     ],
   },
   {
