@@ -24,7 +24,7 @@ export const NAV: NavGroup[] = [
     label: 'Overview',
     items: [
       { label: 'Dashboard', icon: 'dashboard', link: '/dashboard', roles: ALL },
-      { label: 'Reports', icon: 'bar-chart', roles: ['finance', 'ops'], phase: 'A7' },
+      { label: 'Reports', icon: 'bar-chart', link: '/reports', roles: ['finance', 'ops'] },
     ],
   },
   {
