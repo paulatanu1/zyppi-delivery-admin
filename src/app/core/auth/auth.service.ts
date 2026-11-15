@@ -1,7 +1,13 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import {
+  MultiFactorResolver,
+  TotpMultiFactorGenerator,
+  TotpSecret,
   User,
   browserLocalPersistence,
+  getMultiFactorResolver,
+  multiFactor,
+  sendEmailVerification,
   onIdTokenChanged,
   sendPasswordResetEmail,
   setPersistence,
@@ -20,6 +26,19 @@ export interface Session {
   role: Role | null;
   /** Approved delivery partner (custom claim set by adminReviewRider). */
   rider: boolean;
+  /** "totp" when this session was signed in with the authenticator code. */
+  secondFactor: string | null;
+  /** The account has an authenticator app enrolled. */
+  mfaEnrolled: boolean;
+}
+
+/** A started authenticator enrolment: show the key, then confirm a code. */
+export interface TotpEnrolment {
+  secret: TotpSecret;
+  /** Base32 key to type into the authenticator app. */
+  secretKey: string;
+  /** otpauth:// link (opens the authenticator app on a phone). */
+  url: string;
 }
 
 /**
@@ -63,18 +82,89 @@ export class AuthService {
     return this.readyPromise;
   }
 
-  /** Signs in and rejects accounts without an admin role. */
+  /** Pending second step of a sign-in (account with an authenticator). */
+  private resolver: MultiFactorResolver | null = null;
+
+  /**
+   * Signs in and rejects accounts without an admin role. Throws
+   * [MfaRequiredError] when the account has an authenticator: finish with
+   * [verifyTotp].
+   */
   async signIn(email: string, password: string): Promise<Session> {
     await setPersistence(this.auth, browserLocalPersistence);
-    const cred = await signInWithEmailAndPassword(this.auth, email.trim(), password);
+    this.resolver = null;
+    try {
+      const cred = await signInWithEmailAndPassword(this.auth, email.trim(), password);
+      return await this.finish(cred.user);
+    } catch (e) {
+      if ((e as { code?: string }).code === 'auth/multi-factor-auth-required') {
+        this.resolver = getMultiFactorResolver(this.auth, e as never);
+        throw new MfaRequiredError();
+      }
+      throw e;
+    }
+  }
+
+  /** Second step: the 6-digit code from the authenticator app. */
+  async verifyTotp(code: string): Promise<Session> {
+    const resolver = this.resolver;
+    const hint = resolver?.hints.find((h) => h.factorId === TotpMultiFactorGenerator.FACTOR_ID);
+    if (!resolver || !hint) throw new Error('no-pending-sign-in');
+    const assertion = TotpMultiFactorGenerator.assertionForSignIn(hint.uid, code.trim());
+    const cred = await resolver.resolveSignIn(assertion);
+    this.resolver = null;
+    return this.finish(cred.user);
+  }
+
+  private async finish(user: User): Promise<Session> {
     // Force-refresh so a role granted since the last sign-in is picked up.
-    const session = await toSession(cred.user, true);
+    const session = await toSession(user, true);
     if (!session.role) {
       await signOut(this.auth);
       throw new NotAdminError();
     }
     this._session.set(session);
     return session;
+  }
+
+  /** Starts adding an authenticator app (needs a recent sign-in). */
+  async startTotpEnrolment(): Promise<TotpEnrolment> {
+    const user = this.auth.currentUser;
+    if (!user) throw new Error('signed-out');
+    const secret = await TotpMultiFactorGenerator.generateSecret(
+      await multiFactor(user).getSession(),
+    );
+    return {
+      secret,
+      secretKey: secret.secretKey,
+      url: secret.generateQrCodeUrl(user.email ?? 'staff', 'Zyppi Admin'),
+    };
+  }
+
+  /** Confirms the enrolment with a code from the app. */
+  async finishTotpEnrolment(e: TotpEnrolment, code: string): Promise<void> {
+    const user = this.auth.currentUser;
+    if (!user) throw new Error('signed-out');
+    const assertion = TotpMultiFactorGenerator.assertionForEnrollment(e.secret, code.trim());
+    await multiFactor(user).enroll(assertion, 'Authenticator app');
+    this._session.set(await toSession(user, true));
+  }
+
+  /** 2-step sign-in needs a verified email: sends the link. */
+  async sendVerificationEmail(): Promise<void> {
+    const user = this.auth.currentUser;
+    if (!user) throw new Error('signed-out');
+    await sendEmailVerification(user);
+  }
+
+  /** Removes the authenticator (needs a recent sign-in). */
+  async removeTotp(): Promise<void> {
+    const user = this.auth.currentUser;
+    if (!user) throw new Error('signed-out');
+    for (const f of multiFactor(user).enrolledFactors) {
+      await multiFactor(user).unenroll(f);
+    }
+    this._session.set(await toSession(user, true));
   }
 
   resetPassword(email: string): Promise<void> {
@@ -92,6 +182,13 @@ export class NotAdminError extends Error {
   }
 }
 
+/** The account has an authenticator: ask for its code. */
+export class MfaRequiredError extends Error {
+  constructor() {
+    super('mfa-required');
+  }
+}
+
 async function toSession(user: User, forceRefresh = false): Promise<Session> {
   const token = await user.getIdTokenResult(forceRefresh);
   return {
@@ -102,6 +199,8 @@ async function toSession(user: User, forceRefresh = false): Promise<Session> {
     phoneNumber: user.phoneNumber,
     role: roleFromClaims(token.claims),
     rider: token.claims['rider'] === true,
+    secondFactor: token.signInSecondFactor ?? null,
+    mfaEnrolled: multiFactor(user).enrolledFactors.length > 0,
   };
 }
 
@@ -124,6 +223,18 @@ export function authErrorMessage(err: unknown): string {
       return 'No connection. Check your internet and try again.';
     case 'auth/user-disabled':
       return 'This account has been disabled.';
+    case 'auth/invalid-verification-code':
+      return 'That code isn’t right. Use the current code from your authenticator app.';
+    case 'auth/requires-recent-login':
+      return 'For your security, sign out and in again, then retry.';
+    case 'auth/operation-not-allowed':
+    case 'auth/admin-restricted-operation':
+    case 'auth/unsupported-first-factor':
+      return '2-step sign-in isn’t switched on for this project yet. Ask the project owner.';
+    case 'auth/unverified-email':
+      return 'Verify your email first: we can send you a link. Then sign in again and retry.';
+    case 'auth/maximum-second-factor-count-exceeded':
+      return 'An authenticator is already set up on this account.';
     default:
       return 'Something went wrong. Please try again.';
   }

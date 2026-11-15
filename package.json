@@ -11,7 +11,8 @@
     "format": "prettier --write \"src/**/*.{ts,html,scss,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,html,scss,css}\"",
     "check": "npm run format:check && ng lint && ng test --watch=false && ng build",
-    "start:emulator": "ng serve --configuration emulator"
+    "start:emulator": "ng serve --configuration emulator",
+    "deploy": "npm run check && firebase deploy --only hosting:admin"
   },
   "private": true,
   "packageManager": "npm@11.19.1",

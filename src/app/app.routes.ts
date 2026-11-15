@@ -205,6 +205,12 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'account/security',
+        title: 'Account security · Zyppi Admin',
+        data: { heading: 'Account' },
+        loadComponent: () => import('./features/account/security-page').then((m) => m.SecurityPage),
+      },
+      {
         path: 'forbidden',
         title: 'No access · Zyppi Admin',
         data: {

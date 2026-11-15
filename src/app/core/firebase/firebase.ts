@@ -1,5 +1,6 @@
 import { EnvironmentProviders, InjectionToken, makeEnvironmentProviders } from '@angular/core';
 import { FirebaseApp, initializeApp } from 'firebase/app';
+import { ReCaptchaEnterpriseProvider, initializeAppCheck } from 'firebase/app-check';
 import { Auth, connectAuthEmulator, getAuth } from 'firebase/auth';
 import { Firestore, connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 import { Functions, connectFunctionsEmulator, getFunctions } from 'firebase/functions';
@@ -18,6 +19,20 @@ export const STORAGE = new InjectionToken<FirebaseStorage>('STORAGE');
  */
 export function provideFirebase(): EnvironmentProviders {
   const app = initializeApp(environment.firebase);
+  // App Check: callables and Firestore get a token proving the call comes
+  // from this site (functions/src/shared/hardening.ts). Dev builds use a
+  // debug token printed in the browser console once; register it under
+  // App Check → Apps → Manage debug tokens.
+  if (environment.appCheckSiteKey && !environment.useEmulators) {
+    if (!environment.production) {
+      (globalThis as { FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN =
+        true;
+    }
+    initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(environment.appCheckSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  }
   const auth = getAuth(app);
   const db = getFirestore(app);
   const functions = getFunctions(app, environment.functionsRegion);
