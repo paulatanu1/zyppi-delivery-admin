@@ -1,0 +1,228 @@
+<z-page-header
+  title="Dispatch"
+  subtitle="New orders are offered to the nearest free rider automatically. Orders nobody took, and delivery problems, wait here for you."
+>
+  <a nz-button routerLink="/rider-settings"><span nz-icon nzType="setting"></span>Rider settings</a>
+</z-page-header>
+
+@if ((sos.value() ?? []).length) {
+  <section class="sos mb-4" role="alert" aria-live="assertive">
+    <div class="flex items-center gap-2 mb-2">
+      <span nz-icon nzType="alert" class="text-[20px]"></span>
+      <span class="font-extrabold text-[16px] flex-1">Rider emergency</span>
+    </div>
+    @for (a of sos.value(); track a.id) {
+      <div class="sos-row">
+        <div class="flex-1 min-w-[200px]">
+          <div class="font-extrabold">
+            {{ a.riderName }} · {{ sosLabels[a.lastKind] ?? a.lastKind }}
+          </div>
+          <div class="text-[13px]">
+            {{ ago(a.at, now()) }}
+            @if (a.orderId) {
+              · on order #{{ a.orderId.slice(0, 8).toUpperCase() }}
+            }
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          @if (a.riderPhone) {
+            <a nz-button nzType="primary" nzDanger [href]="'tel:' + a.riderPhone">
+              <span nz-icon nzType="phone"></span>Call {{ a.riderPhone }}
+            </a>
+          }
+          @if (mapsLink(a.lat, a.lng); as link) {
+            <a nz-button [href]="link" target="_blank" rel="noopener">
+              <span nz-icon nzType="environment"></span>Location
+            </a>
+          }
+          <button nz-button (click)="openResolve(a)">Resolve</button>
+        </div>
+      </div>
+    }
+  </section>
+}
+
+<div class="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-4">
+  <div class="z-card p-4">
+    <div class="z-overline">Needs a rider</div>
+    <div class="z-display text-[24px] mt-1" [class.text-[var(--z-danger)]]="needsRider().length">
+      {{ needsRider().length }}
+    </div>
+  </div>
+  <div class="z-card p-4">
+    <div class="z-overline">Offered now</div>
+    <div class="z-display text-[24px] mt-1">{{ offered().length }}</div>
+  </div>
+  <div class="z-card p-4">
+    <div class="z-overline">Riders online</div>
+    <div class="z-display text-[24px] mt-1">{{ (riders.value() ?? []).length }}</div>
+  </div>
+  <div class="z-card p-4">
+    <div class="z-overline">Free right now</div>
+    <div class="z-display text-[24px] mt-1">{{ freeCount() }}</div>
+  </div>
+</div>
+
+<div class="grid gap-4 xl:grid-cols-[1fr_1fr]">
+  <section>
+    <h3 class="text-[17px] mb-3">Needs a rider</h3>
+    <z-page-state
+      [status]="queue.status()"
+      [error]="queue.error()"
+      [empty]="needsRider().length === 0"
+      emptyTitle="Every order has a rider"
+      emptyText="Orders nobody accepted, or that a rider couldn't deliver, show up here."
+      (retry)="queue.retry()"
+    >
+      <ul class="list-none p-0 m-0 flex flex-col gap-3">
+        @for (o of needsRider(); track o.id) {
+          <li class="z-card p-4">
+            <div class="flex flex-wrap items-center gap-2">
+              <a class="font-extrabold" [routerLink]="['/orders', o.id]">#{{ o.shortId }}</a>
+              @if (o.state === 'issue') {
+                <nz-tag nzColor="red"
+                  >Can’t deliver: {{ cdLabels[o.cannotDeliver?.reason ?? ''] ?? 'problem' }}</nz-tag
+                >
+              } @else {
+                <nz-tag nzColor="orange">No rider took it ({{ o.tried }} offered)</nz-tag>
+              }
+              <span class="flex-1"></span>
+              <span class="font-bold">{{ o.totalPaise | rupees }}{{ o.cod ? ' COD' : '' }}</span>
+            </div>
+            <div class="z-caption mt-1">
+              {{ areaNames().get(o.serviceAreaId) ?? '' }} · {{ ago(o.placedAt, now()) }} ·
+              {{ o.addressText }}
+            </div>
+            @if (o.cannotDeliver?.note) {
+              <div class="z-caption mt-1">Rider: “{{ o.cannotDeliver?.note }}”</div>
+            }
+            <div class="flex flex-wrap gap-2 mt-3">
+              @if (o.state === 'unassigned') {
+                <button nz-button nzType="primary" (click)="openAssign(o)">Assign a rider</button>
+              }
+              <a nz-button [routerLink]="['/orders', o.id]">
+                {{ o.state === 'issue' ? 'Open order (cancel or reassign)' : 'Open order' }}
+              </a>
+            </div>
+          </li>
+        }
+      </ul>
+    </z-page-state>
+
+    @if (offered().length) {
+      <h3 class="text-[17px] mt-6 mb-3">Offered now</h3>
+      <ul class="list-none p-0 m-0 flex flex-col gap-2">
+        @for (o of offered(); track o.id) {
+          <li class="z-card p-3 flex items-center gap-3">
+            <span class="font-bold">#{{ o.shortId }}</span>
+            <span class="z-caption flex-1"
+              >try {{ o.tried }} · {{ areaNames().get(o.serviceAreaId) ?? '' }}</span
+            >
+            <nz-tag nzColor="purple">{{ secondsLeft(o) }} s left</nz-tag>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <section>
+    <h3 class="text-[17px] mb-3">Riders online</h3>
+    <z-page-state
+      [status]="riders.status()"
+      [error]="riders.error()"
+      [empty]="ridersSorted().length === 0"
+      emptyTitle="Nobody is online"
+      emptyText="Riders go online by swiping in the Zyppi Delivery app."
+      (retry)="riders.retry()"
+    >
+      <div class="z-card overflow-hidden">
+        <ul class="list-none p-0 m-0">
+          @for (r of ridersSorted(); track r.id) {
+            <li class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-[var(--z-line)]">
+              <div class="flex-1 min-w-[160px]">
+                <a class="font-bold" [routerLink]="['/riders', r.id]">{{ r.name }}</a>
+                <div class="z-caption">
+                  {{ areaNames().get(r.serviceAreaId) ?? '' }} · seen {{ ago(r.pingAt, now()) }}
+                  @if (r.inSlot) {
+                    · in slot
+                  }
+                </div>
+              </div>
+              @if (r.codBalancePaise > 0) {
+                <span class="z-caption">holds {{ r.codBalancePaise | rupees }}</span>
+              }
+              <nz-tag [nzColor]="activity[activityOf(r, now())].color">
+                {{ activity[activityOf(r, now())].label }}
+              </nz-tag>
+              @if (mapsLink(r.lat, r.lng); as link) {
+                <a
+                  nz-button
+                  nzType="text"
+                  nzSize="small"
+                  [href]="link"
+                  target="_blank"
+                  rel="noopener"
+                  aria-label="Rider location"
+                >
+                  <span nz-icon nzType="environment"></span>
+                </a>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+    </z-page-state>
+  </section>
+</div>
+
+<nz-modal
+  [nzVisible]="!!assigning()"
+  [nzTitle]="'Assign #' + (assigning()?.shortId ?? '')"
+  nzOkText="Assign"
+  [nzOkLoading]="busy()"
+  [nzOkDisabled]="!pickedRider()"
+  (nzOnOk)="assign()"
+  (nzOnCancel)="assigning.set(null)"
+>
+  <ng-container *nzModalContent>
+    <p class="mb-3 z-muted">
+      Riders online in this order’s area. The order goes straight to their app.
+    </p>
+    @if (riderOptions().length) {
+      <label for="pick-rider" class="font-bold">Rider</label>
+      <nz-select
+        nzId="pick-rider"
+        class="w-full mt-1"
+        nzPlaceHolder="Pick a rider"
+        [nzOptions]="riderOptions()"
+        [ngModel]="pickedRider()"
+        (ngModelChange)="pickedRider.set($event)"
+      />
+    } @else {
+      <p>No free rider is online in this area. Assign from the order page to any approved rider.</p>
+    }
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="!!resolving()"
+  nzTitle="Close this alert?"
+  nzOkText="Resolve"
+  [nzOkLoading]="busy()"
+  (nzOnOk)="resolve()"
+  (nzOnCancel)="resolving.set(null)"
+>
+  <ng-container *nzModalContent>
+    <p class="mb-3">Only after you’ve spoken to {{ resolving()?.riderName }} and they’re safe.</p>
+    <label for="sos-note" class="font-bold">What happened (kept with the alert)</label>
+    <textarea
+      nz-input
+      id="sos-note"
+      rows="3"
+      maxlength="300"
+      class="mt-1"
+      [ngModel]="resolveNote()"
+      (ngModelChange)="resolveNote.set($event)"
+    ></textarea>
+  </ng-container>
+</nz-modal>

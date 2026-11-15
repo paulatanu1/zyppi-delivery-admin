@@ -21,6 +21,7 @@ import { Chart } from '../../shared/charts/chart';
 import { RupeesPipe, formatPaise } from '../../shared/pipes/rupees.pipe';
 import { WhenPipe } from '../../shared/pipes/when.pipe';
 import { PageState } from '../../shared/ui/page-state';
+import { chime, closeChime } from '../../shared/util/chime';
 import { LOW_STOCK } from '../catalog/catalog.models';
 import { STATUS_META } from '../orders/orders.models';
 import { hourChart, methodChart, ordersGmvChart, rankChart } from '../reports/charts';
@@ -215,10 +216,7 @@ export class Dashboard {
       if (seen && top.id !== seen && top.status === 'placed' && this.sound()) chime();
       seen = top.id;
     });
-    inject(DestroyRef).onDestroy(() => {
-      void audio?.close();
-      audio = null;
-    });
+    inject(DestroyRef).onDestroy(closeChime);
   }
 
   /** Low-stock count and the area comparison (last 30 days); one-shot reads. */
@@ -266,29 +264,5 @@ function readSound(): boolean {
     return localStorage.getItem(SOUND_KEY) === '1';
   } catch {
     return false;
-  }
-}
-
-let audio: AudioContext | null = null;
-
-/** A short two-note chime made with Web Audio (no sound file). */
-function chime(): void {
-  try {
-    audio ??= new AudioContext();
-    const t = audio.currentTime;
-    for (const [i, f] of [880, 1320].entries()) {
-      const start = t + i * 0.14;
-      const osc = audio.createOscillator();
-      const gain = audio.createGain();
-      osc.frequency.value = f;
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.2, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.3);
-      osc.connect(gain).connect(audio.destination);
-      osc.start(start);
-      osc.stop(start + 0.32);
-    }
-  } catch {
-    // No Web Audio: stay quiet.
   }
 }

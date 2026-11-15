@@ -96,6 +96,8 @@ export class SettingsApi {
       address: s.address,
       phone: s.phone,
       hours: s.open && s.close ? { open: s.open, close: s.close } : null,
+      lat: s.lat,
+      lng: s.lng,
       isActive: s.isActive,
     });
   }

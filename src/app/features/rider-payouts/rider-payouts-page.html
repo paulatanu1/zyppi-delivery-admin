@@ -1,0 +1,212 @@
+<z-page-header
+  title="Rider payouts"
+  subtitle="Send the money by UPI or bank transfer, then record it here with the UTR. Payable = earnings minus cash the rider still holds."
+/>
+
+<div class="grid gap-4 grid-cols-2 md:grid-cols-3 mb-4">
+  <div class="z-card p-4">
+    <div class="z-overline">Requests waiting</div>
+    <div class="z-display text-[24px] mt-1">{{ (requests.value() ?? []).length }}</div>
+  </div>
+  <div class="z-card p-4">
+    <div class="z-overline">Payable to all riders</div>
+    <div class="z-display text-[24px] mt-1">{{ owed() | rupees }}</div>
+  </div>
+</div>
+
+<nz-tabs>
+  <nz-tab nzTitle="Requests">
+    <z-page-state
+      [status]="requests.status()"
+      [error]="requests.error()"
+      [empty]="(requests.value() ?? []).length === 0"
+      emptyTitle="No payout requests"
+      emptyText="Riders ask for their balance from the Pocket tab."
+      (retry)="requests.retry()"
+    >
+      <div class="z-card overflow-hidden">
+        <nz-table
+          #rt
+          [nzData]="requests.value() ?? []"
+          [nzShowPagination]="false"
+          nzSize="middle"
+          [nzScroll]="{ x: '560px' }"
+        >
+          <thead>
+            <tr>
+              <th>Rider</th>
+              <th nzAlign="right">Amount</th>
+              <th>Asked</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rt.data; track r.id) {
+              <tr>
+                <td class="font-bold">{{ r.riderName }}</td>
+                <td nzAlign="right">{{ r.amountPaise | rupees }}</td>
+                <td class="z-caption">{{ r.requestedAt | when }}</td>
+                <td nzAlign="right">
+                  <button nz-button nzType="primary" nzSize="small" (click)="payRequest(r)">
+                    Record payout
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </z-page-state>
+  </nz-tab>
+  <nz-tab nzTitle="Balances">
+    <z-page-state
+      [status]="balances.status()"
+      [error]="balances.error()"
+      [empty]="(balances.value() ?? []).length === 0"
+      emptyTitle="No approved riders"
+      (retry)="balances.retry()"
+    >
+      <div class="z-card overflow-hidden">
+        <nz-table
+          #bt
+          [nzData]="balances.value() ?? []"
+          [nzPageSize]="25"
+          nzSize="middle"
+          [nzScroll]="{ x: '720px' }"
+        >
+          <thead>
+            <tr>
+              <th>Rider</th>
+              <th nzAlign="right">Unpaid earnings</th>
+              <th nzAlign="right">Cash held</th>
+              <th nzAlign="right">Payable</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (b of bt.data; track b.id) {
+              <tr>
+                <td>
+                  <div class="font-bold">{{ b.name }}</div>
+                  <div class="z-caption">{{ b.phone }}</div>
+                </td>
+                <td nzAlign="right">{{ b.earningsBalancePaise | rupees }}</td>
+                <td nzAlign="right">{{ b.codBalancePaise | rupees }}</td>
+                <td nzAlign="right" class="font-bold">
+                  {{ payable(b.earningsBalancePaise, b.codBalancePaise) | rupees }}
+                </td>
+                <td nzAlign="right" class="whitespace-nowrap">
+                  <button nz-button nzSize="small" class="mr-2" (click)="openAdjust(b)">
+                    Adjust
+                  </button>
+                  <button
+                    nz-button
+                    nzSize="small"
+                    [disabled]="b.earningsBalancePaise <= 0"
+                    (click)="payRider(b)"
+                  >
+                    Pay
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
+    </z-page-state>
+  </nz-tab>
+</nz-tabs>
+
+<nz-modal
+  [nzVisible]="!!pay()"
+  [nzTitle]="'Payout to ' + (pay()?.riderName ?? '')"
+  nzOkText="Record payout"
+  [nzOkLoading]="busy()"
+  [nzOkDisabled]="
+    !pay()?.rupees || (pay()?.method !== 'cash' && (pay()?.reference ?? '').trim().length < 4)
+  "
+  (nzOnOk)="confirmPay()"
+  (nzOnCancel)="pay.set(null)"
+>
+  <ng-container *nzModalContent>
+    @if (pay(); as d) {
+      <form nz-form nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzFor="pamt">Amount sent (₹)</nz-form-label>
+          <nz-form-control [nzExtra]="'Up to ' + (d.maxPaise | rupees) + ' unpaid earnings'">
+            <nz-input-number
+              nzId="pamt"
+              name="pamt"
+              class="w-full"
+              [nzMin]="1"
+              [nzMax]="d.maxPaise / 100"
+              [nzPrecision]="2"
+              [ngModel]="d.rupees"
+              (ngModelChange)="patchPay((x) => (x.rupees = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label>Paid by</nz-form-label>
+          <nz-form-control>
+            <nz-segmented
+              name="pm"
+              [nzOptions]="methods"
+              [ngModel]="d.method"
+              (ngModelChange)="patchPay((x) => (x.method = $event))"
+              aria-label="Payment method"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        @if (d.method !== 'cash') {
+          <nz-form-item>
+            <nz-form-label nzFor="pref">UTR / reference</nz-form-label>
+            <nz-form-control>
+              <input
+                nz-input
+                id="pref"
+                name="pref"
+                maxlength="80"
+                [ngModel]="d.reference"
+                (ngModelChange)="patchPay((x) => (x.reference = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        }
+      </form>
+    }
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="!!adjusting()"
+  [nzTitle]="'Adjust ' + (adjusting()?.name ?? '')"
+  nzOkText="Save adjustment"
+  [nzOkLoading]="busy()"
+  [nzOkDisabled]="!adjustRupees() || adjustReason().trim().length < 3"
+  (nzOnOk)="confirmAdjust()"
+  (nzOnCancel)="adjusting.set(null)"
+>
+  <ng-container *nzModalContent>
+    <p class="z-muted mb-3">
+      A positive amount credits the rider; negative deducts. Shows in their Pocket with the reason.
+    </p>
+    <label for="adj" class="font-bold">Amount (₹)</label>
+    <nz-input-number
+      nzId="adj"
+      class="w-full mt-1 mb-3"
+      [nzPrecision]="2"
+      [ngModel]="adjustRupees()"
+      (ngModelChange)="adjustRupees.set($event)"
+    />
+    <label for="adjr" class="font-bold">Reason</label>
+    <input
+      nz-input
+      id="adjr"
+      class="mt-1"
+      maxlength="200"
+      [ngModel]="adjustReason()"
+      (ngModelChange)="adjustReason.set($event)"
+    />
+  </ng-container>
+</nz-modal>
