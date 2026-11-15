@@ -22,9 +22,6 @@ export function callableErrorMessage(e: unknown): string {
   const err = e as { code?: string; message?: string };
   const code = err?.code ?? '';
   // functions/src/shared/hardening.ts
-  if (err?.message === 'MFA_REQUIRED') {
-    return 'Super admins must sign in with their authenticator code for this. Sign out, set up 2-step sign-in under Account security, and sign in again.';
-  }
   if (err?.message === 'APP_CHECK_FAILED') {
     return 'This browser couldn’t be verified. Reload the page and try again.';
   }

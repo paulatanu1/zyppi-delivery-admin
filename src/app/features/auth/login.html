@@ -49,46 +49,17 @@
           <div class="logo z-display">Z</div>
           <span class="z-display text-lg">Zyppi Admin</span>
         </div>
-        <h2 class="text-[24px]">
-          {{
-            mode() === 'signin'
-              ? 'Sign in'
-              : mode() === 'totp'
-                ? '2-step sign-in'
-                : 'Reset password'
-          }}
-        </h2>
+        <h2 class="text-[24px]">{{ mode() === 'signin' ? 'Sign in' : 'Reset password' }}</h2>
         <p class="z-muted mt-1 mb-6">
           {{
             mode() === 'signin'
               ? 'Use your staff email and password.'
-              : mode() === 'totp'
-                ? 'Enter the 6-digit code from your authenticator app.'
-                : 'We’ll email you a link to set a new password.'
+              : 'We’ll email you a link to set a new password.'
           }}
         </p>
 
         <form nz-form nzLayout="vertical" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-          @if (mode() === 'totp') {
-            <nz-form-item>
-              <nz-form-label nzFor="code">Code</nz-form-label>
-              <nz-form-control nzErrorTip="Enter the 6 digits.">
-                <input
-                  nz-input
-                  nzSize="large"
-                  id="code"
-                  inputmode="numeric"
-                  autocomplete="one-time-code"
-                  maxlength="6"
-                  formControlName="code"
-                  placeholder="123456"
-                  class="tracking-[.3em] text-center"
-                />
-              </nz-form-control>
-            </nz-form-item>
-          }
-
-          <nz-form-item [class.hidden]="mode() === 'totp'">
+          <nz-form-item>
             <nz-form-label nzFor="email">Email</nz-form-label>
             <nz-form-control nzErrorTip="Enter a valid email.">
               <nz-input-wrapper class="w-full">
@@ -155,9 +126,9 @@
             class="z-brand-btn"
             [nzLoading]="busy()"
           >
-            {{ mode() === 'signin' ? 'Sign in' : mode() === 'totp' ? 'Verify' : 'Send reset link' }}
+            {{ mode() === 'signin' ? 'Sign in' : 'Send reset link' }}
           </button>
-          @if (mode() !== 'signin') {
+          @if (mode() === 'reset') {
             <div class="text-center mt-4">
               <button type="button" class="link" (click)="switchMode('signin')">
                 Back to sign in

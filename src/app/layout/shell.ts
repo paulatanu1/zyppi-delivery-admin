@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDrawerModule } from 'ng-zorro-antd/drawer';
@@ -17,7 +17,6 @@ import { Sidebar } from './sidebar';
 @Component({
   selector: 'z-shell',
   imports: [
-    RouterLink,
     RouterOutlet,
     Sidebar,
     NzAvatarModule,
@@ -92,12 +91,6 @@ import { Sidebar } from './sidebar';
         <nz-dropdown-menu #userMenu="nzDropdownMenu">
           <ul nz-menu>
             <li nz-menu-item>
-              <a routerLink="/account/security" class="menu-btn">
-                <span nz-icon nzType="safety-certificate"></span>
-                <span class="ml-2">Account security</span>
-              </a>
-            </li>
-            <li nz-menu-item>
               <button type="button" class="menu-btn" (click)="signOut()">
                 <span nz-icon nzType="logout"></span>
                 <span class="ml-2">Sign out</span>
@@ -108,16 +101,6 @@ import { Sidebar } from './sidebar';
       </header>
 
       <main class="px-4 md:px-8 py-6 max-w-[1440px] mx-auto">
-        @if (needsMfa()) {
-          <div class="mfa-banner" role="status">
-            <span nz-icon nzType="safety-certificate"></span>
-            <span class="flex-1">
-              Super admins must use 2-step sign-in.
-              {{ mfaEnrolled() ? 'Sign out and in again with your code.' : 'Set it up now.' }}
-            </span>
-            <a nz-button nzSize="small" routerLink="/account/security">Account security</a>
-          </div>
-        }
         <router-outlet />
       </main>
     </div>
@@ -154,17 +137,6 @@ import { Sidebar } from './sidebar';
       width: 100%;
       cursor: pointer;
     }
-    .mfa-banner {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding: 10px 14px;
-      border-radius: var(--z-radius-control);
-      background: var(--z-warn-soft);
-      color: var(--z-warn);
-      font-weight: 700;
-    }
     .avatar {
       background: var(--z-brand);
       color: #fff;
@@ -193,12 +165,6 @@ export class Shell {
     return s?.displayName || s?.email || 'Admin';
   });
   readonly initial = computed(() => this.name().charAt(0).toUpperCase());
-  /** A super admin whose session has no second factor. */
-  readonly needsMfa = computed(() => {
-    const s = this.auth.session();
-    return s?.role === 'super_admin' && !s.secondFactor;
-  });
-  readonly mfaEnrolled = computed(() => this.auth.session()?.mfaEnrolled ?? false);
   readonly roleLabel = computed(() => {
     const role = this.auth.role();
     return role ? ROLE_LABELS[role] : '';

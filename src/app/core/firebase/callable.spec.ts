@@ -1,10 +1,7 @@
 import { callableErrorMessage } from './callable';
 
 describe('callableErrorMessage', () => {
-  it('explains the hardening refusals', () => {
-    expect(
-      callableErrorMessage({ code: 'functions/permission-denied', message: 'MFA_REQUIRED' }),
-    ).toContain('authenticator');
+  it('explains an App Check refusal', () => {
     expect(
       callableErrorMessage({ code: 'functions/unauthenticated', message: 'APP_CHECK_FAILED' }),
     ).toContain('Reload');
