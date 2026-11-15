@@ -2,6 +2,9 @@
   title="Dispatch"
   subtitle="New orders are offered to the nearest free rider automatically. Orders nobody took, and delivery problems, wait here for you."
 >
+  <button nz-button (click)="openAnnounce()">
+    <span nz-icon nzType="notification"></span>Message riders
+  </button>
   <a nz-button routerLink="/rider-settings"><span nz-icon nzType="setting"></span>Rider settings</a>
 </z-page-header>
 
@@ -224,5 +227,48 @@
       [ngModel]="resolveNote()"
       (ngModelChange)="resolveNote.set($event)"
     ></textarea>
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="announcing()"
+  nzTitle="Message riders"
+  nzOkText="Send"
+  [nzOkLoading]="busy()"
+  [nzOkDisabled]="annTitle().trim().length < 3 || annBody().trim().length < 3"
+  (nzOnOk)="announce()"
+  (nzOnCancel)="announcing.set(false)"
+>
+  <ng-container *nzModalContent>
+    <p class="z-muted mb-3">Goes to every approved rider’s Messages and their phone.</p>
+    <label for="ann-t" class="font-bold">Title</label>
+    <input
+      nz-input
+      id="ann-t"
+      class="mt-1 mb-3"
+      maxlength="65"
+      [ngModel]="annTitle()"
+      (ngModelChange)="annTitle.set($event)"
+    />
+    <label for="ann-b" class="font-bold">Message</label>
+    <textarea
+      nz-input
+      id="ann-b"
+      rows="4"
+      maxlength="500"
+      class="mt-1 mb-3"
+      [ngModel]="annBody()"
+      (ngModelChange)="annBody.set($event)"
+    ></textarea>
+    <label for="ann-a" class="font-bold">Areas</label>
+    <nz-select
+      nzId="ann-a"
+      class="w-full mt-1"
+      nzMode="multiple"
+      nzPlaceHolder="All areas"
+      [nzOptions]="areaOptions()"
+      [ngModel]="annAreas()"
+      (ngModelChange)="annAreas.set($event)"
+    />
   </ng-container>
 </nz-modal>

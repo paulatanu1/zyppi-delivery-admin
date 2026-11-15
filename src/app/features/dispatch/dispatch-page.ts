@@ -132,6 +132,35 @@ export class DispatchPage {
       }));
   });
 
+  // Message riders dialog.
+  readonly announcing = signal(false);
+  readonly annTitle = signal('');
+  readonly annBody = signal('');
+  readonly annAreas = signal<string[]>([]);
+  readonly areaOptions = computed(() =>
+    (this.areas.value() ?? []).map((a) => ({ label: a.name, value: a.id })),
+  );
+
+  openAnnounce(): void {
+    this.annTitle.set('');
+    this.annBody.set('');
+    this.annAreas.set([]);
+    this.announcing.set(true);
+  }
+
+  async announce(): Promise<void> {
+    this.busy.set(true);
+    try {
+      const r = await this.api.announce(this.annTitle(), this.annBody(), this.annAreas());
+      this.message.success(`Sent to ${r.riders} riders (${r.pushed} phones notified)`);
+      this.announcing.set(false);
+    } catch (e) {
+      this.message.error((e as Error).message);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   // SOS resolve dialog.
   readonly resolving = signal<SosAlert | null>(null);
   readonly resolveNote = signal('');

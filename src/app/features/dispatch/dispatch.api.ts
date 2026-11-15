@@ -53,6 +53,14 @@ export class DispatchApi {
     );
   }
 
+  /** Inbox row + push for approved riders (all areas when empty). */
+  announce(title: string, body: string, serviceAreaIds: string[]) {
+    return this.callables.call<unknown, { riders: number; pushed: number }>(
+      'adminAnnounceToRiders',
+      { title, body, serviceAreaIds },
+    );
+  }
+
   resolveSos(id: string, note: string) {
     return this.callables.call<unknown, { ok: true }>('adminResolveSos', { id, note });
   }
