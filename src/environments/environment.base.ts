@@ -8,6 +8,12 @@ export const baseEnvironment = {
   production: true,
   useEmulators: false,
   functionsRegion: 'asia-south1',
+  /**
+   * reCAPTCHA Enterprise site key for App Check (public; create it in
+   * Firebase console → App Check → Apps → this web app). Empty = App Check
+   * off; the functions then log calls as unverified (monitor mode).
+   */
+  appCheckSiteKey: '',
   firebase: {
     apiKey: 'AIzaSyBeeSEObnfOYUwAT67tf1YUkyz8rTPTH_4',
     authDomain: 'zippy-app-2024.firebaseapp.com',

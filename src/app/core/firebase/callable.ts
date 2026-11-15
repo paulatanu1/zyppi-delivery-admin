@@ -21,6 +21,10 @@ export class Callables {
 export function callableErrorMessage(e: unknown): string {
   const err = e as { code?: string; message?: string };
   const code = err?.code ?? '';
+  // functions/src/shared/hardening.ts
+  if (err?.message === 'APP_CHECK_FAILED') {
+    return 'This browser couldn’t be verified. Reload the page and try again.';
+  }
   const expected = [
     'invalid-argument',
     'not-found',
