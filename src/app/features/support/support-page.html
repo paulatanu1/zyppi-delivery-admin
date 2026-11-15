@@ -1,0 +1,198 @@
+<z-page-header
+  title="Support"
+  subtitle="Customers who asked for a person are on top, longest wait first. Replies reach their phone as a notification."
+>
+  <a nz-button routerLink="/support/kb"><span nz-icon nzType="book"></span>Knowledge base</a>
+</z-page-header>
+
+<div class="inbox" [class.has-thread]="!!id()">
+  <aside class="list z-card">
+    <div class="p-3 border-b border-[var(--z-line)]">
+      <nz-segmented
+        [nzOptions]="viewOptions()"
+        [ngModel]="view()"
+        (ngModelChange)="view.set($event)"
+        aria-label="Which chats"
+      />
+    </div>
+    <z-page-state
+      [status]="listStatus()"
+      [error]="listError()"
+      [empty]="list().length === 0"
+      [emptyTitle]="view() === 'open' ? 'All caught up' : 'No chats yet'"
+      emptyText="When a customer taps “Talk to a person”, their chat shows up here."
+      (retry)="openChats.retry(); recentChats.retry()"
+    >
+      <ul class="list-none p-0 m-0">
+        @for (c of list(); track c.id) {
+          <li>
+            <button
+              type="button"
+              class="row"
+              [class.active]="c.id === id()"
+              (click)="select(c)"
+              [attr.aria-current]="c.id === id() ? 'true' : null"
+            >
+              <span class="flex items-center gap-2">
+                <nz-tag [nzColor]="chatMeta[c.status].color">{{ chatMeta[c.status].label }}</nz-tag>
+                @if (c.orderId) {
+                  <span class="z-caption">#{{ shortId(c.orderId) }}</span>
+                }
+                <span class="flex-1"></span>
+                @if (c.status === 'waiting_agent') {
+                  <span class="z-caption tone-danger">{{ waited(c.handoffAt) }}</span>
+                }
+                <nz-badge [nzCount]="c.unreadByAgent" nzSize="small" />
+              </span>
+              <span class="preview">{{ c.lastMessage || 'No messages yet' }}</span>
+              <span class="z-caption">{{ c.updatedAt | when }} · {{ c.lang.toUpperCase() }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+    </z-page-state>
+  </aside>
+
+  <section class="thread">
+    @if (!id()) {
+      <div class="z-card h-full grid place-items-center p-10 text-center">
+        <div>
+          <span nz-icon nzType="message" class="text-[32px] z-muted"></span>
+          <p class="font-bold mt-2">Pick a chat</p>
+          <p class="z-muted mt-1">
+            @if (waitingCount()) {
+              {{ waitingCount() }} customer{{ waitingCount() === 1 ? ' is' : 's are' }} waiting.
+            } @else {
+              Nobody is waiting right now.
+            }
+          </p>
+        </div>
+      </div>
+    } @else {
+      <z-page-state [status]="threadStatus()" [error]="threadError()" (retry)="retryThread()">
+        <div class="grid gap-4 xl:grid-cols-[1fr_300px]">
+          <div class="z-card flex flex-col min-h-[60vh]">
+            <header class="flex flex-wrap items-center gap-3 p-3 border-b border-[var(--z-line)]">
+              <button
+                nz-button
+                nzType="text"
+                class="lg:!hidden"
+                (click)="back()"
+                aria-label="Back to chats"
+              >
+                <span nz-icon nzType="arrow-left"></span>
+              </button>
+              <div class="flex-1 min-w-0">
+                <div class="font-extrabold truncate">{{ customer()?.name ?? '…' }}</div>
+                <div class="z-caption">
+                  {{ customer()?.phone ?? '' }}
+                  @if (chat(); as c) {
+                    · {{ chatMeta[c.status].label }}
+                  }
+                </div>
+              </div>
+              @if (chat(); as c) {
+                @if (canCustomers()) {
+                  <a nz-button nzSize="small" [routerLink]="['/customers', c.userId]">Customer</a>
+                }
+                @if (c.status !== 'closed') {
+                  <button nz-button nzSize="small" [nzLoading]="closing()" (click)="close()">
+                    Close chat
+                  </button>
+                }
+              }
+            </header>
+
+            <div #scroller class="messages" role="log" aria-live="polite" aria-label="Messages">
+              @for (m of messages(); track m.id) {
+                <div class="msg" [class.mine]="m.from !== 'user'" [class.bot]="m.from === 'bot'">
+                  <div class="bubble">
+                    <div class="z-caption font-bold mb-0.5">{{ sender(m) }}</div>
+                    <div class="whitespace-pre-wrap">{{ m.text }}</div>
+                    @if (m.quickReplies.length) {
+                      <div class="flex flex-wrap gap-1 mt-2">
+                        @for (q of m.quickReplies; track q) {
+                          <nz-tag>{{ q }}</nz-tag>
+                        }
+                      </div>
+                    }
+                  </div>
+                  <div class="z-caption mt-0.5">{{ m.createdAt | when }}</div>
+                </div>
+              } @empty {
+                <p class="z-muted text-center py-10">No messages yet.</p>
+              }
+            </div>
+
+            <footer class="p-3 border-t border-[var(--z-line)] flex gap-2 items-end">
+              <textarea
+                nz-input
+                class="flex-1"
+                rows="2"
+                maxlength="2000"
+                placeholder="Write a reply… (Ctrl+Enter to send)"
+                aria-label="Reply"
+                [ngModel]="draft()"
+                (ngModelChange)="draft.set($event)"
+                (keydown)="onKey($event)"
+              ></textarea>
+              <button
+                nz-button
+                nzType="primary"
+                [nzLoading]="sending()"
+                [disabled]="!draft().trim()"
+                (click)="send()"
+              >
+                <span nz-icon nzType="send"></span>Send
+              </button>
+            </footer>
+          </div>
+
+          <aside class="z-card p-4 h-fit">
+            <div class="z-overline mb-2">About</div>
+            @if (chat()?.orderId) {
+              @if (order(); as o) {
+                <div class="flex items-center gap-2">
+                  <span class="font-extrabold">#{{ o.shortId }}</span>
+                  <nz-tag [nzColor]="orderMeta[o.status].color">{{
+                    orderMeta[o.status].label
+                  }}</nz-tag>
+                </div>
+                <div class="z-caption mt-1">{{ o.placedAt | when }} · {{ o.paymentMethod }}</div>
+                <ul class="list-none p-0 mt-3 flex flex-col gap-1">
+                  @for (i of o.items; track i.variantId) {
+                    <li class="flex gap-2 text-[13px]">
+                      <span class="flex-1">{{ i.quantity }} × {{ i.name }}</span>
+                      <span>{{ i.pricePaise * i.quantity | rupees }}</span>
+                    </li>
+                  }
+                </ul>
+                <div
+                  class="flex justify-between font-extrabold mt-2 pt-2 border-t border-[var(--z-line)]"
+                >
+                  <span>Total</span><span>{{ o.totalPaise | rupees }}</span>
+                </div>
+                @if (o.riderName) {
+                  <div class="z-caption mt-2">
+                    Rider: {{ o.riderName }} {{ o.riderPhone ?? '' }}
+                  </div>
+                }
+                @if (o.cancelReason) {
+                  <div class="z-caption tone-danger mt-2">Cancelled: {{ o.cancelReason }}</div>
+                }
+                <div class="z-caption mt-2">{{ o.addressText }}</div>
+                @if (canOrders()) {
+                  <a nz-button nzBlock class="mt-3" [routerLink]="['/orders', o.id]">Open order</a>
+                }
+              } @else {
+                <p class="z-muted">Loading the order…</p>
+              }
+            } @else {
+              <p class="z-muted">A general question, not about one order.</p>
+            }
+          </aside>
+        </div>
+      </z-page-state>
+    }
+  </section>
+</div>

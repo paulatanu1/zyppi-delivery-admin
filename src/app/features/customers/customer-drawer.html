@@ -1,0 +1,227 @@
+<nz-drawer
+  [nzVisible]="!!id()"
+  [nzWidth]="'min(680px, 100vw)'"
+  [nzTitle]="title()"
+  (nzOnClose)="closed.emit()"
+>
+  <ng-container *nzDrawerContent>
+    <z-page-state [status]="status()" [error]="error()" (retry)="retry()">
+      @if (customer(); as c) {
+        <div class="flex flex-wrap items-start gap-3">
+          <div class="flex-1 min-w-[200px]">
+            <div class="z-caption">
+              {{ c.phone ?? 'No phone' }} · {{ c.email ?? account()?.email ?? 'No email' }}
+            </div>
+            <div class="flex flex-wrap gap-1 mt-2">
+              @if (c.blocked) {
+                <nz-tag nzColor="red">Blocked: {{ c.blockedReason }}</nz-tag>
+              }
+              @if (account()?.anonymous) {
+                <nz-tag>Guest</nz-tag>
+              }
+              @if (account()?.disabled) {
+                <nz-tag nzColor="red">Sign-in disabled</nz-tag>
+              }
+              <nz-tag>{{ c.lang.toUpperCase() }}</nz-tag>
+              <nz-tag [nzColor]="c.notifyOffers ? 'green' : 'default'">
+                Offers {{ c.notifyOffers ? 'on' : 'off' }}
+              </nz-tag>
+              @if (!c.hasDevice) {
+                <nz-tag>No device for pushes</nz-tag>
+              }
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button nz-button [disabled]="!c.hasDevice" (click)="openPush()">
+              <span nz-icon nzType="notification"></span>Notify
+            </button>
+            @if (canBlock()) {
+              <button
+                nz-button
+                [nzDanger]="!c.blocked"
+                [nzLoading]="busy() && !blockOpen()"
+                (click)="toggleBlock()"
+              >
+                {{ c.blocked ? 'Unblock' : 'Block' }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+          <div class="z-card p-3">
+            <div class="z-overline">Orders</div>
+            <div class="z-display text-[20px]">{{ c.orderCount }}</div>
+          </div>
+          <div class="z-card p-3">
+            <div class="z-overline">Lifetime value</div>
+            <div class="z-display text-[20px]">{{ c.totalSpentPaise | rupees }}</div>
+          </div>
+          <div class="z-card p-3">
+            <div class="z-overline">Avg order</div>
+            <div class="z-display text-[20px]">{{ aov(c) | rupees }}</div>
+          </div>
+          <div class="z-card p-3">
+            <div class="z-overline">Last order</div>
+            <div class="text-[13px] font-bold mt-1">{{ c.lastOrderAt | when }}</div>
+          </div>
+        </div>
+
+        @if (sideError()) {
+          <p class="z-caption mt-3" role="alert">{{ sideError() }}</p>
+        }
+
+        <nz-tabs class="mt-4">
+          <nz-tab nzTitle="Orders">
+            @if (orders() === null) {
+              <p class="z-muted" aria-busy="true">Loading…</p>
+            } @else {
+              <ul class="list-none p-0 m-0">
+                @for (o of orders(); track o.id) {
+                  <li
+                    class="flex flex-wrap items-center gap-2 py-2 border-b border-[var(--z-line)]"
+                  >
+                    @if (canOrders()) {
+                      <a class="font-bold" [routerLink]="['/orders', o.id]">#{{ o.shortId }}</a>
+                    } @else {
+                      <span class="font-bold">#{{ o.shortId }}</span>
+                    }
+                    <nz-tag [nzColor]="orderMeta[o.status].color">{{
+                      orderMeta[o.status].label
+                    }}</nz-tag>
+                    <span class="z-caption flex-1">{{ o.placedAt | when }}</span>
+                    <span class="font-bold">{{ o.totalPaise | rupees }}</span>
+                  </li>
+                } @empty {
+                  <p class="z-muted">No orders yet.</p>
+                }
+              </ul>
+            }
+          </nz-tab>
+          <nz-tab nzTitle="Addresses">
+            @if (addresses() === null) {
+              <p class="z-muted" aria-busy="true">Loading…</p>
+            } @else {
+              <ul class="list-none p-0 m-0 flex flex-col gap-2">
+                @for (a of addresses(); track a.id) {
+                  <li class="z-card p-3">
+                    <div class="font-bold">
+                      {{ a.label }}
+                      @if (a.isDefault) {
+                        <nz-tag class="ml-1">Default</nz-tag>
+                      }
+                    </div>
+                    <div class="z-caption">{{ a.line1 }}, {{ a.area }}, {{ a.city }}</div>
+                    @if (mapLink(a); as link) {
+                      <a class="z-caption" [href]="link" target="_blank" rel="noopener"
+                        >Open in Google Maps</a
+                      >
+                    }
+                  </li>
+                } @empty {
+                  <p class="z-muted">No saved addresses.</p>
+                }
+              </ul>
+            }
+          </nz-tab>
+          @if (canSupport()) {
+            <nz-tab nzTitle="Support">
+              <ul class="list-none p-0 m-0">
+                @for (ch of chats() ?? []; track ch.id) {
+                  <li class="py-2 border-b border-[var(--z-line)]">
+                    <a
+                      [routerLink]="['/support', ch.id]"
+                      class="flex flex-wrap gap-2 items-center text-inherit"
+                    >
+                      <nz-tag [nzColor]="chatMeta[ch.status].color">{{
+                        chatMeta[ch.status].label
+                      }}</nz-tag>
+                      <span class="flex-1 truncate">{{ ch.lastMessage ?? '' }}</span>
+                      <span class="z-caption">{{ ch.updatedAt | when }}</span>
+                    </a>
+                  </li>
+                } @empty {
+                  <p class="z-muted">No support chats.</p>
+                }
+              </ul>
+            </nz-tab>
+          }
+          <nz-tab nzTitle="Account">
+            @if (account(); as a) {
+              <dl class="grid grid-cols-[140px_1fr] gap-y-2 text-[13px]">
+                <dt class="z-muted">Signs in with</dt>
+                <dd>{{ a.anonymous ? 'Guest (no sign-in)' : providers() || '—' }}</dd>
+                <dt class="z-muted">Account created</dt>
+                <dd>{{ a.createdAt | when }}</dd>
+                <dt class="z-muted">Last signed in</dt>
+                <dd>{{ a.lastSignInAt | when }}</dd>
+                <dt class="z-muted">Customer id</dt>
+                <dd class="break-all">{{ c.id }}</dd>
+              </dl>
+            } @else {
+              <p class="z-muted">Account details aren’t available.</p>
+            }
+          </nz-tab>
+        </nz-tabs>
+      }
+    </z-page-state>
+  </ng-container>
+</nz-drawer>
+
+<nz-modal
+  [nzVisible]="blockOpen()"
+  nzTitle="Block this customer?"
+  nzOkText="Block"
+  [nzOkDanger]="true"
+  [nzOkLoading]="busy()"
+  [nzOkDisabled]="blockReason().trim().length < 3"
+  (nzOnOk)="setBlocked(true, blockReason())"
+  (nzOnCancel)="blockOpen.set(false)"
+>
+  <ng-container *nzModalContent>
+    <p class="mb-3">They can still open the app and see their orders, but can’t place new ones.</p>
+    <label for="block-reason" class="font-bold">Reason (only staff see it)</label>
+    <textarea
+      nz-input
+      id="block-reason"
+      rows="3"
+      maxlength="300"
+      class="mt-1"
+      [ngModel]="blockReason()"
+      (ngModelChange)="blockReason.set($event)"
+    ></textarea>
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="pushOpen()"
+  nzTitle="Send a notification"
+  nzOkText="Send"
+  [nzOkLoading]="busy()"
+  [nzOkDisabled]="!pushTitle().trim() || !pushBody().trim()"
+  (nzOnOk)="sendPush()"
+  (nzOnCancel)="pushOpen.set(false)"
+>
+  <ng-container *nzModalContent>
+    <p class="mb-3 z-muted">Goes to this customer’s phone only, whatever their offers setting.</p>
+    <label for="push-title" class="font-bold">Title</label>
+    <input
+      nz-input
+      id="push-title"
+      maxlength="65"
+      class="mt-1 mb-3"
+      [ngModel]="pushTitle()"
+      (ngModelChange)="pushTitle.set($event)"
+    />
+    <label for="push-body" class="font-bold">Message</label>
+    <textarea
+      nz-input
+      id="push-body"
+      rows="3"
+      maxlength="240"
+      class="mt-1"
+      [ngModel]="pushBody()"
+      (ngModelChange)="pushBody.set($event)"
+    ></textarea>
+  </ng-container>
+</nz-modal>

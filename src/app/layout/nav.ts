@@ -33,8 +33,8 @@ export const NAV: NavGroup[] = [
       { label: 'Orders', icon: 'shopping', link: '/orders', roles: ['ops', 'support'] },
       { label: 'Riders', icon: 'car', link: '/riders', roles: ['ops', 'finance'] },
       { label: 'Inventory', icon: 'inbox', link: '/catalog/inventory', roles: ['ops', 'catalog'] },
-      { label: 'Customers', icon: 'team', roles: ['ops', 'support'], phase: 'A8' },
-      { label: 'Support', icon: 'message', roles: ['support'], phase: 'A8' },
+      { label: 'Customers', icon: 'team', link: '/customers', roles: ['ops', 'support'] },
+      { label: 'Support', icon: 'message', link: '/support', roles: ['support'] },
     ],
   },
   {
@@ -72,7 +72,7 @@ export const NAV: NavGroup[] = [
       },
       { label: 'Admins & roles', icon: 'safety-certificate', link: '/settings/staff', roles: [] },
       { label: 'Audit log', icon: 'history', link: '/settings/audit', roles: [] },
-      { label: 'Store settings', icon: 'setting', roles: ['ops'], phase: 'A8' },
+      { label: 'Store settings', icon: 'setting', link: '/store-settings', roles: ['ops'] },
     ],
   },
 ];
