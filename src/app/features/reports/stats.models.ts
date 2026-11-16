@@ -43,6 +43,10 @@ export interface DayStats {
   cancelled: number;
   cancelledPaise: number;
   refundedPaise: number;
+  /** Marketplace: owed to sellers for their items. */
+  payoutPaise: number;
+  /** Marketplace: Zyppi's share of the item value (own stock, add-ons, supply margin). */
+  marginPaise: number;
   /** First orders (customerOrderNo 1). */
   newCustomers: number;
   /** Second and later orders. */
@@ -96,6 +100,8 @@ export function toDayStats(date: string, d: Record<string, unknown>): DayStats {
     cancelled: num(d['cancelled']),
     cancelledPaise: num(d['cancelledPaise']),
     refundedPaise: num(d['refundedPaise']),
+    payoutPaise: num(d['payoutPaise']),
+    marginPaise: num(d['marginPaise']),
     newCustomers: num(d['newCustomers']),
     repeatOrders: num(d['repeatOrders']),
     byMethod: mapOf(d['byMethod'], (x) => ({ orders: num(x['orders']), paise: num(x['paise']) })),
@@ -192,6 +198,8 @@ export function sumDays(days: DayStats[], date = ''): DayStats {
     t.cancelled += d.cancelled;
     t.cancelledPaise += d.cancelledPaise;
     t.refundedPaise += d.refundedPaise;
+    t.payoutPaise += d.payoutPaise;
+    t.marginPaise += d.marginPaise;
     t.newCustomers += d.newCustomers;
     t.repeatOrders += d.repeatOrders;
     addMap(t.byMethod, d.byMethod);

@@ -62,6 +62,46 @@ export const routes: Routes = [
         loadComponent: () => import('./features/riders/riders-page').then((m) => m.RidersPage),
       },
       {
+        path: 'sellers',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'finance', 'catalog'], heading: 'Operations' },
+        title: 'Sellers · Zyppi Admin',
+        loadComponent: () => import('./features/sellers/sellers-page').then((m) => m.SellersPage),
+      },
+      {
+        path: 'sellers/:id',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'finance', 'catalog'], heading: 'Operations' },
+        title: 'Seller · Zyppi Admin',
+        loadComponent: () => import('./features/sellers/sellers-page').then((m) => m.SellersPage),
+      },
+      {
+        path: 'seller-payouts',
+        canActivate: [roleGuard],
+        data: { roles: ['finance'], heading: 'Money' },
+        title: 'Seller payouts · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/seller-payouts/seller-payouts-page').then((m) => m.SellerPayoutsPage),
+      },
+      {
+        path: 'seller-plans',
+        canActivate: [roleGuard],
+        data: { roles: ['finance'], heading: 'Money' },
+        title: 'Seller plans · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/seller-plans/seller-plans-page').then((m) => m.SellerPlansPage),
+      },
+      {
+        path: 'product-requests',
+        canActivate: [roleGuard],
+        data: { roles: ['catalog'], heading: 'Catalog & growth' },
+        title: 'Product requests · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/product-requests/product-requests-page').then(
+            (m) => m.ProductRequestsPage,
+          ),
+      },
+      {
         path: 'payments',
         canActivate: [roleGuard],
         data: { roles: ['finance'], heading: 'Money' },
