@@ -31,6 +31,7 @@ export const NAV: NavGroup[] = [
     label: 'Operations',
     items: [
       { label: 'Orders', icon: 'shopping', link: '/orders', roles: ['ops', 'support'] },
+      { label: 'Dispatch', icon: 'thunderbolt', link: '/dispatch', roles: ['ops'] },
       { label: 'Riders', icon: 'car', link: '/riders', roles: ['ops', 'finance'] },
       { label: 'Inventory', icon: 'inbox', link: '/catalog/inventory', roles: ['ops', 'catalog'] },
       { label: 'Customers', icon: 'team', link: '/customers', roles: ['ops', 'support'] },
@@ -59,7 +60,10 @@ export const NAV: NavGroup[] = [
   },
   {
     label: 'Money',
-    items: [{ label: 'Payments', icon: 'wallet', link: '/payments', roles: ['finance'] }],
+    items: [
+      { label: 'Payments', icon: 'wallet', link: '/payments', roles: ['finance'] },
+      { label: 'Rider payouts', icon: 'credit-card', link: '/rider-payouts', roles: ['finance'] },
+    ],
   },
   {
     label: 'System',
@@ -73,6 +77,7 @@ export const NAV: NavGroup[] = [
       { label: 'Admins & roles', icon: 'safety-certificate', link: '/settings/staff', roles: [] },
       { label: 'Audit log', icon: 'history', link: '/settings/audit', roles: [] },
       { label: 'Store settings', icon: 'setting', link: '/store-settings', roles: ['ops'] },
+      { label: 'Rider settings', icon: 'tool', link: '/rider-settings', roles: ['ops'] },
     ],
   },
 ];

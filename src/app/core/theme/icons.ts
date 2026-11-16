@@ -1,4 +1,5 @@
 import {
+  AlertOutline,
   ApartmentOutline,
   AppstoreOutline,
   ArrowLeftOutline,
@@ -60,6 +61,7 @@ import {
 
 /** Every icon the panel uses, registered statically (no runtime fetching). */
 export const ICONS = [
+  AlertOutline,
   ApartmentOutline,
   AppstoreOutline,
   ArrowLeftOutline,

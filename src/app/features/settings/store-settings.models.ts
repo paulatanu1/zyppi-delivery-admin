@@ -22,6 +22,9 @@ export interface StoreDoc {
   /** "" = open all day. */
   open: string;
   close: string;
+  /** Rider pickup point; null = the area's centre. */
+  lat: number | null;
+  lng: number | null;
   isActive: boolean;
 }
 
@@ -74,6 +77,8 @@ export function toStore(id: string, d: Record<string, unknown>): StoreDoc {
     phone: str(d['phone']).replace(/^\+91/, ''),
     open: str(h['open']),
     close: str(h['close']),
+    lat: numOrNull(d['lat']),
+    lng: numOrNull(d['lng']),
     isActive: d['isActive'] === true,
   };
 }

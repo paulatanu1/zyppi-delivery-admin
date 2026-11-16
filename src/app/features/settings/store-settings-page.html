@@ -516,6 +516,36 @@
         </nz-form-item>
         <div class="grid gap-x-3 grid-cols-2">
           <nz-form-item>
+            <nz-form-label nzFor="slat">Pickup latitude</nz-form-label>
+            <nz-form-control nzExtra="Where riders collect orders">
+              <nz-input-number
+                nzId="slat"
+                name="slat"
+                class="w-full"
+                [nzPrecision]="5"
+                [nzStep]="0.001"
+                [ngModel]="s.lat"
+                (ngModelChange)="patchStore((x) => (x.lat = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="slng">Pickup longitude</nz-form-label>
+            <nz-form-control nzExtra="Empty = the area centre">
+              <nz-input-number
+                nzId="slng"
+                name="slng"
+                class="w-full"
+                [nzPrecision]="5"
+                [nzStep]="0.001"
+                [ngModel]="s.lng"
+                (ngModelChange)="patchStore((x) => (x.lng = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div class="grid gap-x-3 grid-cols-2">
+          <nz-form-item>
             <nz-form-label nzFor="so">Opens</nz-form-label>
             <nz-form-control nzExtra="Leave both empty for all day">
               <input

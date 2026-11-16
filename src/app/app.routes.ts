@@ -170,6 +170,30 @@ export const routes: Routes = [
           import('./features/customers/customers-page').then((m) => m.CustomersPage),
       },
       {
+        path: 'dispatch',
+        canActivate: [roleGuard],
+        data: { roles: ['ops'], heading: 'Operations' },
+        title: 'Dispatch · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/dispatch/dispatch-page').then((m) => m.DispatchPage),
+      },
+      {
+        path: 'rider-settings',
+        canActivate: [roleGuard],
+        data: { roles: ['ops'], heading: 'Settings' },
+        title: 'Rider settings · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/rider-settings/rider-settings-page').then((m) => m.RiderSettingsPage),
+      },
+      {
+        path: 'rider-payouts',
+        canActivate: [roleGuard],
+        data: { roles: ['finance'], heading: 'Money' },
+        title: 'Rider payouts · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/rider-payouts/rider-payouts-page').then((m) => m.RiderPayoutsPage),
+      },
+      {
         path: 'store-settings',
         canActivate: [roleGuard],
         data: { roles: ['ops'], heading: 'Settings' },

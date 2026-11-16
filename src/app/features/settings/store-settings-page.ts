@@ -216,6 +216,8 @@ export class StoreSettingsPage {
           phone: '',
           open: '',
           close: '',
+          lat: null,
+          lng: null,
           isActive: true,
         },
       ),

@@ -1,0 +1,644 @@
+<z-page-header
+  title="Rider settings"
+  subtitle="How orders reach riders, what they earn, the slots they can book and who they call in an emergency. The Zyppi Delivery app follows these live."
+>
+  @if (dirty()) {
+    <button nz-button (click)="discard()">Discard</button>
+  }
+  <button nz-button nzType="primary" [nzLoading]="saving()" [disabled]="!dirty()" (click)="save()">
+    Save settings
+  </button>
+</z-page-header>
+
+<z-page-state [status]="config.status()" [error]="config.error()" (retry)="config.retry()">
+  @if (cfg(); as c) {
+    <nz-tabs>
+      <!-- Dispatch -->
+      <nz-tab nzTitle="Dispatch">
+        <div class="z-card p-5 max-w-2xl">
+          <label class="flex items-center gap-2 mb-4">
+            <nz-switch
+              [ngModel]="c.dispatch.auto"
+              (ngModelChange)="patch((x) => (x.dispatch.auto = $event))"
+            />
+            <span>
+              <span class="font-bold">Auto-assign</span>
+              <span class="z-caption block"
+                >Off: every order waits on the Dispatch board for ops.</span
+              >
+            </span>
+          </label>
+          <nz-form-item>
+            <nz-form-label>Look for a rider</nz-form-label>
+            <nz-form-control>
+              <nz-segmented
+                [nzOptions]="assignOptions"
+                [ngModel]="c.dispatch.assignAt"
+                (ngModelChange)="patch((x) => (x.dispatch.assignAt = $event))"
+                aria-label="When to look for a rider"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <div class="grid gap-x-4 sm:grid-cols-3">
+            <nz-form-item>
+              <nz-form-label nzFor="os">Seconds to accept</nz-form-label>
+              <nz-form-control nzExtra="15–120">
+                <nz-input-number
+                  nzId="os"
+                  class="w-full"
+                  [nzMin]="15"
+                  [nzMax]="120"
+                  [ngModel]="c.dispatch.offerSeconds"
+                  (ngModelChange)="patch((x) => (x.dispatch.offerSeconds = $event))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzFor="mo">Riders to try</nz-form-label>
+              <nz-form-control nzExtra="Then it waits for ops">
+                <nz-input-number
+                  nzId="mo"
+                  class="w-full"
+                  [nzMin]="1"
+                  [nzMax]="10"
+                  [ngModel]="c.dispatch.maxOffers"
+                  (ngModelChange)="patch((x) => (x.dispatch.maxOffers = $event))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzFor="md">Max distance (km)</nz-form-label>
+              <nz-form-control nzExtra="Rider to store">
+                <nz-input-number
+                  nzId="md"
+                  class="w-full"
+                  [nzMin]="1"
+                  [nzMax]="30"
+                  [ngModel]="c.dispatch.maxDistanceKm"
+                  (ngModelChange)="patch((x) => (x.dispatch.maxDistanceKm = $event))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          <p class="z-caption">
+            The nearest free rider gets the offer first; within 500 m, riders in a booked slot and
+            then the one waiting longest go first.
+          </p>
+        </div>
+      </nz-tab>
+
+      <!-- Pay -->
+      <nz-tab nzTitle="Pay">
+        <div class="z-card p-5 max-w-2xl mb-4">
+          <nz-form-item>
+            <nz-form-label nzFor="pa">Rates for</nz-form-label>
+            <nz-form-control>
+              <nz-select
+                nzId="pa"
+                [nzOptions]="areaOptions()"
+                [ngModel]="payArea()"
+                (ngModelChange)="payArea.set($event)"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          @if (payArea() !== 'default') {
+            <label class="flex items-center gap-2 mb-4">
+              <nz-switch
+                [ngModel]="hasOwnRate(payArea())"
+                (ngModelChange)="setOwnRate(payArea(), $event)"
+              />
+              Own rates for {{ areaNames().get(payArea()) }} (off = the default rates)
+            </label>
+          }
+          @if (hasOwnRate(payArea())) {
+            @let r = rateFor(payArea());
+            <div class="grid gap-x-4 sm:grid-cols-2">
+              <nz-form-item>
+                <nz-form-label nzFor="rb">Base per order (₹)</nz-form-label>
+                <nz-form-control>
+                  <nz-input-number
+                    nzId="rb"
+                    class="w-full"
+                    [nzMin]="0"
+                    [nzPrecision]="2"
+                    [ngModel]="rupees(r.basePaise)"
+                    (ngModelChange)="setRate(payArea(), 'basePaise', $event)"
+                  />
+                </nz-form-control>
+              </nz-form-item>
+              <nz-form-item>
+                <nz-form-label nzFor="rk">Per km by road (₹)</nz-form-label>
+                <nz-form-control>
+                  <nz-input-number
+                    nzId="rk"
+                    class="w-full"
+                    [nzMin]="0"
+                    [nzPrecision]="2"
+                    [ngModel]="rupees(r.perKmPaise)"
+                    (ngModelChange)="setRate(payArea(), 'perKmPaise', $event)"
+                  />
+                </nz-form-control>
+              </nz-form-item>
+              <nz-form-item>
+                <nz-form-label nzFor="rmin">Minimum per order (₹)</nz-form-label>
+                <nz-form-control>
+                  <nz-input-number
+                    nzId="rmin"
+                    class="w-full"
+                    [nzMin]="0"
+                    [nzPrecision]="2"
+                    [ngModel]="rupees(r.minPaise)"
+                    (ngModelChange)="setRate(payArea(), 'minPaise', $event)"
+                  />
+                </nz-form-control>
+              </nz-form-item>
+              <nz-form-item>
+                <nz-form-label nzFor="rmax">Maximum per order (₹)</nz-form-label>
+                <nz-form-control>
+                  <nz-input-number
+                    nzId="rmax"
+                    class="w-full"
+                    [nzMin]="0"
+                    [nzPrecision]="2"
+                    [ngModel]="rupees(r.maxPaise)"
+                    (ngModelChange)="setRate(payArea(), 'maxPaise', $event)"
+                  />
+                </nz-form-control>
+              </nz-form-item>
+            </div>
+            <p class="z-caption">
+              Example: a drop 2 km away (≈2.6 km by road) pays {{ example(r, 2) | rupees }}; 5 km
+              pays {{ example(r, 5) | rupees }}. Tips always go to the rider in full.
+            </p>
+          }
+        </div>
+
+        <div class="z-card p-5 max-w-2xl mb-4">
+          <div class="font-extrabold mb-2">Surge (e.g. rain)</div>
+          <label class="flex items-center gap-2 mb-3">
+            <nz-switch
+              [ngModel]="c.surge.enabled"
+              (ngModelChange)="patch((x) => (x.surge.enabled = $event))"
+            />
+            Surge is on — riders see it in Offers
+          </label>
+          <div class="grid gap-x-4 sm:grid-cols-2">
+            <nz-form-item>
+              <nz-form-label nzFor="sl">Label</nz-form-label>
+              <nz-form-control>
+                <input
+                  nz-input
+                  id="sl"
+                  maxlength="40"
+                  [ngModel]="c.surge.label"
+                  (ngModelChange)="patch((x) => (x.surge.label = $event))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzFor="se">Extra per order (₹)</nz-form-label>
+              <nz-form-control>
+                <nz-input-number
+                  nzId="se"
+                  class="w-full"
+                  [nzMin]="0"
+                  [nzPrecision]="2"
+                  [ngModel]="rupees(c.surge.extraPaise)"
+                  (ngModelChange)="patch((x) => (x.surge.extraPaise = paise($event)))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+        </div>
+
+        <div class="z-card p-5 max-w-2xl">
+          <div class="flex items-center mb-2">
+            <span class="font-extrabold flex-1">Peak hours (India time)</span>
+            <button nz-button nzSize="small" [disabled]="c.peak.length >= 6" (click)="addPeak()">
+              <span nz-icon nzType="plus"></span>Add
+            </button>
+          </div>
+          @for (p of c.peak; track $index; let i = $index) {
+            <div class="flex flex-wrap items-end gap-2 mb-2">
+              <input
+                nz-input
+                type="time"
+                class="!w-[130px]"
+                aria-label="From"
+                [ngModel]="p.start"
+                (ngModelChange)="patch((x) => (x.peak[i].start = $event))"
+              />
+              <input
+                nz-input
+                type="time"
+                class="!w-[130px]"
+                aria-label="To"
+                [ngModel]="p.end"
+                (ngModelChange)="patch((x) => (x.peak[i].end = $event))"
+              />
+              <nz-input-number
+                class="!w-[140px]"
+                nzPlaceHolder="Extra ₹"
+                [nzMin]="0"
+                [nzPrecision]="2"
+                [ngModel]="rupees(p.extraPaise)"
+                (ngModelChange)="patch((x) => (x.peak[i].extraPaise = paise($event)))"
+              />
+              <button
+                nz-button
+                nzDanger
+                nzType="text"
+                aria-label="Remove"
+                (click)="patch((x) => x.peak.splice(i, 1))"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </div>
+          } @empty {
+            <p class="z-muted">No peak-hour extras.</p>
+          }
+        </div>
+      </nz-tab>
+
+      <!-- Gigs -->
+      <nz-tab nzTitle="Gig slots">
+        <div class="z-card p-5 max-w-2xl mb-4">
+          <div class="grid gap-x-4 sm:grid-cols-2">
+            <nz-form-item>
+              <nz-form-label nzFor="bd">Book up to (days ahead)</nz-form-label>
+              <nz-form-control>
+                <nz-input-number
+                  nzId="bd"
+                  class="w-full"
+                  [nzMin]="1"
+                  [nzMax]="14"
+                  [ngModel]="c.slots.bookDaysAhead"
+                  (ngModelChange)="patch((x) => (x.slots.bookDaysAhead = $event))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzFor="ch">Cancel until (hours before)</nz-form-label>
+              <nz-form-control>
+                <nz-input-number
+                  nzId="ch"
+                  class="w-full"
+                  [nzMin]="0"
+                  [nzMax]="48"
+                  [ngModel]="c.slots.cancelHours"
+                  (ngModelChange)="patch((x) => (x.slots.cancelHours = $event))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          <nz-form-item>
+            <nz-form-label nzFor="sa">Slots for</nz-form-label>
+            <nz-form-control>
+              <nz-select
+                nzId="sa"
+                [nzOptions]="areaOptions()"
+                [ngModel]="slotArea()"
+                (ngModelChange)="slotArea.set($event)"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          @if (slotArea() !== 'default') {
+            <label class="flex items-center gap-2 mb-4">
+              <nz-switch
+                [ngModel]="hasOwnSlots(slotArea())"
+                (ngModelChange)="setOwnSlots(slotArea(), $event)"
+              />
+              Own slots for {{ areaNames().get(slotArea()) }}
+            </label>
+          }
+          @if (hasOwnSlots(slotArea())) {
+            @for (s of slotsFor(slotArea()); track $index; let i = $index) {
+              <div class="flex flex-wrap items-end gap-2 mb-2">
+                <input
+                  nz-input
+                  type="time"
+                  class="!w-[120px]"
+                  aria-label="Start"
+                  [ngModel]="s.start"
+                  (ngModelChange)="patch((x) => (x.slotTemplates[slotArea()][i].start = $event))"
+                />
+                <input
+                  nz-input
+                  type="time"
+                  class="!w-[120px]"
+                  aria-label="End"
+                  [ngModel]="s.end"
+                  (ngModelChange)="patch((x) => (x.slotTemplates[slotArea()][i].end = $event))"
+                />
+                <nz-input-number
+                  class="!w-[110px]"
+                  nzPlaceHolder="Riders"
+                  [nzMin]="1"
+                  [nzMax]="100"
+                  [ngModel]="s.capacity"
+                  (ngModelChange)="patch((x) => (x.slotTemplates[slotArea()][i].capacity = $event))"
+                />
+                <nz-input-number
+                  class="!w-[140px]"
+                  nzPlaceHolder="On-time bonus ₹"
+                  [nzMin]="0"
+                  [nzPrecision]="2"
+                  [ngModel]="rupees(s.bonusPaise)"
+                  (ngModelChange)="
+                    patch((x) => (x.slotTemplates[slotArea()][i].bonusPaise = paise($event)))
+                  "
+                />
+                <button
+                  nz-button
+                  nzDanger
+                  nzType="text"
+                  aria-label="Remove slot"
+                  (click)="patch((x) => x.slotTemplates[slotArea()].splice(i, 1))"
+                >
+                  <span nz-icon nzType="delete"></span>
+                </button>
+              </div>
+            }
+            <p class="z-caption mb-2">
+              Start · end · riders per slot · bonus for being online within 15 min of the start.
+            </p>
+            <button nz-button nzSize="small" (click)="addSlot(slotArea())">
+              <span nz-icon nzType="plus"></span>Add slot
+            </button>
+          }
+        </div>
+      </nz-tab>
+
+      <!-- Safety -->
+      <nz-tab nzTitle="Safety & cash">
+        <div class="z-card p-5 max-w-2xl">
+          <div class="font-extrabold mb-2">Emergency buttons in the rider app</div>
+          <div class="grid gap-x-4 sm:grid-cols-3">
+            <nz-form-item>
+              <nz-form-label nzFor="ea">Ambulance</nz-form-label>
+              <nz-form-control>
+                <input
+                  nz-input
+                  id="ea"
+                  inputmode="tel"
+                  [ngModel]="c.emergency.ambulance"
+                  (ngModelChange)="patch((x) => (x.emergency.ambulance = $event))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzFor="ec">Accident team</nz-form-label>
+              <nz-form-control nzExtra="Empty = support phone">
+                <input
+                  nz-input
+                  id="ec"
+                  inputmode="tel"
+                  [ngModel]="c.emergency.accident"
+                  (ngModelChange)="patch((x) => (x.emergency.accident = $event))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzFor="ep">Police</nz-form-label>
+              <nz-form-control>
+                <input
+                  nz-input
+                  id="ep"
+                  inputmode="tel"
+                  [ngModel]="c.emergency.police"
+                  (ngModelChange)="patch((x) => (x.emergency.police = $event))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          <p class="z-caption mb-4">
+            Every tap also raises an alert on the Dispatch board with the rider’s location.
+          </p>
+          <div class="grid gap-x-4 sm:grid-cols-2">
+            <nz-form-item>
+              <nz-form-label nzFor="wm">Wait at the door (min)</nz-form-label>
+              <nz-form-control nzExtra="Before “customer not reachable” is allowed">
+                <nz-input-number
+                  nzId="wm"
+                  class="w-full"
+                  [nzMin]="2"
+                  [nzMax]="30"
+                  [ngModel]="c.waitMinutes"
+                  (ngModelChange)="patch((x) => (x.waitMinutes = $event))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzFor="cl">Cash-in-hand warning (₹)</nz-form-label>
+              <nz-form-control nzExtra="Rider is asked to hand cash over">
+                <nz-input-number
+                  nzId="cl"
+                  class="w-full"
+                  [nzMin]="0"
+                  [nzPrecision]="2"
+                  [ngModel]="rupees(c.cashLimitPaise)"
+                  (ngModelChange)="patch((x) => (x.cashLimitPaise = paise($event)))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+        </div>
+      </nz-tab>
+
+      <!-- Offers -->
+      <nz-tab nzTitle="Incentive offers">
+        <div class="flex mb-3">
+          <span class="flex-1 z-muted"
+            >Targets riders see in the Offers tab. Bonuses are paid every night.</span
+          >
+          <button nz-button nzType="primary" (click)="newCampaign()">
+            <span nz-icon nzType="plus"></span>New offer
+          </button>
+        </div>
+        <z-page-state
+          [status]="campaigns.status()"
+          [error]="campaigns.error()"
+          [empty]="(campaigns.value() ?? []).length === 0"
+          emptyTitle="No offers yet"
+          emptyText="For example: 15 deliveries in a day, ₹150 bonus."
+          (retry)="campaigns.retry()"
+        >
+          <div class="z-card overflow-hidden">
+            <nz-table
+              #ct
+              [nzData]="campaigns.value() ?? []"
+              [nzShowPagination]="false"
+              nzSize="middle"
+              [nzScroll]="{ x: '640px' }"
+            >
+              <thead>
+                <tr>
+                  <th>Offer</th>
+                  <th>Target</th>
+                  <th nzAlign="right">Bonus</th>
+                  <th>Dates</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (o of ct.data; track o.id) {
+                  <tr
+                    class="cursor-pointer"
+                    tabindex="0"
+                    (click)="editCampaign(o)"
+                    (keydown.enter)="editCampaign(o)"
+                  >
+                    <td class="font-bold">{{ o.title }}</td>
+                    <td>{{ o.target }} {{ o.kind === 'daily_target' ? 'a day' : 'a week' }}</td>
+                    <td nzAlign="right">{{ o.rewardPaise | rupees }}</td>
+                    <td class="z-caption">{{ o.startDate }} → {{ o.endDate }}</td>
+                    <td>
+                      <nz-tag [nzColor]="campaignState(o).color">{{
+                        campaignState(o).label
+                      }}</nz-tag>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+          </div>
+        </z-page-state>
+      </nz-tab>
+    </nz-tabs>
+  }
+</z-page-state>
+
+<nz-modal
+  [nzVisible]="!!draft()"
+  [nzTitle]="draft()?.id ? 'Edit offer' : 'New offer'"
+  nzOkText="Save"
+  [nzOkLoading]="saving()"
+  (nzOnOk)="saveCampaign()"
+  (nzOnCancel)="draft.set(null)"
+>
+  <ng-container *nzModalContent>
+    @if (draft(); as d) {
+      <form nz-form nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzFor="ct">Title</nz-form-label>
+          <nz-form-control>
+            <input
+              nz-input
+              id="ct"
+              name="ct"
+              maxlength="60"
+              placeholder="15 orders today"
+              [ngModel]="d.title"
+              (ngModelChange)="patchDraft((x) => (x.title = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label nzFor="cd">Description</nz-form-label>
+          <nz-form-control>
+            <input
+              nz-input
+              id="cd"
+              name="cd"
+              maxlength="200"
+              [ngModel]="d.description"
+              (ngModelChange)="patchDraft((x) => (x.description = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <div class="grid gap-x-3 grid-cols-3">
+          <nz-form-item>
+            <nz-form-label>Every</nz-form-label>
+            <nz-form-control>
+              <nz-select
+                name="ck"
+                [ngModel]="d.kind"
+                (ngModelChange)="patchDraft((x) => (x.kind = $event))"
+              >
+                <nz-option nzValue="daily_target" nzLabel="Day" />
+                <nz-option nzValue="weekly_target" nzLabel="Week" />
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="cn">Deliveries</nz-form-label>
+            <nz-form-control>
+              <nz-input-number
+                nzId="cn"
+                name="cn"
+                class="w-full"
+                [nzMin]="1"
+                [nzMax]="500"
+                [ngModel]="d.target"
+                (ngModelChange)="patchDraft((x) => (x.target = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="cr">Bonus (₹)</nz-form-label>
+            <nz-form-control>
+              <nz-input-number
+                nzId="cr"
+                name="cr"
+                class="w-full"
+                [nzMin]="1"
+                [nzPrecision]="2"
+                [ngModel]="rupees(d.rewardPaise)"
+                (ngModelChange)="patchDraft((x) => (x.rewardPaise = paise($event)))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div class="grid gap-x-3 grid-cols-2">
+          <nz-form-item>
+            <nz-form-label nzFor="cs">From</nz-form-label>
+            <nz-form-control>
+              <input
+                nz-input
+                type="date"
+                id="cs"
+                name="cs"
+                [ngModel]="d.startDate"
+                (ngModelChange)="patchDraft((x) => (x.startDate = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="ce">To</nz-form-label>
+            <nz-form-control>
+              <input
+                nz-input
+                type="date"
+                id="ce"
+                name="ce"
+                [ngModel]="d.endDate"
+                (ngModelChange)="patchDraft((x) => (x.endDate = $event))"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <nz-form-item>
+          <nz-form-label nzFor="cas">Areas</nz-form-label>
+          <nz-form-control nzExtra="Empty = every area">
+            <nz-select
+              nzId="cas"
+              name="cas"
+              nzMode="multiple"
+              [nzOptions]="areaOptions().slice(1)"
+              [ngModel]="d.serviceAreaIds"
+              (ngModelChange)="patchDraft((x) => (x.serviceAreaIds = $event))"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <label class="flex items-center gap-2">
+          <nz-switch
+            name="ca"
+            [ngModel]="d.active"
+            (ngModelChange)="patchDraft((x) => (x.active = $event))"
+          />
+          Active
+        </label>
+      </form>
+    }
+  </ng-container>
+</nz-modal>
