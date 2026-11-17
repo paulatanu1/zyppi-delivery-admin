@@ -299,7 +299,12 @@ export class NotificationsPage {
     await this.run('send', async () => {
       const id = await this.persist();
       const res = await this.api.schedule(id, null);
-      this.toast.success(`Sent to ${res.sent ?? 0} device${res.sent === 1 ? '' : 's'}`);
+      // Big audiences go out in batches (Cloud Tasks); the list shows progress.
+      this.toast.success(
+        res.status === 'sending'
+          ? `Sending to ${res.targeted ?? 0} customers in batches…`
+          : `Sent to ${res.sent ?? 0} device${res.sent === 1 ? '' : 's'}`,
+      );
       this.close();
     });
   }
