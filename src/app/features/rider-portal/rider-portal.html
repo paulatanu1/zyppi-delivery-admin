@@ -328,6 +328,8 @@
                 </div>
               </div>
             }
+            <h3 class="mt-4 mb-0">Agreement</h3>
+            <z-legal-sign audience="rider" (done)="legalDone.set(true)" />
             <p class="z-caption">
               By submitting you confirm the details and documents are yours and correct.
             </p>
@@ -368,6 +370,7 @@
               nzType="primary"
               class="z-brand-btn"
               [nzLoading]="busy()"
+              [disabled]="!legalDone()"
               (click)="submit()"
             >
               Submit application

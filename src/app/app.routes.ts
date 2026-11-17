@@ -261,6 +261,12 @@ export const routes: Routes = [
             loadComponent: () => import('./features/staff/staff-page').then((m) => m.StaffPage),
           },
           {
+            path: 'legal',
+            title: 'Legal documents · Zyppi Admin',
+            data: { heading: 'Settings' },
+            loadComponent: () => import('./features/legal/legal-page').then((m) => m.LegalPage),
+          },
+          {
             path: 'audit',
             title: 'Audit log · Zyppi Admin',
             data: { heading: 'Settings' },

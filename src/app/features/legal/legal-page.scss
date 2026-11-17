@@ -1,0 +1,15 @@
+.legal-item {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.legal-item:hover {
+  background: var(--z-surface-2, rgba(0, 0, 0, 0.04));
+}
+.legal-item.active {
+  background: var(--z-brand-soft, rgba(103, 58, 183, 0.1));
+}
+.legal-preview {
+  max-height: 560px;
+  overflow-y: auto;
+}

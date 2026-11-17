@@ -34,6 +34,7 @@ import {
   stepProblems,
 } from '../riders/riders.models';
 import { KycUpload } from './kyc-upload';
+import { LegalSign } from './legal-sign';
 
 interface Form {
   fullName: string;
@@ -77,6 +78,7 @@ const EMPTY: Form = {
     NzStepsModule,
     RupeesPipe,
     KycUpload,
+    LegalSign,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './rider-portal.html',
@@ -114,6 +116,8 @@ export class RiderPortal {
   readonly areas = signal<{ label: string; value: string }[]>([]);
   readonly problems = signal<string[]>([]);
   readonly saved = signal<string | null>(null);
+  /** Rider agreement + privacy policy accepted (or nothing published yet). */
+  readonly legalDone = signal(false);
 
   readonly meta = STATUS_META;
   readonly vehicles = VEHICLES;
@@ -313,6 +317,10 @@ export class RiderPortal {
   }
 
   async submit(): Promise<void> {
+    if (!this.legalDone()) {
+      this.problems.set(['Read and sign the rider agreement first.']);
+      return;
+    }
     for (const s of [0, 1, 2, 3]) {
       if (!this.check(s)) {
         this.step.set(s);

@@ -84,6 +84,7 @@ export const NAV: NavGroup[] = [
         roles: [],
       },
       { label: 'Admins & roles', icon: 'safety-certificate', link: '/settings/staff', roles: [] },
+      { label: 'Legal documents', icon: 'file-protect', link: '/settings/legal', roles: [] },
       { label: 'Audit log', icon: 'history', link: '/settings/audit', roles: [] },
       { label: 'Store settings', icon: 'setting', link: '/store-settings', roles: ['ops'] },
       { label: 'Rider settings', icon: 'tool', link: '/rider-settings', roles: ['ops'] },
