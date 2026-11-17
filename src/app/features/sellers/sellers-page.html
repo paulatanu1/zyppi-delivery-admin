@@ -1,0 +1,130 @@
+<z-page-header
+  title="Sellers"
+  subtitle="Shops that sell through Zyppi on a subscription or a supply deal. Review applications, set Zyppi’s add-on and pay them out."
+/>
+
+<z-page-state
+  [status]="sellers.status()"
+  [error]="sellers.error()"
+  [empty]="(sellers.value() ?? []).length === 0"
+  emptyTitle="No seller applications yet"
+  emptyText="Shops apply from the Zyppi Seller app."
+  (retry)="sellers.retry()"
+>
+  <div class="grid gap-4 grid-cols-2 md:grid-cols-4 mb-4">
+    <div class="z-card p-4">
+      <div class="z-overline">To review</div>
+      <div class="z-display text-[24px] mt-1 text-[var(--z-brand-text)]">
+        {{ groups().review.length }}
+      </div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Active sellers</div>
+      <div class="z-display text-[24px] mt-1">{{ groups().active.length }}</div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Owed to sellers</div>
+      <div class="z-display text-[24px] mt-1">{{ owed() | rupees }}</div>
+    </div>
+    <div class="z-card p-4">
+      <div class="z-overline">Plan fees due</div>
+      <div class="z-display text-[24px] mt-1" [class.text-[var(--z-warn)]]="dues() > 0">
+        {{ dues() | rupees }}
+      </div>
+    </div>
+  </div>
+
+  <div class="z-card overflow-hidden">
+    <div class="px-4 pt-2 flex flex-wrap items-center gap-3">
+      <nz-tabs
+        class="flex-1"
+        [nzSelectedIndex]="tabIndex()"
+        (nzSelectedIndexChange)="setTab($event)"
+      >
+        <nz-tab [nzTitle]="t1"
+          ><ng-template #t1
+            >To review <nz-badge [nzCount]="groups().review.length" nzSize="small" /></ng-template
+        ></nz-tab>
+        <nz-tab nzTitle="Active"></nz-tab>
+        <nz-tab nzTitle="Others"></nz-tab>
+      </nz-tabs>
+      <nz-input-wrapper class="min-w-[220px] mb-2">
+        <span nzInputPrefix nz-icon nzType="search" class="z-muted"></span>
+        <input
+          nz-input
+          placeholder="Shop, owner or phone"
+          aria-label="Search sellers"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+        />
+      </nz-input-wrapper>
+    </div>
+    <nz-table
+      #t
+      [nzData]="visible()"
+      [nzPageSize]="25"
+      [nzScroll]="{ x: '900px' }"
+      [nzNoResult]="none"
+    >
+      <thead>
+        <tr>
+          <th>Shop</th>
+          <th>Area</th>
+          <th>Model</th>
+          @if (tab() === 'active') {
+            <th>Rating</th>
+            <th>Reliable</th>
+            <th>Balance</th>
+            <th>Online</th>
+          } @else {
+            <th>Status</th>
+            <th>Applied</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of t.data; track s.id) {
+          <tr class="cursor-pointer" tabindex="0" (click)="open(s)" (keydown.enter)="open(s)">
+            <td>
+              <div class="font-bold">{{ s.shopName || 'Unnamed shop' }}</div>
+              <div class="z-caption">{{ s.ownerName }} · {{ s.phone }}</div>
+            </td>
+            <td>{{ areaNames().get(s.serviceAreaId) ?? '—' }}</td>
+            <td>
+              {{ modelLabel[s.model] ?? '—' }}
+              <div class="z-caption">{{ fulfilmentLabel[s.fulfilment] ?? '' }}</div>
+            </td>
+            @if (tab() === 'active') {
+              <td>
+                {{
+                  s.ratingCount ? '★ ' + s.ratingAvg.toFixed(1) + ' (' + s.ratingCount + ')' : 'New'
+                }}
+              </td>
+              <td>{{ reliability(s) === null ? '—' : reliability(s) + '%' }}</td>
+              <td class="font-bold">{{ s.earningsBalancePaise | rupees }}</td>
+              <td>
+                @if (s.licenceExpired) {
+                  <nz-tag nzColor="red">Licence expired</nz-tag>
+                } @else if (s.subscription?.status === 'expired') {
+                  <nz-tag nzColor="red">Plan unpaid</nz-tag>
+                } @else {
+                  <nz-tag [nzColor]="s.isOnline ? 'green' : 'default'">{{
+                    s.isOnline ? 'Online' : 'Offline'
+                  }}</nz-tag>
+                }
+              </td>
+            } @else {
+              <td>
+                <nz-tag [nzColor]="meta[s.status].color">{{ meta[s.status].label }}</nz-tag>
+              </td>
+              <td class="z-caption">{{ s.submittedAt | when }}</td>
+            }
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+    <ng-template #none><div class="py-8 z-muted">Nobody here.</div></ng-template>
+  </div>
+</z-page-state>
+
+<z-seller-drawer [sellerId]="id() ?? null" [areaNames]="areaNames()" (closed)="close()" />

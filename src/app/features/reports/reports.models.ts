@@ -63,6 +63,8 @@ function salesRow(d: DayStats, period: string): Row {
     fees: d.deliveryFeePaise + d.handlingFeePaise,
     tips: d.tipPaise,
     refunded: d.refundedPaise,
+    sellerPayouts: d.payoutPaise,
+    zyppiShare: d.marginPaise,
   };
 }
 
@@ -83,6 +85,8 @@ export function salesReport(days: DayStats[], from: string, to: string, grain: G
       col('fees', 'Fees', 'paise'),
       col('tips', 'Tips', 'paise'),
       col('refunded', 'Refunded', 'paise'),
+      col('sellerPayouts', 'Seller payouts', 'paise'),
+      col('zyppiShare', 'Zyppi share', 'paise'),
     ],
     rows,
     total: salesRow(sumDays(days), 'Total'),

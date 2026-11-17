@@ -127,6 +127,20 @@ export class OrdersApi {
     );
   }
 
+  /** Returned / damaged units of a seller's line; debits the seller when at fault. */
+  returnItem(input: {
+    orderId: string;
+    index: number;
+    quantity: number;
+    sellerAtFault: boolean;
+    reason: string;
+  }) {
+    return this.callables.call<typeof input, { debitPaise: number }>(
+      'adminReturnSellerItem',
+      input,
+    );
+  }
+
   refreshRefund(refundId: string) {
     return this.callables.call<unknown, { status: string }>('adminRefreshRefund', { refundId });
   }

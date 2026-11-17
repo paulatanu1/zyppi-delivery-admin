@@ -21,6 +21,7 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSkeletonModule } from 'ng-zorro-antd/skeleton';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzTimelineModule } from 'ng-zorro-antd/timeline';
 import { AuthService } from '../../core/auth/auth.service';
 import { hasRole } from '../../core/auth/roles';
@@ -54,6 +55,7 @@ import {
     NzSelectModule,
     NzSkeletonModule,
     NzTagModule,
+    NzCheckboxModule,
     NzTimelineModule,
     RupeesPipe,
     WhenPipe,
@@ -109,6 +111,10 @@ export class OrderDrawer {
   readonly refundRupees = signal<number | null>(null);
   readonly refundReason = signal('');
   readonly dialogError = signal<string | null>(null);
+  readonly returnLine = signal<number | null>(null);
+  readonly returnQty = signal(1);
+  readonly returnFault = signal(true);
+  readonly returnReason = signal('');
 
   readonly meta = STATUS_META;
   readonly refundMeta = REFUND_META;
@@ -116,6 +122,7 @@ export class OrderDrawer {
   readonly width = computed(() => (globalThis.innerWidth < 760 ? '100%' : 620));
   readonly canOperate = computed(() => hasRole(this.auth.role(), ['ops']));
   readonly canRefund = computed(() => hasRole(this.auth.role(), ['finance']));
+  readonly canReturn = computed(() => hasRole(this.auth.role(), ['ops', 'finance']));
   readonly area = computed(() => {
     const o = this.order();
     return o ? (this.areaNames().get(o.serviceAreaId) ?? o.serviceAreaId) : '';
@@ -245,6 +252,55 @@ export class OrderDrawer {
           res.refund
             ? `#${o.shortId} cancelled · refund ${REFUND_META[res.refund.status as Refund['status']]?.label.toLowerCase() ?? res.refund.status}`
             : `#${o.shortId} cancelled · stock returned`,
+        );
+      },
+      true,
+    );
+  }
+
+  /** Units of line [index] that can still be returned. */
+  returnable(index: number): number {
+    const o = this.order();
+    const item = o?.items[index];
+    return item ? item.quantity - (o!.returns[String(index)] ?? 0) : 0;
+  }
+
+  openReturn(index: number): void {
+    this.returnLine.set(index);
+    this.returnQty.set(1);
+    this.returnFault.set(true);
+    this.returnReason.set('');
+    this.dialogError.set(null);
+  }
+
+  async confirmReturn(): Promise<void> {
+    const o = this.order();
+    const index = this.returnLine();
+    if (!o || index === null) return;
+    const qty = Math.floor(this.returnQty() ?? 0);
+    if (qty < 1 || qty > this.returnable(index)) {
+      this.dialogError.set(`Enter 1 to ${this.returnable(index)} units.`);
+      return;
+    }
+    if (this.returnReason().trim().length < 3) {
+      this.dialogError.set('Give a reason (the seller sees it).');
+      return;
+    }
+    await this.run(
+      'return',
+      async () => {
+        const res = await this.api.returnItem({
+          orderId: o.id,
+          index,
+          quantity: qty,
+          sellerAtFault: this.returnFault(),
+          reason: this.returnReason().trim(),
+        });
+        this.returnLine.set(null);
+        this.toast.success(
+          res.debitPaise
+            ? `Recorded. ₹${(res.debitPaise / 100).toFixed(2)} taken back from the seller. Refund the customer with Refund…`
+            : 'Recorded. Refund the customer with Refund… if needed.',
         );
       },
       true,

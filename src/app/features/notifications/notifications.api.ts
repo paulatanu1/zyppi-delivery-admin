@@ -52,7 +52,12 @@ export class NotificationsApi {
   schedule(
     id: string,
     sendAtMs: number | null,
-  ): Promise<{ status: 'sent' | 'scheduled'; sent?: number; failed?: number }> {
+  ): Promise<{
+    status: 'sent' | 'sending' | 'scheduled';
+    sent?: number;
+    failed?: number;
+    targeted?: number;
+  }> {
     return this.callables.call('adminScheduleCampaign', { id, sendAtMs });
   }
 

@@ -1,0 +1,513 @@
+<nz-drawer
+  [nzVisible]="!!sellerId()"
+  [nzWidth]="width()"
+  [nzTitle]="title"
+  [nzFooter]="footer"
+  (nzOnClose)="closed.emit()"
+>
+  <ng-template #title>
+    @if (seller(); as s) {
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="z-display text-[18px]">{{ s.shopName || 'Seller' }}</span>
+        <nz-tag [nzColor]="meta[s.status].color">{{ meta[s.status].label }}</nz-tag>
+        @if (s.licenceExpired) {
+          <nz-tag nzColor="red">FSSAI expired</nz-tag>
+        }
+      </div>
+    } @else {
+      Seller
+    }
+  </ng-template>
+
+  <ng-container *nzDrawerContent>
+    @switch (seller()) {
+      @case (undefined) {
+        <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 8 }" />
+      }
+      @case (null) {
+        <nz-alert nzType="warning" nzShowIcon nzMessage="Seller not found or you can’t see it." />
+      }
+      @default {
+        @if (seller(); as s) {
+          @if (s.reviewNote) {
+            <nz-alert
+              nzType="info"
+              nzShowIcon
+              class="block mb-3"
+              [nzMessage]="'Last note to seller: ' + s.reviewNote"
+            />
+          }
+
+          <div class="facts pb-4">
+            <span class="z-muted">Owner</span><span>{{ s.ownerName }}</span>
+            <span class="z-muted">Mobile</span
+            ><a [href]="'tel:' + s.phone" class="font-bold">{{ s.phone }}</a>
+            @if (s.email) {
+              <span class="z-muted">Email</span><span>{{ s.email }}</span>
+            }
+            <span class="z-muted">Shop address</span><span>{{ s.address }}</span>
+            <span class="z-muted">Area</span
+            ><span>{{ areaNames().get(s.serviceAreaId) ?? s.serviceAreaId }}</span>
+            <span class="z-muted">Works as</span>
+            <span
+              >{{ modelLabel[s.model] ?? '—' }} · {{ fulfilmentLabel[s.fulfilment] ?? '' }}</span
+            >
+            <span class="z-muted">PAN</span><span>{{ s.pan || '—' }}</span>
+            <span class="z-muted">GSTIN</span><span>{{ s.gstin || '—' }}</span>
+            <span class="z-muted">FSSAI</span>
+            <span
+              >{{ s.fssaiNo || '—' }}
+              @if (s.fssaiExpiry) {
+                <span class="z-caption">· valid to {{ s.fssaiExpiry }}</span>
+              }
+            </span>
+            <span class="z-muted">Payouts</span>
+            <span>
+              @if (payout(); as p) {
+                @if (p['method'] === 'upi') {
+                  UPI {{ p['upiId'] }}
+                } @else {
+                  {{ p['accountName'] }} · A/c {{ p['accountNumber'] }} · {{ p['ifsc'] }}
+                }
+              } @else if (s.payout) {
+                @if (s.payout.method === 'upi') {
+                  UPI {{ s.payout.upiId }}
+                } @else {
+                  Bank ••{{ s.payout.accountLast4 }} · {{ s.payout.ifsc }}
+                }
+              } @else {
+                —
+              }
+            </span>
+            <span class="z-muted">Applied</span><span>{{ s.submittedAt | when }}</span>
+          </div>
+
+          <div class="section">
+            <div class="z-overline mb-2">Selfie, shop photos and documents · click to zoom</div>
+            <nz-image-group>
+              <div class="docs">
+                @for (d of docs(); track d.key) {
+                  <figure class="doc m-0">
+                    @if (d.url) {
+                      <img nz-image [nzSrc]="d.url" [alt]="d.label" />
+                    } @else {
+                      <div class="grid place-items-center h-[110px] z-caption">Can’t load</div>
+                    }
+                    <figcaption class="px-2 py-1 text-[12px]">
+                      <b>{{ d.label }}</b>
+                      @if (d.note) {
+                        <div class="z-caption">{{ d.note }}</div>
+                      }
+                    </figcaption>
+                  </figure>
+                } @empty {
+                  <p class="z-muted">No documents uploaded.</p>
+                }
+              </div>
+            </nz-image-group>
+          </div>
+
+          @if (s.status === 'applied' && canReview()) {
+            <div class="section">
+              <div class="z-overline mb-2">Checklist</div>
+              <div class="flex flex-col gap-2">
+                @for (c of checklist; track c.key) {
+                  <div
+                    nz-checkbox
+                    [ngModel]="checks()[c.key]"
+                    (ngModelChange)="toggleCheck(c.key, $event)"
+                  >
+                    {{ c.label }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          @if (s.status === 'approved' || s.status === 'suspended') {
+            <div class="section">
+              <div class="z-overline mb-2">Money</div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="z-card p-3">
+                  <div class="z-caption">Held (return window)</div>
+                  <div class="z-display text-[18px]">{{ s.heldPaise | rupees }}</div>
+                </div>
+                <div class="z-card p-3">
+                  <div class="z-caption">Available</div>
+                  <div class="z-display text-[18px]">{{ s.earningsBalancePaise | rupees }}</div>
+                </div>
+                <div class="z-card p-3">
+                  <div class="z-caption">Plan fees due</div>
+                  <div class="z-display text-[18px]" [class.text-[var(--z-warn)]]="s.duesPaise > 0">
+                    {{ s.duesPaise | rupees }}
+                  </div>
+                </div>
+                <div class="z-card p-3">
+                  <div class="z-caption">Paid out (total)</div>
+                  <div class="z-display text-[18px]">{{ s.paidOutTotalPaise | rupees }}</div>
+                </div>
+              </div>
+              @if (canFinance()) {
+                <div class="flex flex-wrap gap-2 mt-3">
+                  @if (s.duesPaise > 0) {
+                    <button nz-button (click)="openMoney('fee')">
+                      <span nz-icon nzType="wallet"></span>Record fee paid
+                    </button>
+                  }
+                  <button nz-button (click)="openMoney('adjust')">
+                    <span nz-icon nzType="edit"></span>Adjust balance
+                  </button>
+                </div>
+              }
+            </div>
+
+            @if (s.model === 'subscription') {
+              <div class="section">
+                <div class="z-overline mb-2">Plan</div>
+                <p class="m-0">
+                  {{ planName() }}
+                  @if (s.subscription; as sub) {
+                    <nz-tag
+                      [nzColor]="
+                        sub.status === 'active' ? 'green' : sub.status === 'grace' ? 'gold' : 'red'
+                      "
+                      class="ml-2"
+                      >{{ sub.status }}</nz-tag
+                    >
+                    <span class="z-caption">renews {{ sub.periodEnd | when }}</span>
+                  }
+                </p>
+                @if (canFinance()) {
+                  <div class="flex gap-2 mt-2">
+                    <nz-select
+                      class="min-w-[220px]"
+                      nzPlaceHolder="Change plan"
+                      [ngModel]="planChoice()"
+                      (ngModelChange)="planChoice.set($event)"
+                    >
+                      @for (p of plans(); track p.id) {
+                        <nz-option
+                          [nzValue]="p.id"
+                          [nzLabel]="p.name + ' · ' + p.months + ' mo · ₹' + p.feePaise / 100"
+                        />
+                      }
+                    </nz-select>
+                    <button
+                      nz-button
+                      [disabled]="!planChoice()"
+                      [nzLoading]="busy()"
+                      (click)="setPlan()"
+                    >
+                      Set
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="section">
+              <div class="flex items-center justify-between mb-2">
+                <div class="z-overline">Products ({{ listings().length }})</div>
+                @if (canCatalog()) {
+                  <label class="flex items-center gap-2 text-[13px]">
+                    Own products go live without review
+                    <nz-switch
+                      nzSize="small"
+                      [ngModel]="s.trustedCatalog"
+                      (ngModelChange)="setTrusted($event)"
+                    />
+                  </label>
+                }
+              </div>
+              <div class="flex flex-col gap-1">
+                @for (l of listings(); track l.id) {
+                  <div
+                    class="flex items-center gap-2 text-[13px] py-1 border-b border-[var(--z-line)]"
+                  >
+                    <span class="flex-1">
+                      <b>{{ label(l) }}</b>
+                      @if (!l.isActive) {
+                        <nz-tag class="ml-1">Off</nz-tag>
+                      }
+                    </span>
+                    <span class="z-caption"
+                      >Seller {{ l.payoutPaise | rupees }} · Zyppi
+                      {{ l.marginPaise | rupees }}</span
+                    >
+                    <span class="font-bold">{{ l.pricePaise | rupees }}</span>
+                    @if (canPrice()) {
+                      <button nz-button nzSize="small" (click)="edit(l)">Edit</button>
+                    }
+                  </div>
+                } @empty {
+                  <p class="z-muted m-0">No products listed yet.</p>
+                }
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="z-overline mb-2">Performance</div>
+              <p class="m-0">
+                {{
+                  s.ratingCount
+                    ? '★ ' + s.ratingAvg.toFixed(1) + ' from ' + s.ratingCount + ' ratings'
+                    : 'No ratings yet'
+                }}
+                · {{ s.orders }} orders · {{ s.lateAccepts }} late accepts ·
+                {{ s.cancelled }} cancelled by the seller · reliable
+                {{ reliability(s) === null ? '—' : reliability(s) + '%' }}
+              </p>
+            </div>
+
+            @if (ledger().length) {
+              <div class="section">
+                <div class="z-overline mb-2">Ledger</div>
+                <ul class="list-none p-0 m-0 flex flex-col gap-1">
+                  @for (r of ledger(); track r.id) {
+                    <li class="flex items-center gap-2 text-[13px]">
+                      <span class="font-bold" [class.text-[var(--z-ok)]]="r.amountPaise > 0"
+                        >{{ r.amountPaise >= 0 ? '+' : '−'
+                        }}{{ (r.amountPaise >= 0 ? r.amountPaise : -r.amountPaise) | rupees }}</span
+                      >
+                      <span class="z-muted">{{ ledgerLabel(r) }}</span>
+                      <span class="z-caption ml-auto">{{ r.at | when }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          }
+
+          <div class="section">
+            <div class="z-overline mb-2">History</div>
+            <ul class="list-none p-0 m-0 flex flex-col gap-1">
+              @for (e of events(); track e.id) {
+                <li class="text-[13px]">
+                  <b>{{ eventLabel(e.type) }}</b> <span class="z-caption">{{ e.at | when }}</span>
+                  @if (e.note) {
+                    <span class="z-muted"> · {{ e.note }}</span>
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      }
+    }
+  </ng-container>
+
+  <ng-template #footer>
+    @if (seller(); as s) {
+      @if (canReview()) {
+        <div class="flex flex-wrap justify-end gap-2">
+          @switch (s.status) {
+            @case ('applied') {
+              <button nz-button nzDanger (click)="ask('reject')">Reject</button>
+              <button nz-button (click)="ask('request_changes')">Ask for changes</button>
+              <button
+                nz-button
+                nzType="primary"
+                [disabled]="!allChecked()"
+                (click)="ask('approve')"
+              >
+                Approve
+              </button>
+            }
+            @case ('approved') {
+              <button nz-button nzDanger (click)="ask('suspend')">Suspend</button>
+            }
+            @case ('suspended') {
+              <button nz-button nzType="primary" (click)="ask('reinstate')">Reinstate</button>
+            }
+          }
+        </div>
+        @if (s.status === 'applied' && !allChecked()) {
+          <div class="z-caption text-right mt-1">Tick every checklist item to approve.</div>
+        }
+      }
+    }
+  </ng-template>
+</nz-drawer>
+
+<nz-modal
+  [nzVisible]="!!action()"
+  [nzTitle]="action() ? copy[action()!].title : ''"
+  [nzCentered]="true"
+  [nzOkText]="action() ? copy[action()!].ok : 'OK'"
+  [nzOkDanger]="!!action() && !!copy[action()!].danger"
+  [nzOkLoading]="busy()"
+  (nzOnOk)="confirm()"
+  (nzOnCancel)="action.set(null)"
+>
+  <ng-container *nzModalContent>
+    <div class="flex flex-col gap-3">
+      @if (action() === 'approve') {
+        <p>
+          The seller gets a login for the Zyppi Seller app. Their shop becomes a pickup store, and a
+          subscription plan starts now.
+        </p>
+      }
+      @if (action() && copy[action()!].reason) {
+        <p class="z-muted">The seller sees this message in the app.</p>
+        <textarea
+          nz-input
+          rows="3"
+          maxlength="500"
+          aria-label="Reason"
+          [placeholder]="copy[action()!].placeholder ?? ''"
+          [ngModel]="reason()"
+          (ngModelChange)="reason.set($event)"
+        ></textarea>
+      }
+      @if (dialogError(); as e) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+      }
+    </div>
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="!!editing()"
+  nzTitle="Price"
+  [nzCentered]="true"
+  nzOkText="Save"
+  [nzOkLoading]="busy()"
+  (nzOnOk)="saveListing()"
+  (nzOnCancel)="editing.set(null)"
+>
+  <ng-container *nzModalContent>
+    @if (editing(); as l) {
+      <div class="flex flex-col gap-3">
+        <div class="font-bold">
+          {{ label(l) }} <span class="z-caption">MRP {{ l.mrpPaise | rupees }}</span>
+        </div>
+        @if (l.model === 'supply') {
+          <label
+            >Supply price (paid to the seller)
+            <nz-input-number
+              class="!w-full"
+              [nzMin]="0.01"
+              [nzPrecision]="2"
+              [ngModel]="sellerPriceRupees()"
+              (ngModelChange)="sellerPriceRupees.set($event)"
+              ><span nzInputPrefix>₹</span></nz-input-number
+            >
+          </label>
+          <label
+            >Customer price (set by Zyppi)
+            <nz-input-number
+              class="!w-full"
+              [nzMin]="0.01"
+              [nzPrecision]="2"
+              [ngModel]="zyppiPriceRupees()"
+              (ngModelChange)="zyppiPriceRupees.set($event)"
+              ><span nzInputPrefix>₹</span></nz-input-number
+            >
+          </label>
+          @if ((preview()?.margin ?? 0) < 0) {
+            <input
+              nz-input
+              maxlength="300"
+              placeholder="Why sell below the supply price? (required)"
+              aria-label="Reason"
+              [ngModel]="listingReason()"
+              (ngModelChange)="listingReason.set($event)"
+            />
+          }
+        } @else {
+          <p class="m-0">
+            Seller’s price: <b>{{ l.sellerPricePaise | rupees }}</b> (the seller sets it in their
+            app).
+          </p>
+          <nz-segmented
+            [nzOptions]="[
+              { label: '₹ add-on', value: 'fixed' },
+              { label: '% add-on', value: 'percent' },
+            ]"
+            [ngModel]="addonType()"
+            (ngModelChange)="addonType.set($event)"
+          />
+          <nz-input-number
+            class="!w-full"
+            [nzMin]="0"
+            [nzPrecision]="2"
+            aria-label="Add-on"
+            [ngModel]="addonValue()"
+            (ngModelChange)="addonValue.set($event)"
+          >
+            <span nzInputPrefix>{{ addonType() === 'fixed' ? '₹' : '%' }}</span>
+          </nz-input-number>
+        }
+        <label class="flex items-center gap-2"
+          >On sale
+          <nz-switch [ngModel]="listingActive()" (ngModelChange)="listingActive.set($event)"
+        /></label>
+        @if (preview(); as p) {
+          <div class="z-card p-3 text-[13px]">
+            Customer pays <b>{{ p.price | rupees }}</b> · seller gets
+            <b>{{ p.payout | rupees }}</b> · Zyppi keeps
+            <b [class.text-[var(--z-danger)]]="p.margin < 0">{{ p.margin | rupees }}</b>
+            @if (p.overMrp) {
+              <div class="text-[var(--z-danger)]">Above the MRP — not allowed.</div>
+            }
+          </div>
+        }
+        @if (dialogError(); as e) {
+          <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+        }
+      </div>
+    }
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="!!money()"
+  [nzTitle]="money() === 'fee' ? 'Record plan fee received' : 'Adjust seller balance'"
+  [nzCentered]="true"
+  nzOkText="Save"
+  [nzOkLoading]="busy()"
+  (nzOnOk)="saveMoney()"
+  (nzOnCancel)="money.set(null)"
+>
+  <ng-container *nzModalContent>
+    <div class="flex flex-col gap-3">
+      @if (money() === 'adjust') {
+        <p class="z-muted m-0">
+          Positive adds to what the seller is owed; negative takes it off (e.g. a damaged item). The
+          seller sees the reason.
+        </p>
+      }
+      <nz-input-number
+        class="!w-full"
+        [nzMin]="money() === 'fee' ? 0.01 : -100000"
+        [nzPrecision]="2"
+        aria-label="Amount"
+        [ngModel]="moneyRupees()"
+        (ngModelChange)="moneyRupees.set($event)"
+        ><span nzInputPrefix>₹</span></nz-input-number
+      >
+      @if (money() === 'fee') {
+        <nz-segmented
+          [nzOptions]="[
+            { label: 'UPI', value: 'upi' },
+            { label: 'Bank', value: 'bank' },
+            { label: 'Cash', value: 'cash' },
+          ]"
+          [ngModel]="moneyMethod()"
+          (ngModelChange)="moneyMethod.set($event)"
+        />
+      }
+      <input
+        nz-input
+        maxlength="300"
+        [placeholder]="money() === 'fee' ? 'UTR / receipt no.' : 'Reason'"
+        [attr.aria-label]="money() === 'fee' ? 'Reference' : 'Reason'"
+        [ngModel]="moneyText()"
+        (ngModelChange)="moneyText.set($event)"
+      />
+      @if (dialogError(); as e) {
+        <nz-alert nzType="error" nzShowIcon [nzMessage]="e" />
+      }
+    </div>
+  </ng-container>
+</nz-modal>

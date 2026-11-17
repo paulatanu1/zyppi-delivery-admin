@@ -33,6 +33,7 @@ export const NAV: NavGroup[] = [
       { label: 'Orders', icon: 'shopping', link: '/orders', roles: ['ops', 'support'] },
       { label: 'Dispatch', icon: 'thunderbolt', link: '/dispatch', roles: ['ops'] },
       { label: 'Riders', icon: 'car', link: '/riders', roles: ['ops', 'finance'] },
+      { label: 'Sellers', icon: 'shop', link: '/sellers', roles: ['ops', 'finance', 'catalog'] },
       { label: 'Inventory', icon: 'inbox', link: '/catalog/inventory', roles: ['ops', 'catalog'] },
       { label: 'Customers', icon: 'team', link: '/customers', roles: ['ops', 'support'] },
       { label: 'Support', icon: 'message', link: '/support', roles: ['support'] },
@@ -43,6 +44,12 @@ export const NAV: NavGroup[] = [
     items: [
       { label: 'Products', icon: 'tag', link: '/catalog/products', roles: ['catalog'] },
       { label: 'Categories', icon: 'apartment', link: '/catalog/categories', roles: ['catalog'] },
+      {
+        label: 'Product requests',
+        icon: 'file-search',
+        link: '/product-requests',
+        roles: ['catalog'],
+      },
       { label: 'Banners & home', icon: 'picture', link: '/catalog/home', roles: ['catalog'] },
       {
         label: 'Coupons',
@@ -63,6 +70,9 @@ export const NAV: NavGroup[] = [
     items: [
       { label: 'Payments', icon: 'wallet', link: '/payments', roles: ['finance'] },
       { label: 'Rider payouts', icon: 'credit-card', link: '/rider-payouts', roles: ['finance'] },
+      { label: 'Seller payouts', icon: 'credit-card', link: '/seller-payouts', roles: ['finance'] },
+      { label: 'Seller tax (TCS/TDS)', icon: 'file-excel', link: '/seller-tax', roles: ['finance'] },
+      { label: 'Seller plans', icon: 'profile', link: '/seller-plans', roles: ['finance'] },
     ],
   },
   {
@@ -75,6 +85,7 @@ export const NAV: NavGroup[] = [
         roles: [],
       },
       { label: 'Admins & roles', icon: 'safety-certificate', link: '/settings/staff', roles: [] },
+      { label: 'Legal documents', icon: 'file-protect', link: '/settings/legal', roles: [] },
       { label: 'Audit log', icon: 'history', link: '/settings/audit', roles: [] },
       { label: 'Store settings', icon: 'setting', link: '/store-settings', roles: ['ops'] },
       { label: 'Rider settings', icon: 'tool', link: '/rider-settings', roles: ['ops'] },

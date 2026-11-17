@@ -44,13 +44,16 @@ export class RiderPayoutsApi {
         limit(200),
       ),
       (s) =>
-        s.docs.map((d) => ({
-          id: d.id,
-          riderId: d.ref.parent.parent?.id ?? '',
-          riderName: (d.get('riderName') as string) || 'Rider',
-          amountPaise: Number(d.get('amountPaise')) || 0,
-          requestedAt: d.get('requestedAt') instanceof Timestamp ? d.get('requestedAt') : null,
-        })),
+        s.docs
+          // Sellers' payout requests share the collection name (sellers/{id}/payouts).
+          .filter((d) => d.ref.parent.parent?.parent.id === 'riders')
+          .map((d) => ({
+            id: d.id,
+            riderId: d.ref.parent.parent?.id ?? '',
+            riderName: (d.get('riderName') as string) || 'Rider',
+            amountPaise: Number(d.get('amountPaise')) || 0,
+            requestedAt: d.get('requestedAt') instanceof Timestamp ? d.get('requestedAt') : null,
+          })),
     );
   }
 

@@ -1,0 +1,162 @@
+<z-page-header
+  title="Legal documents"
+  subtitle="The terms every app and the rider portal show. Each publish is a new version with its own hash, written to the audit log."
+/>
+
+<z-page-state [status]="status()" [error]="error()" (retry)="load()">
+  <nz-alert
+    class="mb-4"
+    nzType="info"
+    nzShowIcon
+    nzMessage="Have a lawyer review every document before you publish it. Documents with [PLACEHOLDERS] can’t be published."
+  />
+  <div class="grid gap-4 lg:grid-cols-[280px_1fr]">
+    <nav class="z-card p-2 flex flex-col gap-1" aria-label="Documents">
+      @for (h of heads(); track h.type) {
+        <button
+          type="button"
+          class="legal-item text-left rounded-lg px-3 py-2"
+          [class.active]="selected() === h.type"
+          [attr.aria-current]="selected() === h.type ? 'page' : null"
+          (click)="open(h.type)"
+        >
+          <div class="font-medium">{{ meta[h.type].label }}</div>
+          <div class="z-caption">{{ meta[h.type].who }}</div>
+          <div class="mt-1">
+            @if (h.currentVersion) {
+              <nz-tag nzColor="success">v{{ h.currentVersion }} live</nz-tag>
+            } @else {
+              <nz-tag>Not published</nz-tag>
+            }
+          </div>
+        </button>
+      }
+    </nav>
+
+    @if (selected(); as type) {
+      <section class="flex flex-col gap-4">
+        <div class="z-card p-5 flex flex-col gap-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <input
+              nz-input
+              class="flex-1 min-w-[200px]"
+              aria-label="Title"
+              maxlength="120"
+              [ngModel]="draft().title"
+              (ngModelChange)="setTitle($event)"
+            />
+            <span>
+              <input
+                type="file"
+                aria-label="Load a Markdown file"
+                accept=".md,text/markdown,text/plain"
+                class="hidden"
+                (change)="importFile($event)"
+                #file
+              />
+              <button nz-button type="button" (click)="file.click()">Load .md file</button>
+            </span>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <nz-segmented
+              [nzOptions]="langOptions"
+              [ngModel]="lang()"
+              (ngModelChange)="lang.set($event)"
+            />
+            <nz-segmented
+              [nzOptions]="[
+                { label: 'Edit', value: 'edit' },
+                { label: 'Preview', value: 'preview' },
+              ]"
+              [ngModel]="preview() ? 'preview' : 'edit'"
+              (ngModelChange)="preview.set($event === 'preview')"
+            />
+          </div>
+
+          @if (preview()) {
+            <article class="legal-preview z-card p-4" [innerHTML]="html()"></article>
+          } @else {
+            <textarea
+              nz-input
+              class="font-mono"
+              rows="22"
+              [attr.aria-label]="'Text in ' + lang()"
+              [placeholder]="
+                lang() === 'en'
+                  ? 'Markdown: # Heading, - list, **bold**'
+                  : 'Optional. English is shown when empty.'
+              "
+              [ngModel]="draft().body[lang()]"
+              (ngModelChange)="setBody($event)"
+            ></textarea>
+          }
+          @if (gaps().length) {
+            <nz-alert
+              nzType="warning"
+              nzShowIcon
+              [nzMessage]="'Placeholders to fill: ' + gaps().join(', ')"
+            />
+          }
+
+          <div
+            nz-checkbox
+            [ngModel]="draft().requiresReaccept"
+            (ngModelChange)="setReaccept($event)"
+          >
+            Everyone must accept this version again
+          </div>
+
+          @if (problems().length) {
+            <ul class="z-caption m-0 pl-4">
+              @for (p of problems(); track p) {
+                <li>{{ p }}</li>
+              }
+            </ul>
+          }
+          <div class="flex justify-end">
+            <button
+              nz-button
+              nzType="primary"
+              [nzLoading]="busy()"
+              [disabled]="problems().length > 0"
+              (click)="publish()"
+            >
+              Publish new version
+            </button>
+          </div>
+        </div>
+
+        <div class="z-card p-5">
+          <h3 class="mt-0">Versions</h3>
+          <nz-table
+            #t
+            [nzData]="versions()"
+            nzSize="small"
+            [nzShowPagination]="false"
+            [nzNoResult]="'Not published yet'"
+          >
+            <thead>
+              <tr>
+                <th>Version</th>
+                <th>Title</th>
+                <th>Published</th>
+                <th>Re-accept</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of t.data; track v.version) {
+                <tr>
+                  <td>v{{ v.version }}</td>
+                  <td>{{ v.title }}</td>
+                  <td>{{ v.effectiveFromMs | date: 'd MMM y, h:mm a' }}</td>
+                  <td>{{ v.requiresReaccept ? 'Yes' : 'No' }}</td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        </div>
+      </section>
+    }
+  </div>
+</z-page-state>
