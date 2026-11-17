@@ -84,6 +84,14 @@ export const routes: Routes = [
           import('./features/seller-payouts/seller-payouts-page').then((m) => m.SellerPayoutsPage),
       },
       {
+        path: 'seller-tax',
+        canActivate: [roleGuard],
+        data: { roles: ['finance'], heading: 'Money' },
+        title: 'Seller tax · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/seller-tax/seller-tax-page').then((m) => m.SellerTaxPage),
+      },
+      {
         path: 'seller-plans',
         canActivate: [roleGuard],
         data: { roles: ['finance'], heading: 'Money' },

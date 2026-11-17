@@ -71,6 +71,7 @@ export const NAV: NavGroup[] = [
       { label: 'Payments', icon: 'wallet', link: '/payments', roles: ['finance'] },
       { label: 'Rider payouts', icon: 'credit-card', link: '/rider-payouts', roles: ['finance'] },
       { label: 'Seller payouts', icon: 'credit-card', link: '/seller-payouts', roles: ['finance'] },
+      { label: 'Seller tax (TCS/TDS)', icon: 'file-excel', link: '/seller-tax', roles: ['finance'] },
       { label: 'Seller plans', icon: 'profile', link: '/seller-plans', roles: ['finance'] },
     ],
   },

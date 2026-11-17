@@ -34,6 +34,9 @@ export interface OrderItem {
   image: string | null;
   quantity: number;
   pricePaise: number;
+  /** Marketplace seller ('zyppi' for Zyppi's own stock). */
+  sellerId: string;
+  sellerName: string;
 }
 
 export interface OrderAddress {
@@ -75,6 +78,8 @@ export interface Order {
   cancelReason: string | null;
   refundStatus: string | null;
   refundedPaise: number;
+  /** Units returned per item line (adminReturnSellerItem). */
+  returns: Record<string, number>;
 }
 
 export interface OrderEvent {
@@ -131,6 +136,8 @@ export function toOrder(id: string, d: Record<string, unknown>): Order {
       image: str(i['image']) || null,
       quantity: num(i['quantity']),
       pricePaise: num(i['pricePaise']),
+      sellerId: str(i['sellerId']) || 'zyppi',
+      sellerName: str(i['sellerName']),
     })),
     itemTotalPaise: num(d['itemTotalPaise']),
     deliveryFeePaise: num(d['deliveryFeePaise']),
@@ -146,6 +153,12 @@ export function toOrder(id: string, d: Record<string, unknown>): Order {
     cancelReason: str(d['cancelReason']) || null,
     refundStatus: str(d['refundStatus']) || null,
     refundedPaise: num(d['refundedPaise']),
+    returns: Object.fromEntries(
+      Object.entries((d['returns'] as Record<string, unknown> | undefined) ?? {}).map(([k, v]) => [
+        k,
+        num(v),
+      ]),
+    ),
   };
 }
 
