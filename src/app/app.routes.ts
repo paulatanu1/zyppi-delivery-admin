@@ -202,6 +202,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/support/support-page').then((m) => m.SupportPage),
       },
       {
+        path: 'returns',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'support', 'finance'], heading: 'Operations' },
+        title: 'Returns · Zyppi Admin',
+        loadComponent: () => import('./features/returns/returns-page').then((m) => m.ReturnsPage),
+      },
+      {
         path: 'claims',
         canActivate: [roleGuard],
         data: { roles: ['ops', 'support', 'finance'], heading: 'Operations' },

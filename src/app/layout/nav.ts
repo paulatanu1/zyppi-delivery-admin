@@ -36,6 +36,12 @@ export const NAV: NavGroup[] = [
       { label: 'Sellers', icon: 'shop', link: '/sellers', roles: ['ops', 'finance', 'catalog'] },
       { label: 'Inventory', icon: 'inbox', link: '/catalog/inventory', roles: ['ops', 'catalog'] },
       {
+        label: 'Returns',
+        icon: 'swap',
+        link: '/returns',
+        roles: ['ops', 'support', 'finance'],
+      },
+      {
         label: 'Claims',
         icon: 'alert',
         link: '/claims',

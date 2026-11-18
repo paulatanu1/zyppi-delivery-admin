@@ -33,6 +33,19 @@ export class ClaimsApi {
     );
   }
 
+  /** Claims being handled by an automatic return pickup. */
+  watchReturning(): Live<Claim[]> {
+    return liveQuery(
+      query(
+        collection(this.db, 'orderIssues'),
+        where('status', '==', 'returning'),
+        orderBy('createdAt', 'desc'),
+        limit(100),
+      ),
+      (s) => s.docs.map((d) => toClaim(d.id, d.data())),
+    );
+  }
+
   /** The latest decided claims. */
   watchReviewed(): Live<Claim[]> {
     return liveQuery(

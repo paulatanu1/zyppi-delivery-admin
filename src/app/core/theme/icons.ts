@@ -57,6 +57,7 @@ import {
   TeamOutline,
   ThunderboltOutline,
   ToolOutline,
+  SwapOutline,
   UploadOutline,
   UserAddOutline,
   UserDeleteOutline,
@@ -127,4 +128,5 @@ export const ICONS = [
   UserAddOutline,
   UserDeleteOutline,
   WalletOutline,
+  SwapOutline,
 ];

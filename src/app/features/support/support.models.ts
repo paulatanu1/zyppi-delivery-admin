@@ -92,11 +92,12 @@ export const KB_LANG_NAMES: Record<KbLang, string> = {
   hi: 'हिन्दी',
   pa: 'ਪੰਜਾਬੀ',
 };
-export type KbAction = 'none' | 'order_status' | 'handoff';
+export type KbAction = 'none' | 'order_status' | 'handoff' | 'return_flow';
 export const KB_ACTIONS: { value: KbAction; label: string }[] = [
   { value: 'none', label: 'Just answer' },
   { value: 'order_status', label: 'Show the order status' },
   { value: 'handoff', label: 'Answer, then connect to the team' },
+  { value: 'return_flow', label: 'Answer, then offer "Start a return"' },
 ];
 
 /** Matches functions/src/support/kb/types.ts (vectors left out). */

@@ -7,7 +7,8 @@ import { Timestamp } from 'firebase/firestore';
  */
 export type ClaimKind = 'missing' | 'wrong' | 'damaged' | 'expired';
 export type ClaimResolution = 'wallet' | 'original' | 'replacement';
-export type ClaimStatus = 'open' | 'resolving' | 'approved' | 'rejected';
+/** returning: an automatic return pickup is under way (no ops step). */
+export type ClaimStatus = 'open' | 'resolving' | 'returning' | 'approved' | 'rejected';
 
 export interface ClaimLine {
   index: number;
@@ -34,6 +35,13 @@ export interface Claim {
   deliveredAt: Timestamp | null;
   lastError: string | null;
   rejectReason: string | null;
+  /** Went straight to a return pickup (zyppi-APP functions/src/returns). */
+  autoReturn: boolean;
+  /** Why it waits for ops (missing item, over the limit, rider: doesn't match…). */
+  reviewReason: string | null;
+  returnIds: string[];
+  /** Already paid by automatic returns (an ops decision can only add the rest). */
+  returnPaidPaise: number;
   resolution: {
     type: ClaimResolution | 'rejected' | null;
     walletPaise: number;
@@ -60,6 +68,7 @@ export const RESOLUTION_LABEL: Record<ClaimResolution, string> = {
 export const STATUS_META: Record<ClaimStatus, { label: string; color: string }> = {
   open: { label: 'To review', color: 'orange' },
   resolving: { label: 'Resolving', color: 'blue' },
+  returning: { label: 'Return pickup', color: 'cyan' },
   approved: { label: 'Approved', color: 'green' },
   rejected: { label: 'Rejected', color: 'red' },
 };
@@ -67,7 +76,7 @@ export const STATUS_META: Record<ClaimStatus, { label: string; color: string }> 
 const ZYPPI_SELLER = 'zyppi';
 const KINDS: ClaimKind[] = ['missing', 'wrong', 'damaged', 'expired'];
 const RESOLUTIONS: ClaimResolution[] = ['wallet', 'original', 'replacement'];
-const STATUSES: ClaimStatus[] = ['open', 'resolving', 'approved', 'rejected'];
+const STATUSES: ClaimStatus[] = ['open', 'resolving', 'returning', 'approved', 'rejected'];
 
 const int = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : 0);
 const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
@@ -105,6 +114,12 @@ export function toClaim(id: string, d: Record<string, unknown>): Claim {
     deliveredAt: ts(d['deliveredAt']),
     lastError: str(d['lastError']),
     rejectReason: str(d['rejectReason']),
+    autoReturn: d['autoReturn'] === true,
+    reviewReason: str(d['reviewReason']),
+    returnIds: ((d['returnIds'] as unknown[] | undefined) ?? []).filter(
+      (x): x is string => typeof x === 'string',
+    ),
+    returnPaidPaise: int(d['returnPaidPaise']),
     resolution: {
       type: (str(r['type']) as Claim['resolution']['type']) ?? null,
       walletPaise: int(r['walletPaise']),
@@ -149,3 +164,8 @@ export function claimAmountPaise(input: string, maxPaise: number): number | null
 
 /** Customers with this many claims in their history are flagged. */
 export const REPEAT_CLAIMS = 3;
+
+/** What ops can still pay on a claim after automatic returns paid part of it. */
+export function payableLeft(c: Pick<Claim, 'amountPaise' | 'returnPaidPaise'>): number {
+  return Math.max(0, c.amountPaise - c.returnPaidPaise);
+}

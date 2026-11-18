@@ -27,6 +27,7 @@ import {
   STATUS_META,
   claimAmountPaise,
   hasMarketplaceLine,
+  payableLeft,
   resolutionsFor,
   suggestSellerAtFault,
 } from './claims.models';
@@ -64,13 +65,20 @@ import {
     />
     <nz-tabs [nzSelectedIndex]="tab()" (nzSelectedIndexChange)="tab.set($event)">
       <nz-tab [nzTitle]="'To review (' + (open.value() ?? []).length + ')'"></nz-tab>
+      <nz-tab [nzTitle]="'Return pickups (' + (returning.value() ?? []).length + ')'"></nz-tab>
       <nz-tab nzTitle="Reviewed"></nz-tab>
     </nz-tabs>
     <z-page-state
       [status]="list().status()"
       [error]="list().error()"
       [empty]="(list().value() ?? []).length === 0"
-      [emptyTitle]="tab() === 0 ? 'No claims to review' : 'No reviewed claims yet'"
+      [emptyTitle]="
+        tab() === 0
+          ? 'No claims to review'
+          : tab() === 1
+            ? 'No return pickups under way'
+            : 'No reviewed claims yet'
+      "
       emptyText="Customers report problems from Order details in the app."
       (retry)="list().retry()"
     >
@@ -128,8 +136,20 @@ import {
                 }
               }
             </div>
-            @if (c.lastError) {
+            @if (c.reviewReason && c.status === 'open') {
+              <div class="z-caption">Needs ops: {{ c.reviewReason }}</div>
+            }
+            @if (c.lastError && c.lastError !== c.reviewReason) {
               <nz-alert nzType="warning" nzShowIcon [nzMessage]="c.lastError" />
+            }
+            @if (c.autoReturn) {
+              <div class="z-caption">
+                Automatic return ·
+                <a routerLink="/returns">{{ c.returnIds.length }} pickup(s)</a>
+                @if (c.returnPaidPaise) {
+                  · {{ c.returnPaidPaise | rupees }} already paid
+                }
+              </div>
             }
             @if (c.status === 'approved') {
               <div class="text-[13px]">
@@ -200,7 +220,9 @@ import {
                   (ngModelChange)="amount.set($event)"
                 />
                 <div class="z-caption mt-1">
-                  Up to {{ c.amountPaise | rupees }} (item price less its share of the coupon).
+                  Up to {{ payableLeft(c) | rupees }} (item price less its share of the coupon{{
+                    c.returnPaidPaise ? ', less what returns already paid' : ''
+                  }}).
                   @if (resolution() === 'original') {
                     Any part the online payment can’t take goes to the wallet.
                   }
@@ -282,11 +304,15 @@ export class ClaimsPage {
   readonly kindLabel = KIND_LABEL;
   readonly resolutionLabel = RESOLUTION_LABEL;
   readonly repeat = REPEAT_CLAIMS;
+  readonly payableLeft = payableLeft;
 
   readonly open = this.api.watchOpen();
   readonly reviewed = this.api.watchReviewed();
   readonly tab = signal(0);
-  readonly list = computed(() => (this.tab() === 0 ? this.open : this.reviewed));
+  readonly returning = this.api.watchReturning();
+  readonly list = computed(() =>
+    this.tab() === 0 ? this.open : this.tab() === 1 ? this.returning : this.reviewed,
+  );
 
   /** adminResolveIssue / adminRejectIssue allow these roles. */
   readonly canDecide = computed(() => hasRole(this.auth.role(), ['ops', 'finance']));
@@ -316,7 +342,7 @@ export class ClaimsPage {
     const c = this.approving();
     if (!c || this.busy()) return false;
     return (
-      this.resolution() === 'replacement' || claimAmountPaise(this.amount(), c.amountPaise) != null
+      this.resolution() === 'replacement' || claimAmountPaise(this.amount(), payableLeft(c)) != null
     );
   });
 
@@ -345,7 +371,8 @@ export class ClaimsPage {
     this.resolution.set(
       resolutionsFor(c).includes(c.resolutionWanted) ? c.resolutionWanted : 'wallet',
     );
-    this.amount.set((c.amountPaise / 100).toFixed(c.amountPaise % 100 ? 2 : 0));
+    const left = payableLeft(c);
+    this.amount.set((left / 100).toFixed(left % 100 ? 2 : 0));
     this.sellerAtFault.set(suggestSellerAtFault(c));
     this.approving.set(c);
     void this.loadCount(c.userId);
@@ -364,7 +391,7 @@ export class ClaimsPage {
     if (!c) return;
     const resolution = this.resolution();
     const amountPaise =
-      resolution === 'replacement' ? null : claimAmountPaise(this.amount(), c.amountPaise);
+      resolution === 'replacement' ? null : claimAmountPaise(this.amount(), payableLeft(c));
     this.busy.set(true);
     this.error.set(null);
     try {
