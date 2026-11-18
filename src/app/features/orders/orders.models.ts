@@ -78,6 +78,12 @@ export interface Order {
   cancelReason: string | null;
   refundStatus: string | null;
   refundedPaise: number;
+  /** Paid from the Zyppi wallet (docs/WALLET.md in zyppi-APP). */
+  walletPaise: number;
+  /** Paid through PayU, or the cash taken at the door: totalPaise − walletPaise. */
+  payablePaise: number;
+  /** Set on a free replacement for an approved claim. */
+  replacementOf: string | null;
   /** Units returned per item line (adminReturnSellerItem). */
   returns: Record<string, number>;
 }
@@ -95,7 +101,17 @@ export function shortOrderId(id: string): string {
   return /^[0-9a-f]{8}-/i.test(id) ? id.slice(0, 8).toUpperCase() : id;
 }
 
-export const isOnline = (o: Pick<Order, 'paymentMethod'>) => o.paymentMethod !== 'Cash on delivery';
+/** Paid through PayU (UPI / card). Wallet, replacement and cash orders aren't. */
+export const isOnline = (o: Pick<Order, 'paymentMethod'>) =>
+  o.paymentMethod === 'UPI' || o.paymentMethod === 'Credit or debit card';
+
+/** What can still go back to the online payment (the wallet part never does). */
+export function onlineRefundable(
+  o: Pick<Order, 'paymentMethod' | 'paymentStatus' | 'payablePaise' | 'refundedPaise'>,
+): number {
+  if (!isOnline(o) || o.paymentStatus !== 'succeeded') return 0;
+  return Math.max(0, o.payablePaise - o.refundedPaise);
+}
 
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
@@ -145,6 +161,13 @@ export function toOrder(id: string, d: Record<string, unknown>): Order {
     tipPaise: num(d['tipPaise']),
     discountPaise: num(d['discountPaise']),
     totalPaise: num(d['totalPaise']),
+    walletPaise: num(d['walletPaise']),
+    // Older orders have no wallet part: PayU / cash paid the whole total.
+    payablePaise:
+      typeof payment['amountPaise'] === 'number'
+        ? (payment['amountPaise'] as number)
+        : num(d['totalPaise']),
+    replacementOf: str(d['replacementOf']) || null,
     couponCode: str(d['couponCode']) || null,
     etaMinutes: typeof d['etaMinutes'] === 'number' ? d['etaMinutes'] : null,
     riderId: str(d['riderId']) || null,

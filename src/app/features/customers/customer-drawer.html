@@ -29,6 +29,11 @@
               @if (!c.hasDevice) {
                 <nz-tag>No device for pushes</nz-tag>
               }
+              @if (c.claimCount) {
+                <nz-tag [nzColor]="c.claimCount >= 3 ? 'red' : 'default'">
+                  {{ c.claimCount }} claim(s)
+                </nz-tag>
+              }
             </div>
           </div>
           <div class="flex gap-2">
@@ -48,7 +53,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4">
           <div class="z-card p-3">
             <div class="z-overline">Orders</div>
             <div class="z-display text-[20px]">{{ c.orderCount }}</div>
@@ -64,6 +69,10 @@
           <div class="z-card p-3">
             <div class="z-overline">Last order</div>
             <div class="text-[13px] font-bold mt-1">{{ c.lastOrderAt | when }}</div>
+          </div>
+          <div class="z-card p-3">
+            <div class="z-overline">Wallet</div>
+            <div class="z-display text-[20px]">{{ c.walletPaise | rupees }}</div>
           </div>
         </div>
 
@@ -94,6 +103,45 @@
                   </li>
                 } @empty {
                   <p class="z-muted">No orders yet.</p>
+                }
+              </ul>
+            }
+          </nz-tab>
+          <nz-tab nzTitle="Wallet">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="z-muted flex-1">
+                Store credit from refunds and claims. It can’t be withdrawn as cash.
+              </span>
+              @if (canCredit()) {
+                <button nz-button (click)="openCredit()">
+                  <span nz-icon nzType="wallet"></span>Add credit
+                </button>
+              }
+            </div>
+            @if (wallet() === null) {
+              <p class="z-muted" aria-busy="true">Loading…</p>
+            } @else {
+              <ul class="list-none p-0 m-0">
+                @for (w of wallet(); track w.id) {
+                  <li
+                    class="flex flex-wrap items-center gap-2 py-2 border-b border-[var(--z-line)]"
+                  >
+                    <span class="flex-1">
+                      {{ walletLabel[w.type] ?? w.type }}
+                      @if (w.status === 'held') {
+                        <nz-tag nzColor="blue">Held for a payment</nz-tag>
+                      }
+                      @if (w.type === 'credit' && w.reason) {
+                        <span class="z-caption"> · {{ w.reason }}</span>
+                      }
+                    </span>
+                    <span class="z-caption">{{ w.at | when }}</span>
+                    <b [style.color]="w.amountPaise > 0 ? 'var(--z-ok)' : null">
+                      {{ w.amountPaise > 0 ? '+' : '−' }}{{ abs(w.amountPaise) | rupees }}
+                    </b>
+                  </li>
+                } @empty {
+                  <p class="z-muted">No wallet activity.</p>
                 }
               </ul>
             }
@@ -222,6 +270,42 @@
       class="mt-1"
       [ngModel]="pushBody()"
       (ngModelChange)="pushBody.set($event)"
+    ></textarea>
+  </ng-container>
+</nz-modal>
+
+<nz-modal
+  [nzVisible]="creditOpen()"
+  nzTitle="Add wallet credit"
+  nzOkText="Add credit"
+  [nzOkLoading]="busy()"
+  [nzOkDisabled]="creditPaise() === null || creditReason().trim().length < 3"
+  (nzOnOk)="credit()"
+  (nzOnCancel)="creditOpen.set(false)"
+>
+  <ng-container *nzModalContent>
+    <p class="mb-3 z-muted">
+      For goodwill, a problem found after the 2-hour claim window, or a cash order paid back. Up to
+      {{ creditMax | rupees }} per credit; every credit is in the audit log.
+    </p>
+    <label for="credit-amount" class="font-bold">Amount (₹)</label>
+    <input
+      nz-input
+      id="credit-amount"
+      inputmode="decimal"
+      class="mt-1 mb-3"
+      [ngModel]="creditAmount()"
+      (ngModelChange)="creditAmount.set($event)"
+    />
+    <label for="credit-reason" class="font-bold">Reason (the customer sees it)</label>
+    <textarea
+      nz-input
+      id="credit-reason"
+      rows="3"
+      maxlength="300"
+      class="mt-1"
+      [ngModel]="creditReason()"
+      (ngModelChange)="creditReason.set($event)"
     ></textarea>
   </ng-container>
 </nz-modal>

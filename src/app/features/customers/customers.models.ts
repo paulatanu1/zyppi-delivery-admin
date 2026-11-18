@@ -16,7 +16,45 @@ export interface Customer {
   hasDevice: boolean;
   blocked: boolean;
   blockedReason: string | null;
+  /** Zyppi wallet balance (written only by functions/src/wallet). */
+  walletPaise: number;
+  /** "Report a problem" claims, all time. */
+  claimCount: number;
 }
+
+/** One line of users/{uid}/wallet (signed: + in, − out). */
+export interface WalletEntry {
+  id: string;
+  type: string;
+  amountPaise: number;
+  reason: string;
+  orderId: string | null;
+  status: string | null;
+  at: Timestamp | null;
+}
+
+export const WALLET_TYPE_LABEL: Record<string, string> = {
+  spend: 'Paid for an order',
+  release: 'Payment not completed: returned',
+  cancel: 'Order cancelled: returned',
+  claim: 'Claim approved',
+  credit: 'Staff credit',
+};
+
+export function toWalletEntry(id: string, d: Record<string, unknown>): WalletEntry {
+  return {
+    id,
+    type: str(d['type']) ?? '',
+    amountPaise: Math.round(Number(d['amountPaise']) || 0),
+    reason: str(d['reason']) ?? '',
+    orderId: str(d['orderId']),
+    status: str(d['status']),
+    at: ts(d['at']),
+  };
+}
+
+/** adminCreditWallet allows at most this per credit. */
+export const MAX_WALLET_CREDIT_PAISE = 500_000;
 
 export interface CustomerAddress {
   id: string;
@@ -59,6 +97,8 @@ export function toCustomer(id: string, d: Record<string, unknown>): Customer {
     hasDevice: !!str(d['fcmToken']),
     blocked: d['blocked'] === true,
     blockedReason: str(d['blockedReason']),
+    walletPaise: Math.max(0, Math.round(Number(d['walletPaise']) || 0)),
+    claimCount: Number((d['claimStats'] as { count?: unknown } | undefined)?.count) || 0,
   };
 }
 

@@ -202,9 +202,17 @@ export const routes: Routes = [
         loadComponent: () => import('./features/support/support-page').then((m) => m.SupportPage),
       },
       {
+        path: 'claims',
+        canActivate: [roleGuard],
+        data: { roles: ['ops', 'support', 'finance'], heading: 'Operations' },
+        title: 'Claims · Zyppi Admin',
+        loadComponent: () => import('./features/claims/claims-page').then((m) => m.ClaimsPage),
+      },
+      {
         path: 'customers',
         canActivate: [roleGuard],
-        data: { roles: ['ops', 'support'], heading: 'Operations' },
+        // Finance: wallet credits (adminCreditWallet).
+        data: { roles: ['ops', 'support', 'finance'], heading: 'Operations' },
         title: 'Customers · Zyppi Admin',
         loadComponent: () =>
           import('./features/customers/customers-page').then((m) => m.CustomersPage),
@@ -212,7 +220,7 @@ export const routes: Routes = [
       {
         path: 'customers/:id',
         canActivate: [roleGuard],
-        data: { roles: ['ops', 'support'], heading: 'Operations' },
+        data: { roles: ['ops', 'support', 'finance'], heading: 'Operations' },
         title: 'Customer · Zyppi Admin',
         loadComponent: () =>
           import('./features/customers/customers-page').then((m) => m.CustomersPage),

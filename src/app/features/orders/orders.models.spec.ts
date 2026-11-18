@@ -1,5 +1,12 @@
 import { Timestamp } from 'firebase/firestore';
-import { ago, navigateUrl, shortOrderId, toOrder } from './orders.models';
+import {
+  ago,
+  isOnline,
+  navigateUrl,
+  onlineRefundable,
+  shortOrderId,
+  toOrder,
+} from './orders.models';
 
 describe('orders.models', () => {
   it('formats short ids like the app', () => {
@@ -47,5 +54,41 @@ describe('orders.models', () => {
     const now = 10 * 3600_000;
     expect(ago(Timestamp.fromMillis(now - 5 * 60_000), now)).toBe('5 min');
     expect(ago(Timestamp.fromMillis(now - 3 * 3600_000), now)).toBe('3 h');
+  });
+});
+
+describe('wallet-paid orders', () => {
+  const base = { status: 'delivered', totalPaise: 25000, refundedPaise: 0 };
+
+  it('only the PayU part can be refunded online; the wallet part never', () => {
+    const o = toOrder('o1', {
+      ...base,
+      paymentMethod: 'UPI',
+      walletPaise: 10000,
+      payment: { method: 'UPI', status: 'succeeded', amountPaise: 15000 },
+    });
+    expect(o.walletPaise).toBe(10000);
+    expect(o.payablePaise).toBe(15000);
+    expect(onlineRefundable(o)).toBe(15000);
+    expect(onlineRefundable({ ...o, refundedPaise: 5000 })).toBe(10000);
+  });
+
+  it('older orders: PayU paid the whole total', () => {
+    const o = toOrder('o1', { ...base, paymentMethod: 'UPI', payment: { status: 'succeeded' } });
+    expect(o.payablePaise).toBe(25000);
+    expect(onlineRefundable(o)).toBe(25000);
+  });
+
+  it('wallet, replacement and cash orders have nothing to refund online', () => {
+    for (const method of ['Wallet', 'Replacement', 'Cash on delivery']) {
+      const o = toOrder('o1', {
+        ...base,
+        paymentMethod: method,
+        payment: { method, status: 'succeeded', amountPaise: 0 },
+      });
+      expect(isOnline(o)).toBe(false);
+      expect(onlineRefundable(o)).toBe(0);
+    }
+    expect(toOrder('o2', { ...base, replacementOf: 'o1' }).replacementOf).toBe('o1');
   });
 });

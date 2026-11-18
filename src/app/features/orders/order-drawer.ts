@@ -10,6 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDrawerModule } from 'ng-zorro-antd/drawer';
@@ -36,7 +37,7 @@ import {
   Order,
   OrderEvent,
   STATUS_META,
-  isOnline,
+  onlineRefundable,
   navigateUrl,
 } from './orders.models';
 
@@ -45,6 +46,7 @@ import {
   selector: 'z-order-drawer',
   imports: [
     FormsModule,
+    RouterLink,
     NzAlertModule,
     NzButtonModule,
     NzDrawerModule,
@@ -130,8 +132,7 @@ export class OrderDrawer {
   readonly navigate = computed(() => navigateUrl(this.order()?.address ?? null));
   readonly refundable = computed(() => {
     const o = this.order();
-    if (!o || !isOnline(o) || o.paymentStatus !== 'succeeded') return 0;
-    return Math.max(0, o.totalPaise - o.refundedPaise);
+    return o ? onlineRefundable(o) : 0;
   });
   /** Riders of the order's area first, then the rest. */
   readonly riderOptions = computed(() => {

@@ -34,9 +34,13 @@ import {
   Customer,
   CustomerAddress,
   CustomerAuth,
+  MAX_WALLET_CREDIT_PAISE,
+  WALLET_TYPE_LABEL,
+  WalletEntry,
   averageOrder,
   customerName,
 } from './customers.models';
+import { claimAmountPaise } from '../claims/claims.models';
 
 const PROVIDERS: Record<string, string> = {
   phone: 'Phone OTP',
@@ -79,6 +83,21 @@ export class CustomerDrawer {
   readonly canBlock = computed(() => hasRole(this.auth.role(), ['ops']));
   readonly canOrders = computed(() => hasRole(this.auth.role(), ['ops', 'support']));
   readonly canSupport = computed(() => hasRole(this.auth.role(), ['support']));
+  /** adminCreditWallet is finance only. */
+  readonly canCredit = computed(() => hasRole(this.auth.role(), ['finance']));
+  readonly walletLabel = WALLET_TYPE_LABEL;
+  readonly abs = Math.abs;
+  readonly wallet = signal<WalletEntry[] | null>(null);
+
+  // Wallet credit dialog.
+  readonly creditOpen = signal(false);
+  readonly creditAmount = signal('');
+  readonly creditReason = signal('');
+  readonly creditMax = MAX_WALLET_CREDIT_PAISE;
+  readonly creditPaise = computed(() =>
+    claimAmountPaise(this.creditAmount(), MAX_WALLET_CREDIT_PAISE),
+  );
+  private creditRequestId = '';
 
   readonly customer = signal<Customer | null>(null);
   readonly status = signal<LoadStatus>('loading');
@@ -123,6 +142,7 @@ export class CustomerDrawer {
     this.addresses.set(null);
     this.chats.set(null);
     this.account.set(null);
+    this.wallet.set(null);
     this.sideError.set(null);
     if (!id) return;
     this.status.set('loading');
@@ -148,18 +168,20 @@ export class CustomerDrawer {
 
   async loadSide(id: string): Promise<void> {
     this.sideError.set(null);
-    const [orders, addresses, chats, account] = await Promise.allSettled([
+    const [orders, addresses, chats, account, wallet] = await Promise.allSettled([
       this.api.orders(id),
       this.api.addresses(id),
       this.canSupport() ? this.api.chats(id) : Promise.resolve([]),
       this.api.auth(id),
+      this.api.wallet(id),
     ]);
     if (this.id() !== id) return;
     this.orders.set(orders.status === 'fulfilled' ? orders.value : []);
     this.addresses.set(addresses.status === 'fulfilled' ? addresses.value : []);
     this.chats.set(chats.status === 'fulfilled' ? chats.value : []);
     this.account.set(account.status === 'fulfilled' ? account.value : null);
-    const failed = [orders, addresses, chats, account].find((r) => r.status === 'rejected');
+    this.wallet.set(wallet.status === 'fulfilled' ? wallet.value : []);
+    const failed = [orders, addresses, chats, account, wallet].find((r) => r.status === 'rejected');
     if (failed) this.sideError.set('Some details couldn’t be loaded.');
   }
 
@@ -192,6 +214,31 @@ export class CustomerDrawer {
       await this.api.setBlocked(c.id, blocked, reason);
       this.message.success(blocked ? 'Customer blocked from ordering' : 'Customer unblocked');
       this.blockOpen.set(false);
+    } catch (e) {
+      this.message.error((e as Error).message);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  openCredit(): void {
+    this.creditAmount.set('');
+    this.creditReason.set('');
+    // One id per dialog: a retry or double click can't credit twice.
+    this.creditRequestId = crypto.randomUUID();
+    this.creditOpen.set(true);
+  }
+
+  async credit(): Promise<void> {
+    const c = this.customer();
+    const paise = this.creditPaise();
+    if (!c || paise == null) return;
+    this.busy.set(true);
+    try {
+      await this.api.creditWallet(c.id, paise, this.creditReason().trim(), this.creditRequestId);
+      this.message.success('Wallet credited; the customer can spend it right away');
+      this.creditOpen.set(false);
+      this.wallet.set(await this.api.wallet(c.id));
     } catch (e) {
       this.message.error((e as Error).message);
     } finally {

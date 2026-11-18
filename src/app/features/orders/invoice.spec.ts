@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import { invoiceDefinition, packingSlipDefinition } from './invoice';
+import { invoiceDefinition, packingSlipDefinition, paymentNote } from './invoice';
 import { toOrder } from './orders.models';
 
 const order = toOrder('3f2a9c1b-0000-4000-8000-000000000000', {
@@ -62,5 +62,20 @@ describe('invoice', () => {
     pdfMake.addVirtualFileSystem(vfs);
     const buffer = await pdfMake.createPdf(invoiceDefinition(order, null, 'Purulia')).getBuffer();
     expect(new TextDecoder().decode(buffer.slice(0, 5))).toBe('%PDF-');
+  });
+});
+
+describe('paymentNote', () => {
+  it('says how the order was paid', () => {
+    expect(paymentNote({ paymentMethod: 'UPI', providerReference: 'mih1' })).toBe('PayU ref mih1');
+    expect(paymentNote({ paymentMethod: 'Wallet', providerReference: null })).toBe(
+      'Paid from Zyppi wallet',
+    );
+    expect(paymentNote({ paymentMethod: 'Replacement', providerReference: null })).toBe(
+      'Free replacement',
+    );
+    expect(paymentNote({ paymentMethod: 'Cash on delivery', providerReference: null })).toBe(
+      'Paid on delivery',
+    );
   });
 });

@@ -150,6 +150,26 @@
                 <span class="z-caption">PayU {{ o.providerReference }}</span>
               }
             </div>
+            @if (o.walletPaise > 0) {
+              <div class="z-caption mt-1">
+                Wallet {{ o.walletPaise | rupees }}
+                @if (o.payablePaise > 0) {
+                  ·
+                  {{
+                    o.paymentMethod === 'Cash on delivery' ? 'Cash at the door' : o.paymentMethod
+                  }}
+                  {{ o.payablePaise | rupees }}
+                }
+              </div>
+            }
+            @if (o.replacementOf) {
+              <div class="z-caption mt-1">
+                Free replacement for
+                <a [routerLink]="['/orders', o.replacementOf]"
+                  >#{{ o.replacementOf.slice(0, 8).toUpperCase() }}</a
+                >
+              </div>
+            }
             @for (r of refunds(); track r.id) {
               <div class="z-card p-3 mt-3 flex items-center gap-3">
                 <div class="flex-1 min-w-0">
@@ -272,13 +292,12 @@
     <div class="flex flex-col gap-3">
       <p class="z-muted">
         The customer is notified, stock goes back to the store
-        @if (
-          order() &&
-          order()!.paymentStatus === 'succeeded' &&
-          order()!.paymentMethod !== 'Cash on delivery'
-        ) {
-          and <b>{{ order()!.totalPaise - order()!.refundedPaise | rupees }}</b> is refunded to
-          their {{ order()!.paymentMethod }}
+        @if (refundable() > 0) {
+          and <b>{{ refundable() | rupees }}</b> is refunded to their
+          {{ order()!.paymentMethod }}
+        }
+        @if (order() && order()!.walletPaise > 0) {
+          , <b>{{ order()!.walletPaise | rupees }}</b> goes back to their Zyppi wallet
         }
         . This can’t be undone.
       </p>

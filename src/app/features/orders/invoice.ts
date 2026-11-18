@@ -6,6 +6,14 @@ import { Order, isOnline } from './orders.models';
 
 const BRAND = '#673ab7';
 
+/** How the order was paid, for the invoice's Payment box. */
+export function paymentNote(o: Pick<Order, 'paymentMethod' | 'providerReference'>): string {
+  if (isOnline(o)) return `PayU ref ${o.providerReference ?? '—'}`;
+  if (o.paymentMethod === 'Wallet') return 'Paid from Zyppi wallet';
+  if (o.paymentMethod === 'Replacement') return 'Free replacement';
+  return 'Paid on delivery';
+}
+
 const right = (text: string, extra: Record<string, unknown> = {}): TableCell =>
   ({ text, alignment: 'right', ...extra }) as TableCell;
 const head = (text: string, alignRight = false): TableCell =>
@@ -103,7 +111,10 @@ export function invoiceDefinition(
             stack: [
               { text: 'Payment', bold: true, color: '#83868d', fontSize: 9 },
               { text: o.paymentMethod, bold: true, margin: [0, 2, 0, 0] },
-              { text: isOnline(o) ? `PayU ref ${o.providerReference ?? '—'}` : 'Paid on delivery' },
+              { text: paymentNote(o) },
+              ...(o.walletPaise > 0
+                ? [{ text: `Zyppi wallet ${formatPaise(o.walletPaise)}` }]
+                : []),
               { text: `Area: ${area}` },
             ],
             alignment: 'right',

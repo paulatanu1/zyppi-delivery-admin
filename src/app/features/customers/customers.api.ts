@@ -23,8 +23,10 @@ import {
   CustomerAddress,
   CustomerAuth,
   CustomerQuery,
+  WalletEntry,
   toAddress,
   toCustomer,
+  toWalletEntry,
 } from './customers.models';
 
 export const PAGE_SIZE = 25;
@@ -154,6 +156,28 @@ export class CustomersApi {
       uid,
       blocked,
       reason,
+    });
+  }
+
+  /** The newest wallet history entries. */
+  async wallet(uid: string): Promise<WalletEntry[]> {
+    const s = await getDocs(
+      query(collection(this.db, 'users', uid, 'wallet'), orderBy('at', 'desc'), limit(30)),
+    );
+    return s.docs.map((d) => toWalletEntry(d.id, d.data()));
+  }
+
+  /**
+   * Finance: add store credit (goodwill, a problem found after the 2-hour
+   * window, a cash order paid back). One requestId per dialog, so a double
+   * click or retry can't credit twice.
+   */
+  creditWallet(uid: string, amountPaise: number, reason: string, requestId: string) {
+    return this.callables.call<unknown, { ok: true }>('adminCreditWallet', {
+      uid,
+      amountPaise,
+      reason,
+      requestId,
     });
   }
 
