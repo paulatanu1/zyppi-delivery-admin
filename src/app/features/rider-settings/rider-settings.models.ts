@@ -33,6 +33,8 @@ export interface RiderConfig {
   emergency: { ambulance: string; police: string; accident: string };
   cashLimitPaise: number;
   waitMinutes: number;
+  /** % of the trip's pay for an order cancelled after pickup. */
+  cancelledTripPercent: number;
   pay: Record<string, PayRate>;
   surge: { enabled: boolean; extraPaise: number; label: string };
   peak: PeakWindow[];
@@ -67,6 +69,7 @@ export function defaultRiderConfig(): RiderConfig {
     emergency: { ambulance: '108', police: '112', accident: '' },
     cashLimitPaise: 300000,
     waitMinutes: 10,
+    cancelledTripPercent: 100,
     pay: { default: { ...DEFAULT_RATE } },
     surge: { enabled: false, extraPaise: 1000, label: 'Rain bonus' },
     peak: [],
@@ -127,6 +130,7 @@ export function toRiderConfig(raw: Record<string, unknown> | undefined): RiderCo
     },
     cashLimitPaise: n(r['cashLimitPaise'], d.cashLimitPaise),
     waitMinutes: n(r['waitMinutes'], d.waitMinutes),
+    cancelledTripPercent: n(r['cancelledTripPercent'], d.cancelledTripPercent),
     pay,
     surge: {
       enabled: surge['enabled'] === true,

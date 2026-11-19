@@ -429,8 +429,8 @@
               </nz-form-control>
             </nz-form-item>
             <nz-form-item>
-              <nz-form-label nzFor="cl">Cash-in-hand warning (₹)</nz-form-label>
-              <nz-form-control nzExtra="Rider is asked to hand cash over">
+              <nz-form-label nzFor="cl">Cash-in-hand limit (₹)</nz-form-label>
+              <nz-form-control nzExtra="Above it the rider is asked to hand cash over and gets no cash orders (0 = no limit)">
                 <nz-input-number
                   nzId="cl"
                   class="w-full"
@@ -438,6 +438,19 @@
                   [nzPrecision]="2"
                   [ngModel]="rupees(c.cashLimitPaise)"
                   (ngModelChange)="patch((x) => (x.cashLimitPaise = paise($event)))"
+                />
+              </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+              <nz-form-label nzFor="ct">Cancelled after pickup: trip pay (%)</nz-form-label>
+              <nz-form-control nzExtra="Share of the trip's pay when an order is cancelled after the rider collected it">
+                <nz-input-number
+                  nzId="ct"
+                  class="w-full"
+                  [nzMin]="0"
+                  [nzMax]="100"
+                  [ngModel]="c.cancelledTripPercent"
+                  (ngModelChange)="patch((x) => (x.cancelledTripPercent = $event))"
                 />
               </nz-form-control>
             </nz-form-item>
