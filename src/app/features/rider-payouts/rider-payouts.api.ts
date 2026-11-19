@@ -81,6 +81,7 @@ export class RiderPayoutsApi {
     method: 'upi' | 'bank' | 'cash';
     reference: string;
     payoutId?: string;
+    requestId: string;
   }) {
     return this.callables.call<unknown, { ok: true }>('adminRecordPayout', input);
   }

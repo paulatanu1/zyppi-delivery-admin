@@ -23,6 +23,8 @@ interface PayDraft {
   rupees: number | null;
   method: 'upi' | 'bank' | 'cash';
   reference: string;
+  /** One per dialog: a retried or double-clicked confirm records one payout. */
+  requestId: string;
 }
 
 /**
@@ -85,6 +87,7 @@ export class RiderPayoutsPage {
       rupees: r.amountPaise / 100,
       method: 'upi',
       reference: '',
+      requestId: crypto.randomUUID(),
     });
   }
 
@@ -96,6 +99,7 @@ export class RiderPayoutsPage {
       rupees: payable(b.earningsBalancePaise, b.codBalancePaise) / 100,
       method: 'upi',
       reference: '',
+      requestId: crypto.randomUUID(),
     });
   }
 
@@ -118,6 +122,7 @@ export class RiderPayoutsPage {
         method: d.method,
         reference: d.reference,
         payoutId: d.payoutId,
+        requestId: d.requestId,
       });
       this.message.success(`Payout to ${d.riderName} recorded`);
       this.pay.set(null);
