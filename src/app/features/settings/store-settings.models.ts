@@ -25,6 +25,8 @@ export interface StoreDoc {
   /** Rider pickup point; null = the area's centre. */
   lat: number | null;
   lng: number | null;
+  /** Minutes to pack an order (delivery ETA); null = the default (8). */
+  prepMinutes: number | null;
   isActive: boolean;
 }
 
@@ -79,6 +81,7 @@ export function toStore(id: string, d: Record<string, unknown>): StoreDoc {
     close: str(h['close']),
     lat: numOrNull(d['lat']),
     lng: numOrNull(d['lng']),
+    prepMinutes: numOrNull(d['prepMinutes']),
     isActive: d['isActive'] === true,
   };
 }

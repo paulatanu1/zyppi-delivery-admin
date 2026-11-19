@@ -218,6 +218,7 @@ export class StoreSettingsPage {
           close: '',
           lat: null,
           lng: null,
+          prepMinutes: null,
           isActive: true,
         },
       ),
