@@ -100,6 +100,16 @@ export const routes: Routes = [
           import('./features/seller-plans/seller-plans-page').then((m) => m.SellerPlansPage),
       },
       {
+        path: 'search-insights',
+        canActivate: [roleGuard],
+        data: { roles: ['catalog', 'ops'], heading: 'Catalog & growth' },
+        title: 'Search insights · Zyppi Admin',
+        loadComponent: () =>
+          import('./features/search-insights/search-insights-page').then(
+            (m) => m.SearchInsightsPage,
+          ),
+      },
+      {
         path: 'product-requests',
         canActivate: [roleGuard],
         data: { roles: ['catalog'], heading: 'Catalog & growth' },

@@ -62,6 +62,12 @@ export const NAV: NavGroup[] = [
       { label: 'Products', icon: 'tag', link: '/catalog/products', roles: ['catalog'] },
       { label: 'Categories', icon: 'apartment', link: '/catalog/categories', roles: ['catalog'] },
       {
+        label: 'Search insights',
+        icon: 'search',
+        link: '/search-insights',
+        roles: ['catalog', 'ops'],
+      },
+      {
         label: 'Product requests',
         icon: 'file-search',
         link: '/product-requests',
