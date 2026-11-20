@@ -43,7 +43,12 @@ export interface DeliveryPricing {
   feePaise: number;
   freeAbovePaise: number;
   minOrderPaise: number;
+  /** Added to every order (0 = none). The server uses ₹5 until it's set. */
+  handlingFeePaise: number;
 }
+
+/** functions/src/orders/delivery_config.ts DEFAULT_HANDLING_FEE_PAISE. */
+export const DEFAULT_HANDLING_FEE_PAISE = 500;
 
 export type AnnouncementTone = 'info' | 'warning' | 'offer';
 
@@ -102,6 +107,11 @@ export function toPricing(d: Record<string, unknown> | undefined): DeliveryPrici
     feePaise: int(d?.['feePaise']),
     freeAbovePaise: int(d?.['freeAbovePaise']),
     minOrderPaise: int(d?.['minOrderPaise']),
+    // 0 is a real value here ("no handling fee"); missing means the default.
+    handlingFeePaise: ((v) =>
+      typeof v === 'number' && Number.isInteger(v) && v >= 0 ? v : DEFAULT_HANDLING_FEE_PAISE)(
+      d?.['handlingFeePaise'],
+    ),
   };
 }
 

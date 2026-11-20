@@ -108,6 +108,7 @@ export class StoreSettingsPage {
   readonly fee = signal<number | null>(null);
   readonly freeAbove = signal<number | null>(null);
   readonly minOrder = signal<number | null>(null);
+  readonly handlingFee = signal<number | null>(null);
 
   // App config form.
   readonly app = signal<AppConfigDoc | null>(null);
@@ -135,6 +136,7 @@ export class StoreSettingsPage {
       this.fee.set(paiseToRupees(p.feePaise));
       this.freeAbove.set(paiseToRupees(p.freeAbovePaise));
       this.minOrder.set(paiseToRupees(p.minOrderPaise));
+      this.handlingFee.set(paiseToRupees(p.handlingFeePaise));
     });
     effect(() => {
       const c = this.appConfig.value();
@@ -164,6 +166,7 @@ export class StoreSettingsPage {
           feePaise: rupeesToPaise(this.fee()),
           freeAbovePaise: rupeesToPaise(this.freeAbove()),
           minOrderPaise: rupeesToPaise(this.minOrder()),
+          handlingFeePaise: rupeesToPaise(this.handlingFee()),
         }),
       'Delivery pricing saved; checkout uses it now',
     );

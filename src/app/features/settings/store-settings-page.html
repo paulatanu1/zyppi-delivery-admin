@@ -8,7 +8,7 @@
   <nz-tab nzTitle="Delivery pricing">
     <z-page-state [status]="pricing.status()" [error]="pricing.error()" (retry)="pricing.retry()">
       <form nz-form nzLayout="vertical" class="z-card p-5 max-w-xl" (ngSubmit)="savePricing()">
-        <div class="grid gap-x-4 sm:grid-cols-3">
+        <div class="grid gap-x-4 sm:grid-cols-2">
           <nz-form-item>
             <nz-form-label nzFor="fee">Delivery fee (₹)</nz-form-label>
             <nz-form-control>
@@ -52,6 +52,22 @@
                 [nzPrecision]="2"
                 [ngModel]="minOrder()"
                 (ngModelChange)="minOrder.set($event)"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzFor="handling">Handling fee (₹)</nz-form-label>
+            <nz-form-control nzExtra="Every order · 0 = none">
+              <nz-input-number
+                nzId="handling"
+                name="handling"
+                class="w-full"
+                [nzMin]="0"
+                [nzMax]="100"
+                [nzStep]="1"
+                [nzPrecision]="2"
+                [ngModel]="handlingFee()"
+                (ngModelChange)="handlingFee.set($event)"
               />
             </nz-form-control>
           </nz-form-item>
@@ -516,7 +532,9 @@
         </nz-form-item>
         <nz-form-item>
           <nz-form-label nzFor="sprep">Packing time (min)</nz-form-label>
-          <nz-form-control nzExtra="Used for the delivery time customers are promised. Empty = 8 min.">
+          <nz-form-control
+            nzExtra="Used for the delivery time customers are promised. Empty = 8 min."
+          >
             <nz-input-number
               nzId="sprep"
               class="w-full"
