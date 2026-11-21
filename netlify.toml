@@ -1,0 +1,12 @@
+# Netlify builds and publishes the admin on every push to the production
+# branch (main) once the site is linked to this GitHub repo.
+# Node comes from .nvmrc (Angular CLI needs >= 24.15).
+[build]
+  command = "npm run build && node scripts/check-csp.mjs && node scripts/netlify-headers.mjs"
+  publish = "dist/zyppi-admin/browser"
+
+# Deep links (/orders/123) load the app; public/_redirects says the same.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
