@@ -16,18 +16,38 @@ import {
 } from 'firebase/firestore';
 import { Callables } from '../../core/firebase/callable';
 import { FIRESTORE } from '../../core/firebase/firebase';
+import { Claim, toClaim } from '../claims/claims.models';
 import { Order, toOrder } from '../orders/orders.models';
+import { Intent, toIntent } from '../payments/payments.api';
+import { ReturnDoc, toReturn } from '../returns/returns.models';
 import { Chat, toChat } from '../support/support.models';
 import {
+  CartLine,
+  Consent,
   Customer,
   CustomerAddress,
   CustomerAuth,
   CustomerQuery,
+  Favourite,
+  InboxEntry,
+  SellerRating,
   WalletEntry,
+  newestFirst,
+  ratingsOf,
   toAddress,
+  toCartLine,
+  toConsent,
   toCustomer,
+  toFavourite,
+  toInboxEntry,
   toWalletEntry,
 } from './customers.models';
+
+/** A product's name and variant labels, for cart and favourites. */
+export interface ProductName {
+  name: string;
+  variants: Record<string, string>;
+}
 
 export const PAGE_SIZE = 25;
 
@@ -115,7 +135,8 @@ export class CustomersApi {
       .sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
   }
 
-  async orders(uid: string): Promise<Order[]> {
+  /** The newest 50 orders, and the seller ratings given on them. */
+  async orders(uid: string): Promise<{ orders: Order[]; ratings: SellerRating[] }> {
     const s = await getDocs(
       query(
         collection(this.db, 'orders'),
@@ -124,7 +145,15 @@ export class CustomersApi {
         limit(50),
       ),
     );
-    return s.docs.map((d) => toOrder(d.id, d.data()));
+    const orders = s.docs.map((d) => toOrder(d.id, d.data()));
+    const ratings = s.docs.flatMap((d, i) =>
+      ratingsOf(
+        d.id,
+        d.data(),
+        Object.fromEntries(orders[i].items.map((it) => [it.sellerId, it.sellerName])),
+      ),
+    );
+    return { orders, ratings };
   }
 
   async chats(uid: string): Promise<Chat[]> {
@@ -179,6 +208,104 @@ export class CustomersApi {
       reason,
       requestId,
     });
+  }
+
+  async cart(uid: string): Promise<CartLine[]> {
+    const s = await getDocs(collection(this.db, 'users', uid, 'cart'));
+    return newestFirst(
+      s.docs.map((d) => toCartLine(d.id, d.data())),
+      (l) => l.updatedAt,
+    );
+  }
+
+  async favourites(uid: string): Promise<Favourite[]> {
+    const s = await getDocs(collection(this.db, 'users', uid, 'favourites'));
+    return newestFirst(
+      s.docs.map((d) => toFavourite(d.id, d.data())),
+      (f) => f.createdAt,
+    );
+  }
+
+  /** The newest entries of the app's notification inbox. */
+  async inbox(uid: string): Promise<InboxEntry[]> {
+    const s = await getDocs(
+      query(collection(this.db, 'users', uid, 'notifications'), orderBy('at', 'desc'), limit(30)),
+    );
+    return s.docs.map((d) => toInboxEntry(d.id, d.data()));
+  }
+
+  async consents(uid: string): Promise<Consent[]> {
+    const s = await getDocs(collection(this.db, 'users', uid, 'consents'));
+    return newestFirst(
+      s.docs.map((d) => toConsent(d.id, d.data())),
+      (c) => c.acceptedAt,
+    );
+  }
+
+  // The next three filter on userId only (no composite index) and sort here.
+
+  /** "Report a problem" claims (ops, support, finance). */
+  async claims(uid: string): Promise<Claim[]> {
+    const s = await getDocs(
+      query(collection(this.db, 'orderIssues'), where('userId', '==', uid), limit(50)),
+    );
+    return newestFirst(
+      s.docs.map((d) => toClaim(d.id, d.data())),
+      (c) => c.createdAt,
+    );
+  }
+
+  /** Automatic return pickups (ops, support, finance). */
+  async returns(uid: string): Promise<ReturnDoc[]> {
+    const s = await getDocs(
+      query(collection(this.db, 'returns'), where('userId', '==', uid), limit(50)),
+    );
+    return newestFirst(
+      s.docs.map((d) => toReturn(d.id, d.data())),
+      (r) => r.createdAt,
+    );
+  }
+
+  /** Online payment attempts, paid or not. */
+  async payments(uid: string): Promise<Intent[]> {
+    const s = await getDocs(
+      query(collection(this.db, 'paymentIntents'), where('userId', '==', uid), limit(50)),
+    );
+    return newestFirst(
+      s.docs.map((d) => toIntent(d.id, d.data())),
+      (i) => i.createdAt,
+    );
+  }
+
+  /** A service area's name, or null when it's gone. */
+  async areaName(id: string): Promise<string | null> {
+    const s = await getDoc(doc(this.db, 'serviceAreas', id));
+    return s.exists() ? ((s.get('name') as string | undefined) ?? id) : null;
+  }
+
+  /** Names for product ids (missing or deleted products are left out). */
+  async productNames(ids: string[]): Promise<Map<string, ProductName>> {
+    const unique = [...new Set(ids.filter(Boolean))];
+    const out = new Map<string, ProductName>();
+    for (let i = 0; i < unique.length; i += 30) {
+      const s = await getDocs(
+        query(collection(this.db, 'products'), where(documentId(), 'in', unique.slice(i, i + 30))),
+      );
+      for (const d of s.docs) {
+        const variants = Array.isArray(d.get('variants'))
+          ? (d.get('variants') as { id?: unknown; label?: unknown }[])
+          : [];
+        out.set(d.id, {
+          name: (d.get('name') as string | undefined) ?? d.id,
+          variants: Object.fromEntries(
+            variants
+              .filter((v) => typeof v.id === 'string')
+              .map((v) => [v.id as string, typeof v.label === 'string' ? v.label : '']),
+          ),
+        });
+      }
+    }
+    return out;
   }
 
   push(uid: string, title: string, body: string) {

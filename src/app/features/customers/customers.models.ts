@@ -20,6 +20,139 @@ export interface Customer {
   walletPaise: number;
   /** "Report a problem" claims, all time. */
   claimCount: number;
+  dob: string | null;
+  gender: string | null;
+  preferredPaymentMethod: string | null;
+  notifyOrderUpdates: boolean;
+  /** Push tokens of the customer's signed-in phones (newest first). */
+  pushTokens: string[];
+  pushTokenAt: Timestamp | null;
+  updatedAt: Timestamp | null;
+}
+
+/** A push token shortened for the screen: enough to tell phones apart. */
+export function maskToken(token: string): string {
+  return token.length <= 16 ? token : `${token.slice(0, 8)}…${token.slice(-6)}`;
+}
+
+/** users/{uid}/cart: a product line (Zyppi stock, or a marketplace offer). */
+export interface CartLine {
+  id: string;
+  productId: string;
+  variantId: string;
+  offerId: string | null;
+  quantity: number;
+  updatedAt: Timestamp | null;
+}
+
+export function toCartLine(id: string, d: Record<string, unknown>): CartLine {
+  const offerId = str(d['offerId']);
+  return {
+    id,
+    productId: str(d['productId']) ?? '',
+    variantId: str(d['variantId']) ?? (offerId ? '' : id),
+    offerId,
+    quantity: Math.max(0, Math.round(Number(d['quantity']) || 0)),
+    updatedAt: ts(d['updatedAt']),
+  };
+}
+
+/** users/{uid}/favourites: doc id = product id. */
+export interface Favourite {
+  productId: string;
+  createdAt: Timestamp | null;
+}
+
+export function toFavourite(id: string, d: Record<string, unknown>): Favourite {
+  return { productId: id, createdAt: ts(d['createdAt']) };
+}
+
+/** users/{uid}/notifications: what the app's inbox shows (functions/src/notifications/inbox.ts). */
+export interface InboxEntry {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  read: boolean;
+  at: Timestamp | null;
+}
+
+export function toInboxEntry(id: string, d: Record<string, unknown>): InboxEntry {
+  return {
+    id,
+    kind: str(d['kind']) ?? '',
+    title: str(d['title']) ?? '',
+    body: str(d['body']) ?? '',
+    read: d['read'] === true,
+    at: ts(d['at']),
+  };
+}
+
+/** users/{uid}/consents: a legal document the customer accepted (acceptLegal). */
+export interface Consent {
+  id: string;
+  /** terms, privacy, refund, … */
+  type: string;
+  version: number | null;
+  acceptedAt: Timestamp | null;
+  /** checkbox, signature+otp, signature+reauth */
+  method: string | null;
+  appVersion: string | null;
+  platform: string | null;
+}
+
+export function toConsent(id: string, d: Record<string, unknown>): Consent {
+  return {
+    id,
+    type: str(d['type']) ?? id,
+    version: Number.isInteger(d['version']) ? (d['version'] as number) : null,
+    acceptedAt: ts(d['acceptedAt']),
+    method: str(d['method']),
+    appVersion: str(d['appVersion']),
+    platform: str(d['platform']),
+  };
+}
+
+/** A star rating the customer gave a seller on one order (orders.sellerRatings). */
+export interface SellerRating {
+  orderId: string;
+  sellerId: string;
+  sellerName: string;
+  stars: number;
+  at: Timestamp | null;
+}
+
+/** The ratings stored on one order; seller names come from its items. */
+export function ratingsOf(
+  orderId: string,
+  d: Record<string, unknown>,
+  sellerNames: Record<string, string>,
+): SellerRating[] {
+  const map = d['sellerRatings'];
+  if (!map || typeof map !== 'object') return [];
+  return Object.entries(map as Record<string, unknown>).flatMap(([sellerId, v]) => {
+    const r = (v ?? {}) as { stars?: unknown; at?: unknown };
+    const stars = Number(r.stars);
+    if (!Number.isInteger(stars) || stars < 1 || stars > 5) return [];
+    return [
+      { orderId, sellerId, sellerName: sellerNames[sellerId] || sellerId, stars, at: ts(r.at) },
+    ];
+  });
+}
+
+/** Coupon codes used across orders, with how often (most used first). */
+export function couponsUsed(
+  orders: { couponCode: string | null }[],
+): { code: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const o of orders)
+    if (o.couponCode) counts.set(o.couponCode, (counts.get(o.couponCode) ?? 0) + 1);
+  return [...counts].map(([code, count]) => ({ code, count })).sort((a, b) => b.count - a.count);
+}
+
+/** Newest first by `pick`; missing times last. */
+export function newestFirst<T>(rows: T[], pick: (r: T) => Timestamp | null): T[] {
+  return [...rows].sort((a, b) => (pick(b)?.toMillis() ?? 0) - (pick(a)?.toMillis() ?? 0));
 }
 
 /** One line of users/{uid}/wallet (signed: + in, − out). */
@@ -81,6 +214,15 @@ export interface CustomerAuth {
 const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
 const ts = (v: unknown) => (v instanceof Timestamp ? v : null);
 
+/** pushTokens (newest last, server-kept) plus the older single fcmToken, newest first, no repeats. */
+function pushTokensOf(d: Record<string, unknown>): string[] {
+  const list = Array.isArray(d['pushTokens'])
+    ? (d['pushTokens'] as unknown[]).filter((t): t is string => typeof t === 'string' && !!t)
+    : [];
+  const single = str(d['fcmToken']);
+  return [...new Set([...(single ? [single] : []), ...list.reverse()])];
+}
+
 export function toCustomer(id: string, d: Record<string, unknown>): Customer {
   return {
     id,
@@ -94,11 +236,18 @@ export function toCustomer(id: string, d: Record<string, unknown>): Customer {
     lastOrderAt: ts(d['lastOrderAt']),
     serviceAreaId: str(d['serviceAreaId']),
     notifyOffers: d['notifyOffers'] === true,
-    hasDevice: !!str(d['fcmToken']),
+    hasDevice: pushTokensOf(d).length > 0,
     blocked: d['blocked'] === true,
     blockedReason: str(d['blockedReason']),
     walletPaise: Math.max(0, Math.round(Number(d['walletPaise']) || 0)),
     claimCount: Number((d['claimStats'] as { count?: unknown } | undefined)?.count) || 0,
+    dob: str(d['dob']),
+    gender: str(d['gender']),
+    preferredPaymentMethod: str(d['preferredPaymentMethod']),
+    notifyOrderUpdates: d['notifyOrderUpdates'] !== false,
+    pushTokens: pushTokensOf(d),
+    pushTokenAt: ts(d['pushTokenAt']),
+    updatedAt: ts(d['updatedAt']),
   };
 }
 

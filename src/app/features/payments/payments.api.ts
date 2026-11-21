@@ -37,7 +37,7 @@ export const INTENT_META: Record<IntentStatus, { label: string; color: string }>
   dismissed: { label: 'Resolved', color: 'blue' },
 };
 
-function toIntent(id: string, d: Record<string, unknown>): Intent {
+export function toIntent(id: string, d: Record<string, unknown>): Intent {
   return {
     id,
     userId: (d['userId'] as string | null) ?? null,
