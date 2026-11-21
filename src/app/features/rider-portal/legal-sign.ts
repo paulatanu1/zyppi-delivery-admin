@@ -32,13 +32,13 @@ interface PendingDoc {
   html: string;
 }
 
-/** The server accepts a signature only this soon after an OTP (legal/model.ts). */
-const OTP_MAX_AGE_MS = 10 * 60_000;
+/** The server accepts a signature only this soon after a sign-in or re-confirm (legal/model.ts). */
+const CONFIRM_MAX_AGE_MS = 10 * 60_000;
 
 /**
  * Reads, accepts and signs the documents a rider still has to accept
  * (functions/src/legal: legalStatus → acceptLegal). Signed agreements need
- * a drawn signature (uploaded to riders/{uid}/kyc/) and a phone OTP in
+ * a drawn signature (uploaded to riders/{uid}/kyc/) and a fresh password or Google re-confirm in
  * the last 10 minutes; the server re-checks both. Emits `done` once
  * nothing is pending (straight away if nothing is published yet).
  */
@@ -92,27 +92,25 @@ const OTP_MAX_AGE_MS = 10 * 60_000;
             ></canvas>
           </div>
 
-          @if (otpNeeded()) {
+          @if (confirmNeeded()) {
             <div class="flex flex-col gap-2">
-              <span class="z-caption">
-                Confirm it's you: we'll send a code to {{ phoneLabel() }}.
-              </span>
-              @if (!codeSent()) {
-                <button nz-button id="sign-otp" [nzLoading]="busy()" (click)="sendCode()">
-                  {{ phone() ? 'Send code' : 'Confirm with Google' }}
-                </button>
-              } @else {
+              @if (usesPassword()) {
+                <span class="z-caption">Confirm it's you: enter your password.</span>
                 <div class="flex gap-2">
                   <input
                     nz-input
-                    inputmode="numeric"
-                    maxlength="6"
-                    placeholder="6-digit code"
-                    aria-label="OTP code"
-                    [(ngModel)]="code"
+                    type="password"
+                    autocomplete="current-password"
+                    aria-label="Password"
+                    [(ngModel)]="password"
                   />
-                  <button nz-button [nzLoading]="busy()" (click)="verify()">Verify</button>
+                  <button nz-button [nzLoading]="busy()" (click)="reconfirm()">Confirm</button>
                 </div>
+              } @else {
+                <span class="z-caption">Confirm it's you with your Google account.</span>
+                <button nz-button [nzLoading]="busy()" (click)="reconfirm()">
+                  Confirm with Google
+                </button>
               }
             </div>
           }
@@ -172,12 +170,11 @@ export class LegalSign implements AfterViewChecked {
   readonly read = signal<Set<string>>(new Set());
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
-  readonly codeSent = signal(false);
-  readonly otpAt = signal<number | null>(null);
+  readonly confirmedAt = signal<number | null>(null);
   readonly hasInk = signal(false);
   readonly doneText = signal('Nothing to sign right now.');
   agreed = false;
-  code = '';
+  password = '';
 
   private readonly pad = viewChild<ElementRef<HTMLCanvasElement>>('pad');
   private drawing = false;
@@ -189,17 +186,16 @@ export class LegalSign implements AfterViewChecked {
       .map((d) => d.title)
       .join(' and '),
   );
-  readonly phone = computed(() => this.auth.currentUser?.phoneNumber ?? null);
-  readonly phoneLabel = computed(() => this.phone() ?? 'your Google account');
-  readonly otpNeeded = computed(() => {
-    const at = this.otpAt();
-    return at === null || Date.now() - at > OTP_MAX_AGE_MS - 30_000;
+  readonly usesPassword = signal(this.riderAuth.usesPassword());
+  readonly confirmNeeded = computed(() => {
+    const at = this.confirmedAt();
+    return at === null || Date.now() - at > CONFIRM_MAX_AGE_MS - 30_000;
   });
 
   canSign(): boolean {
     if (!this.agreed || !this.allRead() || this.busy()) return false;
     if (!this.needsSignature()) return true;
-    return this.hasInk() && !this.otpNeeded();
+    return this.hasInk() && !this.confirmNeeded();
   }
 
   constructor() {
@@ -230,12 +226,12 @@ export class LegalSign implements AfterViewChecked {
     }
   }
 
-  /** The ID token's auth_time: when the rider last signed in (OTP or Google). */
+  /** The ID token's auth_time: when the rider last signed in or re-confirmed. */
   private async refreshAuthTime(): Promise<void> {
     const user = this.auth.currentUser;
     if (!user) return;
     const t = await user.getIdTokenResult(true);
-    this.otpAt.set(Date.parse(t.authTime));
+    this.confirmedAt.set(Date.parse(t.authTime));
   }
 
   onScroll(e: Event, type: string): void {
@@ -304,30 +300,13 @@ export class LegalSign implements AfterViewChecked {
     this.hasInk.set(false);
   }
 
-  // ---- OTP -----------------------------------------------------------------------
+  // ---- Re-confirm ----------------------------------------------------------------
 
-  async sendCode(): Promise<void> {
+  /** Password or Google again: refreshes auth_time so the signature counts. */
+  async reconfirm(): Promise<void> {
     await this.run(async () => {
-      const phone = this.phone();
-      if (!phone) {
-        await this.riderAuth.google();
-        await this.refreshAuthTime();
-        return;
-      }
-      await this.riderAuth.sendOtp(phone.replace(/^\+91/, ''), 'sign-otp');
-      this.codeSent.set(true);
-    });
-  }
-
-  async verify(): Promise<void> {
-    if (!/^\d{6}$/.test(this.code)) {
-      this.error.set('Enter the 6-digit code.');
-      return;
-    }
-    await this.run(async () => {
-      await this.riderAuth.confirmOtp(this.code);
-      this.codeSent.set(false);
-      this.code = '';
+      await this.riderAuth.reconfirm(this.password);
+      this.password = '';
       await this.refreshAuthTime();
     });
   }
@@ -369,8 +348,8 @@ export class LegalSign implements AfterViewChecked {
     } catch (e) {
       const msg = (e as Error).message ?? '';
       if (msg.includes('OTP_REQUIRED')) {
-        this.otpAt.set(null);
-        this.error.set('Confirm with the code we send to your phone, then sign again.');
+        this.confirmedAt.set(null);
+        this.error.set('Confirm it’s you again, then sign.');
       } else if (msg.includes('TERMS_CHANGED')) {
         this.error.set('The terms were just updated. Please read them again.');
         void this.load();

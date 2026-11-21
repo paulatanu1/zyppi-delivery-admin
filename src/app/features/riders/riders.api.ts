@@ -171,14 +171,4 @@ export class RidersApi {
       .map((d) => ({ label: (d.get('name') as string) ?? d.id, value: d.id }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }
-
-  /** config/features.phoneOtp (missing = on). */
-  async phoneOtpOn(): Promise<boolean> {
-    try {
-      const s = await getDoc(doc(this.db, 'config', 'features'));
-      return s.get('phoneOtp') !== false;
-    } catch {
-      return true;
-    }
-  }
 }
