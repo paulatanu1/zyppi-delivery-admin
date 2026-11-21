@@ -94,10 +94,12 @@ export class RiderPortal {
   readonly ready = this.auth.ready;
 
   // Sign-in
-  readonly otpOn = signal(true);
-  readonly phone10 = signal('');
-  readonly code = signal('');
-  readonly codeSent = signal(false);
+  /** Email form: sign in, create an account, or reset the password. */
+  readonly mode = signal<'signin' | 'signup' | 'reset'>('signin');
+  readonly name = signal('');
+  readonly email = signal('');
+  readonly password = signal('');
+  readonly notice = signal<string | null>(null);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
 
@@ -150,7 +152,6 @@ export class RiderPortal {
     effect(() => {
       if (!this.ready()) return;
       this.session();
-      void this.api.phoneOtpOn().then((on) => this.otpOn.set(on));
       void this.api
         .activeAreas()
         .then((a) => this.areas.set(a))
@@ -222,24 +223,45 @@ export class RiderPortal {
 
   // ---- Sign-in ----------------------------------------------------------------
 
-  async sendCode(): Promise<void> {
-    const p = this.phone10().replace(/\D/g, '');
-    if (!/^[6-9]\d{9}$/.test(p)) {
-      this.error.set('Enter your 10-digit mobile number.');
-      return;
-    }
-    await this.run(async () => {
-      await this.riderAuth.sendOtp(p, 'otp-send');
-      this.codeSent.set(true);
-    });
+  setMode(m: 'signin' | 'signup' | 'reset'): void {
+    this.mode.set(m);
+    this.error.set(null);
+    this.notice.set(null);
   }
 
-  async verify(): Promise<void> {
-    if (!/^\d{6}$/.test(this.code())) {
-      this.error.set('Enter the 6-digit code.');
+  async submitEmail(): Promise<void> {
+    const email = this.email().trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.error.set('Enter a valid email address.');
       return;
     }
-    await this.run(() => this.riderAuth.confirmOtp(this.code()));
+    const m = this.mode();
+    if (m === 'reset') {
+      await this.run(async () => {
+        await this.riderAuth.resetPassword(email);
+        this.notice.set(`We sent a reset link to ${email}. Check your inbox.`);
+        this.mode.set('signin');
+      });
+      return;
+    }
+    const pw = this.password();
+    if (m === 'signup') {
+      if (this.name().trim().length < 2) {
+        this.error.set('Enter your full name.');
+        return;
+      }
+      if (pw.length < 8 || !/\d/.test(pw)) {
+        this.error.set('Use at least 8 characters, including a number.');
+        return;
+      }
+      await this.run(() => this.riderAuth.signUp(this.name(), email, pw));
+      return;
+    }
+    if (!pw) {
+      this.error.set('Enter your password.');
+      return;
+    }
+    await this.run(() => this.riderAuth.signIn(email, pw));
   }
 
   async google(): Promise<void> {
@@ -248,8 +270,8 @@ export class RiderPortal {
 
   signOut(): void {
     void this.auth.signOut();
-    this.codeSent.set(false);
-    this.code.set('');
+    this.password.set('');
+    this.mode.set('signin');
     this.editing.set(false);
     this.step.set(0);
   }
