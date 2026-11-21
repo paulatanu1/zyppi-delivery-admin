@@ -3,6 +3,17 @@
   subtitle="What the support bot knows. It matches a customer’s message to the example questions in any of the four languages."
 >
   <a nz-button routerLink="/support"><span nz-icon nzType="arrow-left"></span>Inbox</a>
+  <input
+    #importInput
+    type="file"
+    class="sr-only"
+    accept=".json,application/json"
+    aria-label="Import knowledge base JSON"
+    (change)="onImportPicked($event)"
+  />
+  <button nz-button [disabled]="entries.status() !== 'ready'" (click)="importInput.click()">
+    <span nz-icon nzType="upload"></span>Import JSON
+  </button>
   <button nz-button nzType="primary" (click)="create()">
     <span nz-icon nzType="plus"></span>New entry
   </button>
@@ -231,3 +242,111 @@
     </div>
   </ng-template>
 </nz-drawer>
+
+<nz-modal
+  [nzVisible]="!!importRows()"
+  [nzTitle]="'Import ' + importFile()"
+  [nzWidth]="'min(860px, 100vw)'"
+  [nzClosable]="!importing()"
+  [nzMaskClosable]="false"
+  [nzFooter]="importFooter"
+  (nzOnCancel)="closeImport()"
+>
+  <ng-container *nzModalContent>
+    <nz-alert
+      nzType="info"
+      nzShowIcon
+      class="block mb-3"
+      nzMessage="Each entry is saved like an edit in the drawer: checked, re-embedded for the bot and written to the audit log. Entries with the same id are replaced; nothing is deleted."
+    />
+    <p class="z-caption mb-2">
+      {{ importStats().todo }} to save
+      @if (importStats().replacing) {
+        · {{ importStats().replacing }} replace existing entries
+      }
+      @if (importStats().skipped) {
+        · {{ importStats().skipped }} skipped
+      }
+      @if (importStats().saved) {
+        · {{ importStats().saved }} saved
+      }
+    </p>
+    <nz-table
+      #it
+      [nzData]="importRows() ?? []"
+      [nzPageSize]="50"
+      [nzShowPagination]="(importRows()?.length ?? 0) > 50"
+      nzSize="small"
+      [nzScroll]="{ x: '600px' }"
+    >
+      <thead>
+        <tr>
+          <th>Topic</th>
+          <th>Change</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of it.data; track $index) {
+          <tr>
+            <td>
+              <div class="font-bold">{{ r.entry.title.en || r.entry.id || '—' }}</div>
+              <div class="z-caption">{{ r.entry.id }}</div>
+            </td>
+            <td>
+              @if (r.exists) {
+                <nz-tag nzColor="warning">Replace</nz-tag>
+              } @else {
+                <nz-tag nzColor="processing">New</nz-tag>
+              }
+            </td>
+            <td>
+              @switch (r.state) {
+                @case ('ready') {
+                  <span class="z-caption">Ready</span>
+                }
+                @case ('saving') {
+                  <nz-tag nzColor="processing">Saving…</nz-tag>
+                }
+                @case ('saved') {
+                  <nz-tag nzColor="success">Saved</nz-tag>
+                }
+                @case ('failed') {
+                  <nz-tag nzColor="error">Failed</nz-tag>
+                  <div class="z-caption">{{ r.error }}</div>
+                }
+                @case ('skipped') {
+                  <nz-tag>Skipped</nz-tag>
+                  <div class="z-caption">{{ r.problem }}</div>
+                }
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </ng-container>
+  <ng-template #importFooter>
+    <div class="flex gap-2 items-center">
+      <span class="flex-1 z-caption text-left">
+        @if (importing()) {
+          Teaching the bot… each entry can take up to half a minute.
+        }
+      </span>
+      @if (importing()) {
+        <button nz-button (click)="stopImport()">Stop after this one</button>
+      } @else {
+        <button nz-button (click)="closeImport()">Close</button>
+      }
+      <button
+        nz-button
+        nzType="primary"
+        [nzLoading]="importing()"
+        [disabled]="importStats().todo === 0"
+        (click)="runImport()"
+      >
+        {{ importStats().failed ? 'Retry failed' : 'Import ' + importStats().todo }}
+      </button>
+    </div>
+  </ng-template>
+</nz-modal>

@@ -1,12 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDrawerModule } from 'ng-zorro-antd/drawer';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -16,6 +18,7 @@ import { WhenPipe } from '../../shared/pipes/when.pipe';
 import { Confirm } from '../../shared/ui/confirm';
 import { PageHeader } from '../../shared/ui/page-header';
 import { PageState } from '../../shared/ui/page-state';
+import { KbImportRow, parseKbImport, pruneRelated } from './kb-import';
 import { SupportApi } from './support.api';
 import {
   KB_ACTIONS,
@@ -41,6 +44,14 @@ interface Draft {
   related: string[];
 }
 
+/** An import row and how saving it went. */
+interface ImportRow extends KbImportRow {
+  state: 'ready' | 'saving' | 'saved' | 'failed' | 'skipped';
+  error: string | null;
+}
+
+const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
+
 function toDraft(e: KbEntry, isNew: boolean): Draft {
   const per = <T>(f: (l: KbLang) => T) =>
     Object.fromEntries(KB_LANGS.map((l) => [l, f(l)])) as Record<KbLang, T>;
@@ -62,11 +73,13 @@ function toDraft(e: KbEntry, isNew: boolean): Draft {
   selector: 'z-kb-page',
   imports: [
     FormsModule,
+    NzAlertModule,
     NzButtonModule,
     NzDrawerModule,
     NzFormModule,
     NzIconModule,
     NzInputModule,
+    NzModalModule,
     NzSelectModule,
     NzSwitchModule,
     NzTableModule,
@@ -104,6 +117,23 @@ export class KbPage {
   readonly draft = signal<Draft | null>(null);
   readonly saving = signal(false);
   readonly deleting = signal(false);
+
+  readonly importRows = signal<ImportRow[] | null>(null);
+  readonly importFile = signal('');
+  readonly importing = signal(false);
+  private stopRequested = false;
+
+  readonly importStats = computed(() => {
+    const rows = this.importRows() ?? [];
+    const todo = rows.filter((r) => r.state === 'ready' || r.state === 'failed');
+    return {
+      todo: todo.length,
+      replacing: todo.filter((r) => r.exists).length,
+      skipped: rows.filter((r) => r.state === 'skipped').length,
+      saved: rows.filter((r) => r.state === 'saved').length,
+      failed: rows.filter((r) => r.state === 'failed').length,
+    };
+  });
 
   readonly filtered = computed(() => {
     const q = this.search().trim().toLowerCase();
@@ -191,6 +221,77 @@ export class KbPage {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  // ---- Import (supportKb-import.json from chatbot-knowledge-base/) -------
+
+  async onImportPicked(ev: Event): Promise<void> {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!/\.json$/i.test(file.name)) {
+      this.message.error('Choose a .json file.');
+      return;
+    }
+    if (file.size > MAX_IMPORT_BYTES) {
+      this.message.error('That file is over 2 MB. Split it into smaller files.');
+      return;
+    }
+    try {
+      const ids = new Set((this.entries.value() ?? []).map((e) => e.id));
+      const rows = pruneRelated(parseKbImport(await file.text(), ids), ids);
+      this.importFile.set(file.name);
+      this.importRows.set(
+        rows.map((r) => ({ ...r, state: r.problem ? 'skipped' : 'ready', error: null })),
+      );
+    } catch (e) {
+      this.message.error((e as Error).message);
+    }
+  }
+
+  private setRow(i: number, patch: Partial<ImportRow>): void {
+    this.importRows.update(
+      (rows) => rows?.map((r, j) => (j === i ? { ...r, ...patch } : r)) ?? null,
+    );
+  }
+
+  /**
+   * Saves entries one by one through adminSaveKbEntry, so each is validated,
+   * re-embedded and audited like an edit in the drawer. Never deletes anything.
+   */
+  async runImport(): Promise<void> {
+    const rows = this.importRows();
+    if (!rows || this.importing()) return;
+    this.importing.set(true);
+    this.stopRequested = false;
+    try {
+      for (let i = 0; i < rows.length; i++) {
+        if (this.stopRequested) break;
+        const r = rows[i];
+        if (r.state !== 'ready' && r.state !== 'failed') continue;
+        this.setRow(i, { state: 'saving', error: null });
+        try {
+          await this.api.saveKb(r.entry);
+          this.setRow(i, { state: 'saved' });
+        } catch (e) {
+          this.setRow(i, { state: 'failed', error: (e as Error).message });
+        }
+      }
+    } finally {
+      this.importing.set(false);
+    }
+    const s = this.importStats();
+    if (s.failed) this.message.warning(`${s.saved} saved, ${s.failed} failed. Retry to try again.`);
+    else this.message.success(`${s.saved} entries saved; the bot knows them now`);
+  }
+
+  stopImport(): void {
+    this.stopRequested = true;
+  }
+
+  closeImport(): void {
+    if (!this.importing()) this.importRows.set(null);
   }
 
   async remove(): Promise<void> {

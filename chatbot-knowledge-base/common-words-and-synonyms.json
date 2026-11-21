@@ -1,0 +1,1251 @@
+{
+  "version": 1,
+  "note": "intent → supportKb entry id. phrases feed supportKb.questions.en / keywords; trigger_tags are for filtering and analytics.",
+  "intents": [
+    {
+      "intent": "order_tracking",
+      "kb_entry_id": "where_is_order",
+      "category": "delivery_and_live_tracking",
+      "action": "order_status",
+      "phrases": [
+        "where is my order",
+        "wer is my order",
+        "track order",
+        "trak order",
+        "order kahan hai",
+        "order kab ayega",
+        "amar order kothay",
+        "kitna time lagega",
+        "delivery time",
+        "eta",
+        "where is my order?",
+        "track my order",
+        "when will my order arrive?",
+        "how long will delivery take?",
+        "order status",
+        "order kab aayega",
+        "where is my delivery",
+        "wheres my order",
+        "order kothay",
+        "how much time left"
+      ],
+      "keywords": [
+        "track",
+        "tracking",
+        "eta",
+        "status",
+        "trak",
+        "kab",
+        "kahan"
+      ],
+      "trigger_tags": [
+        "delivery_and_live_tracking",
+        "tracking",
+        "order-status",
+        "eta"
+      ]
+    },
+    {
+      "intent": "order_delayed",
+      "kb_entry_id": "late_order",
+      "category": "delivery_and_live_tracking",
+      "action": "order_status",
+      "phrases": [
+        "order late",
+        "late delivery",
+        "still not delivered",
+        "bahut der ho gayi",
+        "order aaya nahi",
+        "deri hocche",
+        "taking forever",
+        "delayed order",
+        "my order is late",
+        "my order hasn't arrived yet",
+        "my order never came",
+        "it's taking too long",
+        "order abhi tak nahi aaya",
+        "still waiting for my order",
+        "delivery delayed",
+        "order late keno"
+      ],
+      "keywords": [
+        "late",
+        "delay",
+        "delayed",
+        "waiting",
+        "slow",
+        "der"
+      ],
+      "trigger_tags": [
+        "delivery_and_live_tracking",
+        "delay",
+        "late",
+        "eta"
+      ]
+    },
+    {
+      "intent": "order_status_meaning",
+      "kb_entry_id": "order_statuses",
+      "category": "delivery_and_live_tracking",
+      "action": "none",
+      "phrases": [
+        "what is packed",
+        "out for delivery meaning",
+        "order placed meaning",
+        "status kya hai",
+        "packed but not coming",
+        "what does packed mean?",
+        "what do the order statuses mean?",
+        "what is out for delivery?",
+        "order placed but nothing happening",
+        "status meaning"
+      ],
+      "keywords": [
+        "placed",
+        "packed",
+        "out for delivery",
+        "delivered",
+        "cancelled",
+        "meaning"
+      ],
+      "trigger_tags": [
+        "delivery_and_live_tracking",
+        "order-status",
+        "lifecycle"
+      ]
+    },
+    {
+      "intent": "rider_live_location",
+      "kb_entry_id": "live_tracking",
+      "category": "delivery_and_live_tracking",
+      "action": "none",
+      "phrases": [
+        "track rider",
+        "rider location",
+        "delivery boy kahan hai",
+        "rider kitna door",
+        "map not updating",
+        "rider not moving",
+        "gps",
+        "how do i track the rider?",
+        "where is the delivery boy?",
+        "rider location not updating",
+        "track rider live",
+        "rider kitna door hai",
+        "map not moving"
+      ],
+      "keywords": [
+        "rider",
+        "delivery boy",
+        "location",
+        "map",
+        "distance",
+        "live",
+        "raider"
+      ],
+      "trigger_tags": [
+        "delivery_and_live_tracking",
+        "tracking",
+        "rider",
+        "map"
+      ]
+    },
+    {
+      "intent": "rider_contact",
+      "kb_entry_id": "rider_contact",
+      "category": "delivery_and_live_tracking",
+      "action": "none",
+      "phrases": [
+        "call rider",
+        "rider number",
+        "delivery boy number",
+        "rider phone",
+        "rider not picking call",
+        "rider ko phone",
+        "delivery instructions",
+        "gate number",
+        "how do i call the rider?",
+        "rider phone number",
+        "contact delivery boy",
+        "give delivery instructions",
+        "rider ko call kaise kare",
+        "rider is not picking up"
+      ],
+      "keywords": [
+        "call",
+        "phone",
+        "number",
+        "contact",
+        "instructions",
+        "rider",
+        "delivery boy"
+      ],
+      "trigger_tags": [
+        "delivery_and_live_tracking",
+        "rider",
+        "call",
+        "instructions"
+      ]
+    },
+    {
+      "intent": "delivery_otp",
+      "kb_entry_id": "delivery_code",
+      "category": "delivery_and_live_tracking",
+      "action": "none",
+      "phrases": [
+        "delivery otp",
+        "delivery pin",
+        "otp for delivery",
+        "rider asking otp",
+        "code kya hai",
+        "4 digit code",
+        "handover code",
+        "code wrong",
+        "what is the delivery code?",
+        "rider is asking for an otp",
+        "where do i find the delivery otp?",
+        "delivery code is not working",
+        "rider bol raha code batao"
+      ],
+      "keywords": [
+        "code",
+        "otp",
+        "pin",
+        "delivery code",
+        "handover",
+        "verify"
+      ],
+      "trigger_tags": [
+        "delivery_and_live_tracking",
+        "otp",
+        "proof-of-delivery",
+        "security"
+      ]
+    },
+    {
+      "intent": "missed_delivery",
+      "kb_entry_id": "failed_delivery",
+      "category": "delivery_and_live_tracking",
+      "action": "none",
+      "phrases": [
+        "missed delivery",
+        "not at home",
+        "rider went back",
+        "rider returned order",
+        "could not deliver",
+        "wrong address rider",
+        "customer not reachable",
+        "i wasn't home when the rider came",
+        "rider could not deliver my order",
+        "rider says customer not reachable",
+        "rider went back with my order",
+        "wrong address rider can not find"
+      ],
+      "keywords": [
+        "missed",
+        "not home",
+        "unreachable",
+        "failed",
+        "returned",
+        "wrong address"
+      ],
+      "trigger_tags": [
+        "delivery_and_live_tracking",
+        "failed-delivery",
+        "rider",
+        "address"
+      ]
+    },
+    {
+      "intent": "cancel_order",
+      "kb_entry_id": "cancel_order",
+      "category": "cancellations_refunds_and_support",
+      "action": "none",
+      "phrases": [
+        "cancel my order",
+        "cancle order",
+        "cansel order",
+        "cancel karna hai",
+        "order cancel kaise",
+        "ordered by mistake",
+        "galti se order",
+        "stop order",
+        "dont want order",
+        "i want to cancel my order",
+        "how do i cancel an order?",
+        "cancel order",
+        "order cancel karna hai",
+        "cancle my order",
+        "cancel kaise kare",
+        "stop my order"
+      ],
+      "keywords": [
+        "cancel",
+        "cancellation",
+        "cancle",
+        "cansel",
+        "stop",
+        "mistake"
+      ],
+      "trigger_tags": [
+        "cancellations_refunds_and_support",
+        "cancellation",
+        "order"
+      ]
+    },
+    {
+      "intent": "order_cancelled_reason",
+      "kb_entry_id": "order_cancelled_by_us",
+      "category": "cancellations_refunds_and_support",
+      "action": "none",
+      "phrases": [
+        "why cancelled",
+        "auto cancelled",
+        "seller rejected",
+        "store rejected",
+        "order cancel ho gaya",
+        "cancelled without asking",
+        "keno cancel holo",
+        "why was my order cancelled?",
+        "i didn't cancel but my order got cancelled",
+        "store rejected my order",
+        "seller cancelled my order",
+        "order cancel ho gaya apne aap",
+        "got order cancelled notification"
+      ],
+      "keywords": [
+        "rejected",
+        "seller",
+        "store",
+        "auto cancel",
+        "cancelled"
+      ],
+      "trigger_tags": [
+        "cancellations_refunds_and_support",
+        "cancellation",
+        "seller",
+        "refund"
+      ]
+    },
+    {
+      "intent": "refund_status",
+      "kb_entry_id": "refund",
+      "category": "cancellations_refunds_and_support",
+      "action": "none",
+      "phrases": [
+        "refund status",
+        "money back",
+        "paisa wapas",
+        "paise wapas kab",
+        "refund kab aayega",
+        "refnd",
+        "refund not received",
+        "taka ferot",
+        "return money",
+        "refund to upi",
+        "when will i get my refund?",
+        "i want a refund",
+        "how do refunds work?",
+        "refund kab milega",
+        "refnd status"
+      ],
+      "keywords": [
+        "refund",
+        "money back",
+        "paisa",
+        "wapas",
+        "return money",
+        "refnd",
+        "credited"
+      ],
+      "trigger_tags": [
+        "cancellations_refunds_and_support",
+        "refund",
+        "payment",
+        "wallet"
+      ]
+    },
+    {
+      "intent": "missing_or_damaged_item",
+      "kb_entry_id": "missing_item",
+      "category": "cancellations_refunds_and_support",
+      "action": "return_flow",
+      "phrases": [
+        "item missing",
+        "saman kam aaya",
+        "wrong item",
+        "galat saman",
+        "damaged",
+        "broken",
+        "leaking packet",
+        "expired product",
+        "kharab",
+        "replace item",
+        "return item",
+        "an item is missing from my order",
+        "i received the wrong item",
+        "the product was damaged",
+        "item is expired or bad quality",
+        "report a problem",
+        "return an item",
+        "item kam aaya",
+        "saman kharab hai",
+        "broken packet",
+        "replace my item",
+        "got a different brand or size"
+      ],
+      "keywords": [
+        "missing",
+        "wrong",
+        "damaged",
+        "broken",
+        "expired",
+        "spoiled",
+        "quality",
+        "return",
+        "replace",
+        "leak"
+      ],
+      "trigger_tags": [
+        "cancellations_refunds_and_support",
+        "claim",
+        "return",
+        "refund",
+        "quality"
+      ]
+    },
+    {
+      "intent": "report_window_closed",
+      "kb_entry_id": "report_too_late",
+      "category": "cancellations_refunds_and_support",
+      "action": "handoff",
+      "phrases": [
+        "cant report",
+        "report option missing",
+        "report not approved",
+        "claim rejected",
+        "2 hours over",
+        "report under review",
+        "i can't report a problem on my order",
+        "report a problem button not showing",
+        "it says problems can be reported up to 2 hours after delivery",
+        "i already have a report under review",
+        "my report was not approved"
+      ],
+      "keywords": [
+        "report",
+        "claim",
+        "under review",
+        "rejected",
+        "window",
+        "2 hours"
+      ],
+      "trigger_tags": [
+        "cancellations_refunds_and_support",
+        "claim",
+        "escalation"
+      ]
+    },
+    {
+      "intent": "payment_methods",
+      "kb_entry_id": "payment_methods",
+      "category": "payments_promos_and_fees",
+      "action": "none",
+      "phrases": [
+        "how to pay",
+        "payment options",
+        "upi",
+        "gpay",
+        "phonepe",
+        "paytm",
+        "card payment",
+        "debit card",
+        "credit card",
+        "net banking",
+        "how can i pay?",
+        "can i pay by upi?",
+        "which payment methods are available?",
+        "can i pay with a card?",
+        "gpay phonepe chalega",
+        "payment option not showing"
+      ],
+      "keywords": [
+        "upi",
+        "payu",
+        "phonepe",
+        "gpay",
+        "paytm",
+        "card",
+        "debit",
+        "credit",
+        "pay"
+      ],
+      "trigger_tags": [
+        "payments_promos_and_fees",
+        "payment",
+        "upi",
+        "card"
+      ]
+    },
+    {
+      "intent": "cod_availability",
+      "kb_entry_id": "cod",
+      "category": "payments_promos_and_fees",
+      "action": "none",
+      "phrases": [
+        "cash on delivery",
+        "cod",
+        "c.o.d",
+        "cash me",
+        "pay cash",
+        "pay at door",
+        "nagad",
+        "cash dena hai",
+        "do you accept cash on delivery?",
+        "is cod available?",
+        "can i pay the rider in cash?",
+        "cod hai kya",
+        "can i pay upi to the rider"
+      ],
+      "keywords": [
+        "cod",
+        "cash",
+        "nagad",
+        "cash on delivery",
+        "pay later"
+      ],
+      "trigger_tags": [
+        "payments_promos_and_fees",
+        "cod",
+        "payment",
+        "cash"
+      ]
+    },
+    {
+      "intent": "payment_deducted_no_order",
+      "kb_entry_id": "payment_failed",
+      "category": "payments_promos_and_fees",
+      "action": "handoff",
+      "phrases": [
+        "money deducted",
+        "paisa kat gaya",
+        "amount debited",
+        "payment failed",
+        "charged twice",
+        "double payment",
+        "taka kete geche",
+        "money was deducted but the order wasn't placed",
+        "my payment failed",
+        "i paid but didn't get a confirmation",
+        "paisa kat gaya order nahi hua",
+        "amount debited order failed"
+      ],
+      "keywords": [
+        "deducted",
+        "debited",
+        "failed",
+        "payment",
+        "kat gaya",
+        "twice",
+        "double"
+      ],
+      "trigger_tags": [
+        "payments_promos_and_fees",
+        "payment",
+        "failed-payment",
+        "escalation"
+      ]
+    },
+    {
+      "intent": "payment_pending",
+      "kb_entry_id": "payment_pending",
+      "category": "payments_promos_and_fees",
+      "action": "none",
+      "phrases": [
+        "payment pending",
+        "payment processing",
+        "stuck on payment",
+        "pay again?",
+        "payment not confirmed",
+        "it says my payment is still being confirmed",
+        "payment processing for a long time",
+        "payment didn't go through",
+        "should i pay again?"
+      ],
+      "keywords": [
+        "pending",
+        "processing",
+        "confirming",
+        "stuck",
+        "pay again",
+        "not charged"
+      ],
+      "trigger_tags": [
+        "payments_promos_and_fees",
+        "payment",
+        "pending"
+      ]
+    },
+    {
+      "intent": "wallet",
+      "kb_entry_id": "wallet",
+      "category": "payments_promos_and_fees",
+      "action": "none",
+      "phrases": [
+        "wallet balance",
+        "zyppi wallet",
+        "wallet money",
+        "withdraw wallet",
+        "add money wallet",
+        "wallet expiry",
+        "store credit",
+        "what is the zyppi wallet?",
+        "how do i use my wallet balance?",
+        "can i withdraw my wallet money?",
+        "add money to wallet",
+        "wallet balance expiry",
+        "wallet me paisa kaise aaya"
+      ],
+      "keywords": [
+        "wallet",
+        "balance",
+        "credit",
+        "withdraw",
+        "top up",
+        "expire"
+      ],
+      "trigger_tags": [
+        "payments_promos_and_fees",
+        "wallet",
+        "refund",
+        "credit"
+      ]
+    },
+    {
+      "intent": "delivery_charges",
+      "kb_entry_id": "delivery_fee",
+      "category": "payments_promos_and_fees",
+      "action": "none",
+      "phrases": [
+        "delivery charge",
+        "delivery fee",
+        "handling fee",
+        "extra charges",
+        "hidden charges",
+        "free delivery",
+        "why fee",
+        "how much is the delivery fee?",
+        "what is the handling fee?",
+        "are there any extra charges?",
+        "is delivery free?",
+        "free delivery kab milegi",
+        "why am i charged a delivery fee"
+      ],
+      "keywords": [
+        "fee",
+        "charge",
+        "charges",
+        "cost",
+        "handling",
+        "free delivery",
+        "extra"
+      ],
+      "trigger_tags": [
+        "payments_promos_and_fees",
+        "fees",
+        "pricing"
+      ]
+    },
+    {
+      "intent": "minimum_order",
+      "kb_entry_id": "min_order",
+      "category": "browsing_and_ordering",
+      "action": "none",
+      "phrases": [
+        "minimum order",
+        "min order",
+        "minimum amount",
+        "small order not allowed",
+        "kam se kam kitna",
+        "is there a minimum order amount?",
+        "it says minimum order is not met",
+        "why can't i check out a small order?",
+        "minimum kitne ka order"
+      ],
+      "keywords": [
+        "minimum",
+        "min order",
+        "small order",
+        "checkout blocked"
+      ],
+      "trigger_tags": [
+        "browsing_and_ordering",
+        "pricing",
+        "checkout"
+      ]
+    },
+    {
+      "intent": "rider_tip",
+      "kb_entry_id": "tip",
+      "category": "payments_promos_and_fees",
+      "action": "none",
+      "phrases": [
+        "tip",
+        "tip rider",
+        "tip compulsory",
+        "bakshish",
+        "tip kaise",
+        "how do i tip the rider?",
+        "is tipping compulsory?",
+        "does the rider get the full tip?",
+        "tip kaise de"
+      ],
+      "keywords": [
+        "tip",
+        "tipping",
+        "rider tip",
+        "bakshish"
+      ],
+      "trigger_tags": [
+        "payments_promos_and_fees",
+        "tip",
+        "rider"
+      ]
+    },
+    {
+      "intent": "coupon_not_working",
+      "kb_entry_id": "coupons",
+      "category": "payments_promos_and_fees",
+      "action": "none",
+      "phrases": [
+        "coupon not working",
+        "cupon",
+        "promo code",
+        "discount code",
+        "offer code invalid",
+        "coupon expired",
+        "first order coupon",
+        "coupon apply nahi ho raha",
+        "how do i use a coupon?",
+        "my coupon is not working",
+        "are there any offers?",
+        "coupon only for first order",
+        "cupon not applying",
+        "discount code invalid"
+      ],
+      "keywords": [
+        "coupon",
+        "offer",
+        "discount",
+        "promo",
+        "code",
+        "cupon",
+        "voucher"
+      ],
+      "trigger_tags": [
+        "payments_promos_and_fees",
+        "coupon",
+        "promo",
+        "discount"
+      ]
+    },
+    {
+      "intent": "delivery_area",
+      "kb_entry_id": "delivery_areas",
+      "category": "browsing_and_ordering",
+      "action": "none",
+      "phrases": [
+        "do you deliver here",
+        "my area",
+        "not serviceable",
+        "pincode",
+        "delivery location",
+        "which city",
+        "purulia",
+        "raghunathpur",
+        "chelyama",
+        "which areas do you deliver to?",
+        "do you deliver to my area?",
+        "is delivery available in my town?",
+        "not serviceable at my address",
+        "it says we don't deliver to this address yet",
+        "delivery radius"
+      ],
+      "keywords": [
+        "purulia",
+        "raghunathpur",
+        "chelyama",
+        "serviceable",
+        "area",
+        "location",
+        "radius",
+        "pincode"
+      ],
+      "trigger_tags": [
+        "browsing_and_ordering",
+        "serviceability",
+        "area"
+      ]
+    },
+    {
+      "intent": "cannot_place_order",
+      "kb_entry_id": "cant_order",
+      "category": "browsing_and_ordering",
+      "action": "none",
+      "phrases": [
+        "cant place order",
+        "checkout not working",
+        "store closed",
+        "shop band",
+        "ordering paused",
+        "update app",
+        "order nahi ho raha",
+        "account blocked",
+        "why can't i place an order?",
+        "it says stores in your area are closed",
+        "ordering is paused in my area",
+        "app says update required",
+        "checkout button not working",
+        "couldn't place your order",
+        "store band hai kya"
+      ],
+      "keywords": [
+        "closed",
+        "paused",
+        "maintenance",
+        "update",
+        "blocked",
+        "cannot order",
+        "opening hours"
+      ],
+      "trigger_tags": [
+        "browsing_and_ordering",
+        "checkout",
+        "availability",
+        "error"
+      ]
+    },
+    {
+      "intent": "schedule_delivery",
+      "kb_entry_id": "schedule_slot",
+      "category": "browsing_and_ordering",
+      "action": "none",
+      "phrases": [
+        "schedule order",
+        "deliver later",
+        "tomorrow delivery",
+        "time slot",
+        "express",
+        "kal delivery",
+        "slot not available",
+        "can i schedule my order for later?",
+        "deliver tomorrow morning",
+        "choose delivery slot",
+        "that delivery time is no longer available",
+        "express delivery",
+        "kal subah delivery"
+      ],
+      "keywords": [
+        "schedule",
+        "slot",
+        "later",
+        "tomorrow",
+        "express",
+        "time"
+      ],
+      "trigger_tags": [
+        "browsing_and_ordering",
+        "scheduling",
+        "slot"
+      ]
+    },
+    {
+      "intent": "multi_seller_order",
+      "kb_entry_id": "multi_seller_cart",
+      "category": "browsing_and_ordering",
+      "action": "none",
+      "phrases": [
+        "different shops",
+        "many sellers",
+        "too many sellers",
+        "seller kaun hai",
+        "marketplace seller",
+        "one order two stores",
+        "can i order from different stores in one order?",
+        "it says my basket has items from too many sellers",
+        "who is the seller of my item?",
+        "marketplace seller problem",
+        "one order many shops"
+      ],
+      "keywords": [
+        "seller",
+        "sellers",
+        "store",
+        "shop",
+        "marketplace",
+        "basket",
+        "multiple"
+      ],
+      "trigger_tags": [
+        "browsing_and_ordering",
+        "marketplace",
+        "seller",
+        "cart"
+      ]
+    },
+    {
+      "intent": "item_out_of_stock",
+      "kb_entry_id": "out_of_stock",
+      "category": "browsing_and_ordering",
+      "action": "none",
+      "phrases": [
+        "out of stock",
+        "not available",
+        "item unavailable",
+        "cant find product",
+        "search not working",
+        "saman nahi mil raha",
+        "back in stock",
+        "an item in my cart is out of stock",
+        "it says the item is no longer available",
+        "i can't find a product",
+        "product not available",
+        "when will it be back in stock"
+      ],
+      "keywords": [
+        "out of stock",
+        "unavailable",
+        "not available",
+        "search",
+        "find",
+        "stock"
+      ],
+      "trigger_tags": [
+        "browsing_and_ordering",
+        "stock",
+        "catalog",
+        "search"
+      ]
+    },
+    {
+      "intent": "change_address",
+      "kb_entry_id": "change_address",
+      "category": "onboarding_and_account",
+      "action": "none",
+      "phrases": [
+        "change address",
+        "wrong address",
+        "add address",
+        "delete address",
+        "default address",
+        "galat address",
+        "thikana",
+        "how do i change my address?",
+        "wrong delivery address",
+        "add a new address",
+        "deliver to a different address",
+        "delete a saved address",
+        "set default address",
+        "address galat daal diya",
+        "i entered the wrong house number",
+        "my address is incomplete"
+      ],
+      "keywords": [
+        "address",
+        "location",
+        "landmark",
+        "home",
+        "work",
+        "default",
+        "saved address"
+      ],
+      "trigger_tags": [
+        "onboarding_and_account",
+        "address",
+        "account"
+      ]
+    },
+    {
+      "intent": "rate_order",
+      "kb_entry_id": "ratings",
+      "category": "browsing_and_ordering",
+      "action": "none",
+      "phrases": [
+        "rate rider",
+        "rating",
+        "review",
+        "feedback",
+        "rider rude",
+        "complain rider",
+        "how do i rate my rider?",
+        "rate the seller",
+        "give feedback on delivery",
+        "rider was rude",
+        "complain about rider behaviour"
+      ],
+      "keywords": [
+        "rate",
+        "rating",
+        "review",
+        "feedback",
+        "stars",
+        "rude",
+        "polite"
+      ],
+      "trigger_tags": [
+        "browsing_and_ordering",
+        "rating",
+        "feedback"
+      ]
+    },
+    {
+      "intent": "login_problem",
+      "kb_entry_id": "otp_login",
+      "category": "onboarding_and_account",
+      "action": "none",
+      "phrases": [
+        "otp not received",
+        "otp nahi aaya",
+        "cant login",
+        "lgin",
+        "forgot password",
+        "reset password",
+        "google login failed",
+        "mobile number login",
+        "i'm not getting the otp",
+        "can't log in",
+        "i forgot my password",
+        "google sign in not working",
+        "login with mobile number",
+        "lgin problem",
+        "verification code not received",
+        "sms code not coming"
+      ],
+      "keywords": [
+        "otp",
+        "login",
+        "sign in",
+        "password",
+        "forgot",
+        "google",
+        "email",
+        "lgin"
+      ],
+      "trigger_tags": [
+        "onboarding_and_account",
+        "login",
+        "auth"
+      ]
+    },
+    {
+      "intent": "create_account",
+      "kb_entry_id": "sign_up",
+      "category": "onboarding_and_account",
+      "action": "none",
+      "phrases": [
+        "sign up",
+        "signup",
+        "register",
+        "new account",
+        "create account",
+        "account kaise banaye",
+        "how do i sign up?",
+        "how do i create a zyppi account?",
+        "new account kaise banaye",
+        "why do you need my mobile number"
+      ],
+      "keywords": [
+        "sign up",
+        "signup",
+        "register",
+        "registration",
+        "new account",
+        "create account"
+      ],
+      "trigger_tags": [
+        "onboarding_and_account",
+        "onboarding",
+        "auth"
+      ]
+    },
+    {
+      "intent": "guest_checkout",
+      "kb_entry_id": "guest_checkout",
+      "category": "onboarding_and_account",
+      "action": "none",
+      "phrases": [
+        "guest",
+        "without login",
+        "save your account",
+        "guest mode",
+        "link google",
+        "can i order as a guest?",
+        "it says save your account to place an order",
+        "link my guest account to google",
+        "without login order"
+      ],
+      "keywords": [
+        "guest",
+        "without login",
+        "save account",
+        "link"
+      ],
+      "trigger_tags": [
+        "onboarding_and_account",
+        "onboarding",
+        "guest"
+      ]
+    },
+    {
+      "intent": "change_phone_number",
+      "kb_entry_id": "phone_number",
+      "category": "onboarding_and_account",
+      "action": "handoff",
+      "phrases": [
+        "change number",
+        "update mobile",
+        "wrong phone number",
+        "number badalna",
+        "how do i change my mobile number?",
+        "update phone number",
+        "wrong phone number on my account",
+        "number change karna hai"
+      ],
+      "keywords": [
+        "phone",
+        "mobile",
+        "mobile number",
+        "change number"
+      ],
+      "trigger_tags": [
+        "onboarding_and_account",
+        "account",
+        "phone"
+      ]
+    },
+    {
+      "intent": "delete_account",
+      "kb_entry_id": "account_delete",
+      "category": "onboarding_and_account",
+      "action": "none",
+      "phrases": [
+        "delete account",
+        "close account",
+        "remove my data",
+        "deactivate",
+        "account hatana",
+        "how do i delete my account?",
+        "close my zyppi account",
+        "i can't delete my account",
+        "account delete karna hai"
+      ],
+      "keywords": [
+        "delete",
+        "remove",
+        "close account",
+        "deactivate",
+        "data",
+        "privacy"
+      ],
+      "trigger_tags": [
+        "onboarding_and_account",
+        "account",
+        "privacy"
+      ]
+    },
+    {
+      "intent": "human_support",
+      "kb_entry_id": "talk_to_person",
+      "category": "cancellations_refunds_and_support",
+      "action": "handoff",
+      "phrases": [
+        "talk to human",
+        "customer care",
+        "customer care number",
+        "helpline",
+        "agent",
+        "call me",
+        "whatsapp",
+        "support email",
+        "complaint",
+        "i want to talk to a person",
+        "connect me to customer care",
+        "talk to an agent",
+        "human",
+        "whatsapp support",
+        "i want to complain"
+      ],
+      "keywords": [
+        "agent",
+        "human",
+        "person",
+        "support",
+        "helpline",
+        "complaint",
+        "customer care",
+        "whatsapp",
+        "call"
+      ],
+      "trigger_tags": [
+        "cancellations_refunds_and_support",
+        "escalation",
+        "handoff",
+        "support"
+      ]
+    },
+    {
+      "intent": "greeting",
+      "kb_entry_id": "greeting",
+      "category": "small_talk",
+      "action": "none",
+      "phrases": [
+        "hi",
+        "hello",
+        "hey",
+        "namaste",
+        "namaskar",
+        "hii",
+        "good morning",
+        "hey there"
+      ],
+      "keywords": [
+        "hi",
+        "hello",
+        "hey",
+        "namaste",
+        "namaskar"
+      ],
+      "trigger_tags": [
+        "small_talk",
+        "small-talk"
+      ]
+    },
+    {
+      "intent": "thanks",
+      "kb_entry_id": "thanks",
+      "category": "small_talk",
+      "action": "none",
+      "phrases": [
+        "thanks",
+        "thank you",
+        "thx",
+        "ty",
+        "dhanyavad",
+        "shukriya",
+        "ok thanks",
+        "great, that helped"
+      ],
+      "keywords": [
+        "thanks",
+        "thank",
+        "thx",
+        "dhanyavad",
+        "shukriya"
+      ],
+      "trigger_tags": [
+        "small_talk",
+        "small-talk"
+      ]
+    }
+  ]
+}
