@@ -66,7 +66,9 @@
         "order abhi tak nahi aaya",
         "still waiting for my order",
         "delivery delayed",
-        "order late keno"
+        "order late keno",
+        "my parcel has not reached yet",
+        "package not received"
       ],
       "keywords": [
         "late",
@@ -347,14 +349,14 @@
         "i want a refund",
         "how do refunds work?",
         "refund kab milega",
-        "refnd status"
+        "refnd status",
+        "paise kab wapas aayenge"
       ],
       "keywords": [
         "refund",
         "money back",
         "paisa",
         "wapas",
-        "return money",
         "refnd",
         "credited"
       ],
@@ -392,7 +394,14 @@
         "saman kharab hai",
         "broken packet",
         "replace my item",
-        "got a different brand or size"
+        "got a different brand or size",
+        "i want to return an item",
+        "rotten vegetables",
+        "less quantity received",
+        "weight is less",
+        "i got someone else's order",
+        "packet was open or torn",
+        "food is stale"
       ],
       "keywords": [
         "missing",
@@ -731,7 +740,9 @@
         "are there any offers?",
         "coupon only for first order",
         "cupon not applying",
-        "discount code invalid"
+        "discount code invalid",
+        "any discount today?",
+        "todays offers"
       ],
       "keywords": [
         "coupon",
@@ -769,7 +780,10 @@
         "is delivery available in my town?",
         "not serviceable at my address",
         "it says we don't deliver to this address yet",
-        "delivery radius"
+        "delivery radius",
+        "service area",
+        "serviceable areas",
+        "is zyppi available in my town?"
       ],
       "keywords": [
         "purulia",
@@ -910,7 +924,9 @@
         "it says the item is no longer available",
         "i can't find a product",
         "product not available",
-        "when will it be back in stock"
+        "when will it be back in stock",
+        "do you have atta?",
+        "is rice available?"
       ],
       "keywords": [
         "out of stock",
@@ -1018,6 +1034,8 @@
         "google sign in not working",
         "login with mobile number",
         "lgin problem",
+        "login",
+        "log in",
         "verification code not received",
         "sms code not coming"
       ],
@@ -1206,18 +1224,287 @@
         "namaskar",
         "hii",
         "good morning",
-        "hey there"
+        "hey there",
+        "good afternoon",
+        "good evening",
+        "helo",
+        "hello zyppi"
       ],
       "keywords": [
         "hi",
         "hello",
         "hey",
         "namaste",
-        "namaskar"
+        "namaskar",
+        "morning",
+        "evening",
+        "afternoon",
+        "gm"
       ],
       "trigger_tags": [
         "small_talk",
         "small-talk"
+      ]
+    },
+    {
+      "intent": "goodbye",
+      "kb_entry_id": "goodbye",
+      "category": "small_talk",
+      "action": "none",
+      "phrases": [
+        "bye",
+        "good night",
+        "gn",
+        "tata",
+        "see you",
+        "bye bye",
+        "shubh ratri",
+        "ok bye",
+        "talk later"
+      ],
+      "keywords": [
+        "bye",
+        "goodbye",
+        "night",
+        "gn",
+        "tata",
+        "later"
+      ],
+      "trigger_tags": [
+        "small_talk",
+        "small-talk"
+      ]
+    },
+    {
+      "intent": "how_are_you",
+      "kb_entry_id": "how_are_you",
+      "category": "small_talk",
+      "action": "none",
+      "phrases": [
+        "how are you",
+        "how r u",
+        "kaise ho",
+        "kemon acho",
+        "whats up",
+        "kya haal",
+        "how are you?",
+        "how are you doing"
+      ],
+      "keywords": [
+        "how are you",
+        "kaise",
+        "kemon",
+        "sup"
+      ],
+      "trigger_tags": [
+        "small_talk",
+        "small-talk"
+      ]
+    },
+    {
+      "intent": "about_bot",
+      "kb_entry_id": "about_bot",
+      "category": "small_talk",
+      "action": "none",
+      "phrases": [
+        "who are you",
+        "are you a bot",
+        "are you human",
+        "what can you do",
+        "robot",
+        "who are you?",
+        "are you a bot?",
+        "are you a real person?",
+        "what can you do?",
+        "what can you help with",
+        "is this automatic"
+      ],
+      "keywords": [
+        "bot",
+        "robot",
+        "assistant",
+        "human",
+        "real person",
+        "help"
+      ],
+      "trigger_tags": [
+        "small_talk",
+        "small-talk",
+        "bot"
+      ]
+    },
+    {
+      "intent": "about_zyppi",
+      "kb_entry_id": "about_zyppi",
+      "category": "small_talk",
+      "action": "none",
+      "phrases": [
+        "what is zyppi",
+        "what do you sell",
+        "grocery app",
+        "how zyppi works",
+        "what is zyppi?",
+        "what do you sell?",
+        "what can i buy on zyppi?",
+        "is zyppi a grocery app?",
+        "how does zyppi work"
+      ],
+      "keywords": [
+        "zyppi",
+        "grocery",
+        "groceries",
+        "sell",
+        "about",
+        "what is"
+      ],
+      "trigger_tags": [
+        "small_talk",
+        "brand",
+        "onboarding"
+      ]
+    },
+    {
+      "intent": "acknowledge",
+      "kb_entry_id": "acknowledge",
+      "category": "small_talk",
+      "action": "none",
+      "phrases": [
+        "ok",
+        "okay",
+        "k",
+        "hmm",
+        "fine",
+        "got it",
+        "accha",
+        "thik hai",
+        "👍",
+        "alright",
+        "thik ache",
+        "cool"
+      ],
+      "keywords": [
+        "ok",
+        "okay",
+        "fine",
+        "hmm",
+        "accha",
+        "thik",
+        "cool"
+      ],
+      "trigger_tags": [
+        "small_talk",
+        "small-talk"
+      ]
+    },
+    {
+      "intent": "compliment",
+      "kb_entry_id": "compliment",
+      "category": "small_talk",
+      "action": "none",
+      "phrases": [
+        "great service",
+        "awesome",
+        "nice app",
+        "good job",
+        "love zyppi",
+        "best app",
+        "you guys are awesome",
+        "fast delivery thanks",
+        "very helpful"
+      ],
+      "keywords": [
+        "great",
+        "awesome",
+        "nice",
+        "love",
+        "good job",
+        "helpful",
+        "excellent",
+        "best"
+      ],
+      "trigger_tags": [
+        "small_talk",
+        "small-talk",
+        "feedback"
+      ]
+    },
+    {
+      "intent": "complaint_angry",
+      "kb_entry_id": "complaint",
+      "category": "cancellations_refunds_and_support",
+      "action": "handoff",
+      "phrases": [
+        "worst service",
+        "useless",
+        "angry",
+        "bakwas",
+        "pathetic",
+        "very bad",
+        "disappointed",
+        "fraud app",
+        "worst service ever",
+        "you are useless",
+        "i am very angry",
+        "very bad experience",
+        "bakwas service",
+        "this is unacceptable",
+        "your bot is stupid",
+        "this is a fraud",
+        "i am not happy with zyppi"
+      ],
+      "keywords": [
+        "worst",
+        "useless",
+        "angry",
+        "bad",
+        "bakwas",
+        "pathetic",
+        "terrible",
+        "disappointed",
+        "unhappy",
+        "stupid"
+      ],
+      "trigger_tags": [
+        "cancellations_refunds_and_support",
+        "escalation",
+        "sentiment-negative",
+        "handoff"
+      ]
+    },
+    {
+      "intent": "app_not_working",
+      "kb_entry_id": "app_issue",
+      "category": "browsing_and_ordering",
+      "action": "none",
+      "phrases": [
+        "app crash",
+        "app not opening",
+        "app slow",
+        "blank screen",
+        "app hang",
+        "bug",
+        "the app keeps crashing",
+        "app is not opening",
+        "app is very slow",
+        "screen is blank",
+        "app hang ho raha hai",
+        "app not loading"
+      ],
+      "keywords": [
+        "crash",
+        "crashing",
+        "hang",
+        "slow",
+        "blank",
+        "not opening",
+        "loading",
+        "bug",
+        "stuck"
+      ],
+      "trigger_tags": [
+        "browsing_and_ordering",
+        "app",
+        "technical"
       ]
     },
     {
@@ -1233,14 +1520,21 @@
         "dhanyavad",
         "shukriya",
         "ok thanks",
-        "great, that helped"
+        "great, that helped",
+        "thank you so much",
+        "thnx",
+        "thanku"
       ],
       "keywords": [
         "thanks",
         "thank",
         "thx",
+        "thnx",
+        "tq",
+        "ty",
         "dhanyavad",
-        "shukriya"
+        "shukriya",
+        "thanku"
       ],
       "trigger_tags": [
         "small_talk",

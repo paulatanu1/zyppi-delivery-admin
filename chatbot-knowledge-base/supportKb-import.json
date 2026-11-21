@@ -79,7 +79,9 @@
         "order abhi tak nahi aaya",
         "still waiting for my order",
         "delivery delayed",
-        "order late keno"
+        "order late keno",
+        "my parcel has not reached yet",
+        "package not received"
       ],
       "bn": [
         "আমার অর্ডার দেরি হচ্ছে",
@@ -288,7 +290,8 @@
         "Where do I find the delivery OTP?",
         "delivery code is not working",
         "rider bol raha code batao",
-        "4 digit code"
+        "4 digit code",
+        "delivery pin"
       ],
       "bn": [
         "ডেলিভারি কোড কী?",
@@ -499,7 +502,8 @@
         "paisa wapas",
         "refund not received",
         "refnd status",
-        "taka ferot"
+        "taka ferot",
+        "paise kab wapas aayenge"
       ],
       "bn": [
         "টাকা ফেরত কবে পাব?",
@@ -532,7 +536,6 @@
       "money back",
       "paisa",
       "wapas",
-      "return money",
       "refnd",
       "credited"
     ],
@@ -564,7 +567,14 @@
         "saman kharab hai",
         "broken packet",
         "replace my item",
-        "got a different brand or size"
+        "got a different brand or size",
+        "I want to return an item",
+        "rotten vegetables",
+        "less quantity received",
+        "weight is less",
+        "I got someone else's order",
+        "packet was open or torn",
+        "food is stale"
       ],
       "bn": [
         "অর্ডারে একটা জিনিস নেই",
@@ -1075,7 +1085,9 @@
         "coupon expired",
         "coupon only for first order",
         "cupon not applying",
-        "discount code invalid"
+        "discount code invalid",
+        "any discount today?",
+        "todays offers"
       ],
       "bn": [
         "কুপন কীভাবে ব্যবহার করব?",
@@ -1130,7 +1142,10 @@
         "Is delivery available in my town?",
         "Not serviceable at my address",
         "It says we don't deliver to this address yet",
-        "delivery radius"
+        "delivery radius",
+        "service area",
+        "serviceable areas",
+        "Is Zyppi available in my town?"
       ],
       "bn": [
         "কোন কোন এলাকায় ডেলিভারি করেন?",
@@ -1336,7 +1351,9 @@
         "I can't find a product",
         "product not available",
         "when will it be back in stock",
-        "saman nahi mil raha"
+        "saman nahi mil raha",
+        "do you have atta?",
+        "is rice available?"
       ],
       "bn": [
         "জিনিসটা স্টকে নেই",
@@ -1492,6 +1509,8 @@
         "login with mobile number",
         "reset password",
         "lgin problem",
+        "login",
+        "log in",
         "verification code not received",
         "sms code not coming"
       ],
@@ -1781,19 +1800,34 @@
         "Hi",
         "Hello",
         "Hey there",
-        "Good morning"
+        "Good morning",
+        "Good afternoon",
+        "Good evening",
+        "hii",
+        "helo",
+        "hello zyppi",
+        "namaste",
+        "namaskar"
       ],
       "bn": [
         "নমস্কার",
-        "হ্যালো"
+        "হ্যালো",
+        "সুপ্রভাত",
+        "শুভ সকাল",
+        "শুভ সন্ধ্যা"
       ],
       "hi": [
         "नमस्ते",
-        "हैलो"
+        "हैलो",
+        "सुप्रभात",
+        "गुड मॉर्निंग",
+        "शुभ संध्या"
       ],
       "pa": [
         "ਸਤ ਸ੍ਰੀ ਅਕਾਲ",
-        "ਹੈਲੋ"
+        "ਹੈਲੋ",
+        "ਸ਼ੁਭ ਸਵੇਰ",
+        "ਗੁੱਡ ਮਾਰਨਿੰਗ"
       ]
     },
     "answers": {
@@ -1807,7 +1841,11 @@
       "hello",
       "hey",
       "namaste",
-      "namaskar"
+      "namaskar",
+      "morning",
+      "evening",
+      "afternoon",
+      "gm"
     ],
     "related": [
       "where_is_order",
@@ -1830,18 +1868,26 @@
         "Thank you",
         "Thanks",
         "Great, that helped",
-        "ok thanks"
+        "ok thanks",
+        "thank you so much",
+        "thnx",
+        "thanku",
+        "dhanyavad",
+        "shukriya"
       ],
       "bn": [
-        "ধন্যবাদ"
+        "ধন্যবাদ",
+        "অনেক ধন্যবাদ"
       ],
       "hi": [
         "धन्यवाद",
-        "शुक्रिया"
+        "शुक्रिया",
+        "बहुत धन्यवाद"
       ],
       "pa": [
         "ਧੰਨਵਾਦ",
-        "ਸ਼ੁਕਰੀਆ"
+        "ਸ਼ੁਕਰੀਆ",
+        "ਬਹੁਤ ਧੰਨਵਾਦ"
       ]
     },
     "answers": {
@@ -1854,9 +1900,445 @@
       "thanks",
       "thank",
       "thx",
+      "thnx",
+      "tq",
+      "ty",
       "dhanyavad",
-      "shukriya"
+      "shukriya",
+      "thanku"
     ],
     "related": []
+  },
+  {
+    "id": "goodbye",
+    "action": "none",
+    "hidden": true,
+    "title": {
+      "en": "Bye",
+      "bn": "বিদায়",
+      "hi": "अलविदा",
+      "pa": "ਅਲਵਿਦਾ"
+    },
+    "questions": {
+      "en": [
+        "Good night",
+        "Bye",
+        "Bye bye",
+        "See you",
+        "ok bye",
+        "tata",
+        "gn",
+        "talk later"
+      ],
+      "bn": [
+        "শুভ রাত্রি",
+        "বিদায়",
+        "আবার কথা হবে"
+      ],
+      "hi": [
+        "शुभ रात्रि",
+        "गुड नाइट",
+        "अलविदा",
+        "बाय"
+      ],
+      "pa": [
+        "ਸ਼ੁਭ ਰਾਤ",
+        "ਅਲਵਿਦਾ",
+        "ਬਾਏ"
+      ]
+    },
+    "answers": {
+      "en": "Take care! I’m here any time you need help with a Zyppi order.",
+      "bn": "ভালো থাকবেন! Zyppi অর্ডার নিয়ে সাহায্য লাগলে যেকোনো সময় আমি আছি।",
+      "hi": "अपना ध्यान रखें! Zyppi ऑर्डर में मदद चाहिए तो मैं कभी भी यहाँ हूँ।",
+      "pa": "ਆਪਣਾ ਖ਼ਿਆਲ ਰੱਖੋ! Zyppi ਆਰਡਰ ਵਿੱਚ ਮਦਦ ਚਾਹੀਦੀ ਹੋਵੇ ਤਾਂ ਮੈਂ ਕਦੇ ਵੀ ਇੱਥੇ ਹਾਂ।"
+    },
+    "keywords": [
+      "bye",
+      "goodbye",
+      "night",
+      "gn",
+      "tata",
+      "later"
+    ],
+    "related": []
+  },
+  {
+    "id": "how_are_you",
+    "action": "none",
+    "hidden": true,
+    "title": {
+      "en": "How are you?",
+      "bn": "কেমন আছেন?",
+      "hi": "आप कैसे हैं?",
+      "pa": "ਤੁਸੀਂ ਕਿਵੇਂ ਹੋ?"
+    },
+    "questions": {
+      "en": [
+        "How are you?",
+        "how r u",
+        "how are you doing",
+        "kaise ho",
+        "kemon acho",
+        "whats up"
+      ],
+      "bn": [
+        "কেমন আছেন?",
+        "কেমন আছো?"
+      ],
+      "hi": [
+        "आप कैसे हैं?",
+        "कैसे हो?"
+      ],
+      "pa": [
+        "ਤੁਸੀਂ ਕਿਵੇਂ ਹੋ?",
+        "ਕੀ ਹਾਲ ਹੈ?"
+      ]
+    },
+    "answers": {
+      "en": "I’m doing great, thanks for asking! How can I help with your Zyppi order today?",
+      "bn": "আমি ভালো আছি, জিজ্ঞেস করার জন্য ধন্যবাদ! আজ আপনার Zyppi অর্ডারে কীভাবে সাহায্য করতে পারি?",
+      "hi": "मैं बढ़िया हूँ, पूछने के लिए शुक्रिया! आज आपके Zyppi ऑर्डर में कैसे मदद करूँ?",
+      "pa": "ਮੈਂ ਵਧੀਆ ਹਾਂ, ਪੁੱਛਣ ਲਈ ਸ਼ੁਕਰੀਆ! ਅੱਜ ਤੁਹਾਡੇ Zyppi ਆਰਡਰ ਵਿੱਚ ਕਿਵੇਂ ਮਦਦ ਕਰਾਂ?"
+    },
+    "keywords": [
+      "how are you",
+      "kaise",
+      "kemon",
+      "sup"
+    ],
+    "related": [
+      "where_is_order",
+      "refund",
+      "payment_methods"
+    ]
+  },
+  {
+    "id": "about_bot",
+    "action": "none",
+    "hidden": true,
+    "title": {
+      "en": "Who are you?",
+      "bn": "আপনি কে?",
+      "hi": "आप कौन हैं?",
+      "pa": "ਤੁਸੀਂ ਕੌਣ ਹੋ?"
+    },
+    "questions": {
+      "en": [
+        "Who are you?",
+        "Are you a bot?",
+        "Are you a real person?",
+        "What can you do?",
+        "what can you help with",
+        "is this automatic"
+      ],
+      "bn": [
+        "আপনি কে?",
+        "আপনি কি রোবট?",
+        "আপনি কী করতে পারেন?"
+      ],
+      "hi": [
+        "आप कौन हैं?",
+        "क्या आप बॉट हैं?",
+        "आप क्या कर सकते हैं?"
+      ],
+      "pa": [
+        "ਤੁਸੀਂ ਕੌਣ ਹੋ?",
+        "ਕੀ ਤੁਸੀਂ ਬੋਟ ਹੋ?",
+        "ਤੁਸੀਂ ਕੀ ਕਰ ਸਕਦੇ ਹੋ?"
+      ]
+    },
+    "answers": {
+      "en": "I’m Zyppi’s automatic assistant. I can help with tracking your order, delivery codes, payments, cancelling, refunds and reporting a problem with an item. For anything I can’t sort out, tap “Talk to a person” and our support team will reply here.",
+      "bn": "আমি Zyppi-র স্বয়ংক্রিয় সহকারী। অর্ডার ট্র্যাক, ডেলিভারি কোড, পেমেন্ট, বাতিল, টাকা ফেরত আর জিনিসে সমস্যা জানাতে সাহায্য করতে পারি। আমি না পারলে “কারও সঙ্গে কথা বলুন” ট্যাপ করুন, আমাদের সাপোর্ট টিম এখানেই উত্তর দেবে।",
+      "hi": "मैं Zyppi का ऑटोमैटिक असिस्टेंट हूँ। ऑर्डर ट्रैक करने, डिलीवरी कोड, पेमेंट, कैंसिल, रिफ़ंड और सामान की शिकायत में मदद कर सकता हूँ। जो मैं न सुलझा पाऊँ, उसके लिए “किसी से बात करें” पर टैप करें, हमारी सपोर्ट टीम यहीं जवाब देगी।",
+      "pa": "ਮੈਂ Zyppi ਦਾ ਆਟੋਮੈਟਿਕ ਸਹਾਇਕ ਹਾਂ। ਆਰਡਰ ਟ੍ਰੈਕ ਕਰਨ, ਡਿਲੀਵਰੀ ਕੋਡ, ਭੁਗਤਾਨ, ਰੱਦ ਕਰਨ, ਰਿਫ਼ੰਡ ਅਤੇ ਸਾਮਾਨ ਦੀ ਸ਼ਿਕਾਇਤ ਵਿੱਚ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ। ਜੋ ਮੈਂ ਨਾ ਸੁਲਝਾ ਸਕਾਂ, ਉਸ ਲਈ “ਕਿਸੇ ਨਾਲ ਗੱਲ ਕਰੋ” ’ਤੇ ਟੈਪ ਕਰੋ, ਸਾਡੀ ਸਪੋਰਟ ਟੀਮ ਇੱਥੇ ਹੀ ਜਵਾਬ ਦੇਵੇਗੀ।"
+    },
+    "keywords": [
+      "bot",
+      "robot",
+      "assistant",
+      "human",
+      "real person",
+      "help"
+    ],
+    "related": [
+      "where_is_order",
+      "refund",
+      "talk_to_person"
+    ]
+  },
+  {
+    "id": "about_zyppi",
+    "action": "none",
+    "hidden": false,
+    "title": {
+      "en": "What is Zyppi?",
+      "bn": "Zyppi কী?",
+      "hi": "Zyppi क्या है?",
+      "pa": "Zyppi ਕੀ ਹੈ?"
+    },
+    "questions": {
+      "en": [
+        "What is Zyppi?",
+        "What do you sell?",
+        "What can I buy on Zyppi?",
+        "Is Zyppi a grocery app?",
+        "how does zyppi work"
+      ],
+      "bn": [
+        "Zyppi কী?",
+        "আপনারা কী বিক্রি করেন?"
+      ],
+      "hi": [
+        "Zyppi क्या है?",
+        "आप क्या बेचते हैं?"
+      ],
+      "pa": [
+        "Zyppi ਕੀ ਹੈ?",
+        "ਤੁਸੀਂ ਕੀ ਵੇਚਦੇ ਹੋ?"
+      ]
+    },
+    "answers": {
+      "en": "Zyppi is a quick-delivery app for groceries and daily essentials. You order from Zyppi stores and local sellers near you, and a Zyppi delivery partner brings it to your door — choose Express for the fastest delivery or schedule a later slot. Pay by UPI, card, Zyppi wallet or cash on delivery.",
+      "bn": "Zyppi হলো মুদি ও রোজকার জিনিসের দ্রুত ডেলিভারি অ্যাপ। কাছের Zyppi স্টোর ও স্থানীয় বিক্রেতাদের থেকে অর্ডার দিন, Zyppi ডেলিভারি পার্টনার দরজায় পৌঁছে দেবেন — সবচেয়ে দ্রুত পেতে এক্সপ্রেস, বা পরের কোনো সময় বাছুন। UPI, কার্ড, Zyppi ওয়ালেট বা ক্যাশ অন ডেলিভারিতে পেমেন্ট করুন।",
+      "hi": "Zyppi किराना और रोज़मर्रा की चीज़ों की तेज़ डिलीवरी वाला ऐप है। पास के Zyppi स्टोर और लोकल सेलर से ऑर्डर करें, Zyppi डिलीवरी पार्टनर आपके दरवाज़े तक लाएगा — सबसे तेज़ के लिए एक्सप्रेस चुनें या बाद का स्लॉट। UPI, कार्ड, Zyppi वॉलेट या कैश ऑन डिलीवरी से पेमेंट करें।",
+      "pa": "Zyppi ਕਰਿਆਨੇ ਅਤੇ ਰੋਜ਼ਾਨਾ ਚੀਜ਼ਾਂ ਦੀ ਤੇਜ਼ ਡਿਲੀਵਰੀ ਵਾਲੀ ਐਪ ਹੈ। ਨੇੜੇ ਦੇ Zyppi ਸਟੋਰ ਅਤੇ ਲੋਕਲ ਸੇਲਰਾਂ ਤੋਂ ਆਰਡਰ ਕਰੋ, Zyppi ਡਿਲੀਵਰੀ ਪਾਰਟਨਰ ਤੁਹਾਡੇ ਦਰਵਾਜ਼ੇ ਤੱਕ ਲਿਆਵੇਗਾ — ਸਭ ਤੋਂ ਤੇਜ਼ ਲਈ ਐਕਸਪ੍ਰੈਸ ਜਾਂ ਬਾਅਦ ਦਾ ਸਲਾਟ ਚੁਣੋ। UPI, ਕਾਰਡ, Zyppi ਵਾਲਿਟ ਜਾਂ ਕੈਸ਼ ਆਨ ਡਿਲੀਵਰੀ ਨਾਲ ਭੁਗਤਾਨ ਕਰੋ।"
+    },
+    "keywords": [
+      "zyppi",
+      "grocery",
+      "groceries",
+      "sell",
+      "about",
+      "what is"
+    ],
+    "related": [
+      "delivery_areas",
+      "payment_methods",
+      "schedule_slot"
+    ]
+  },
+  {
+    "id": "acknowledge",
+    "action": "none",
+    "hidden": true,
+    "title": {
+      "en": "Okay",
+      "bn": "ঠিক আছে",
+      "hi": "ठीक है",
+      "pa": "ਠੀਕ ਹੈ"
+    },
+    "questions": {
+      "en": [
+        "ok",
+        "okay",
+        "got it",
+        "fine",
+        "alright",
+        "hmm",
+        "accha",
+        "thik hai",
+        "thik ache",
+        "cool"
+      ],
+      "bn": [
+        "ঠিক আছে",
+        "আচ্ছা"
+      ],
+      "hi": [
+        "ठीक है",
+        "अच्छा",
+        "ओके"
+      ],
+      "pa": [
+        "ਠੀਕ ਹੈ",
+        "ਅੱਛਾ",
+        "ਓਕੇ"
+      ]
+    },
+    "answers": {
+      "en": "Great! Is there anything else I can help you with?",
+      "bn": "বেশ! আর কিছুতে সাহায্য করতে পারি?",
+      "hi": "बढ़िया! क्या मैं किसी और चीज़ में मदद कर सकता हूँ?",
+      "pa": "ਵਧੀਆ! ਕੀ ਮੈਂ ਕਿਸੇ ਹੋਰ ਚੀਜ਼ ਵਿੱਚ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?"
+    },
+    "keywords": [
+      "ok",
+      "okay",
+      "fine",
+      "hmm",
+      "accha",
+      "thik",
+      "cool"
+    ],
+    "related": [
+      "where_is_order",
+      "refund",
+      "talk_to_person"
+    ]
+  },
+  {
+    "id": "compliment",
+    "action": "none",
+    "hidden": true,
+    "title": {
+      "en": "Thanks for the kind words",
+      "bn": "প্রশংসার জন্য ধন্যবাদ",
+      "hi": "तारीफ़ के लिए शुक्रिया",
+      "pa": "ਤਾਰੀਫ਼ ਲਈ ਸ਼ੁਕਰੀਆ"
+    },
+    "questions": {
+      "en": [
+        "great service",
+        "you guys are awesome",
+        "nice app",
+        "love zyppi",
+        "fast delivery thanks",
+        "good job",
+        "very helpful"
+      ],
+      "bn": [
+        "দারুণ সার্ভিস",
+        "খুব ভালো অ্যাপ"
+      ],
+      "hi": [
+        "बहुत बढ़िया सर्विस",
+        "अच्छा ऐप है"
+      ],
+      "pa": [
+        "ਬਹੁਤ ਵਧੀਆ ਸਰਵਿਸ",
+        "ਵਧੀਆ ਐਪ ਹੈ"
+      ]
+    },
+    "answers": {
+      "en": "Thank you, that means a lot to us! You can also rate your delivery partner and sellers on the order screen — it helps other customers.",
+      "bn": "অনেক ধন্যবাদ, এটা আমাদের কাছে অনেক! অর্ডার স্ক্রিনে ডেলিভারি পার্টনার ও বিক্রেতাদের রেটিংও দিতে পারেন — এতে অন্য গ্রাহকদের সুবিধা হয়।",
+      "hi": "बहुत शुक्रिया, यह हमारे लिए बहुत मायने रखता है! ऑर्डर स्क्रीन पर डिलीवरी पार्टनर और सेलर को रेटिंग भी दे सकते हैं — इससे दूसरे ग्राहकों को मदद मिलती है।",
+      "pa": "ਬਹੁਤ ਸ਼ੁਕਰੀਆ, ਇਹ ਸਾਡੇ ਲਈ ਬਹੁਤ ਮਾਇਨੇ ਰੱਖਦਾ ਹੈ! ਆਰਡਰ ਸਕ੍ਰੀਨ ’ਤੇ ਡਿਲੀਵਰੀ ਪਾਰਟਨਰ ਅਤੇ ਸੇਲਰਾਂ ਨੂੰ ਰੇਟਿੰਗ ਵੀ ਦੇ ਸਕਦੇ ਹੋ — ਇਸ ਨਾਲ ਹੋਰ ਗਾਹਕਾਂ ਦੀ ਮਦਦ ਹੁੰਦੀ ਹੈ।"
+    },
+    "keywords": [
+      "great",
+      "awesome",
+      "nice",
+      "love",
+      "good job",
+      "helpful",
+      "excellent",
+      "best"
+    ],
+    "related": [
+      "ratings"
+    ]
+  },
+  {
+    "id": "complaint",
+    "action": "handoff",
+    "hidden": true,
+    "title": {
+      "en": "I’m not happy",
+      "bn": "আমি খুশি নই",
+      "hi": "मैं खुश नहीं हूँ",
+      "pa": "ਮੈਂ ਖ਼ੁਸ਼ ਨਹੀਂ ਹਾਂ"
+    },
+    "questions": {
+      "en": [
+        "worst service ever",
+        "you are useless",
+        "I am very angry",
+        "very bad experience",
+        "bakwas service",
+        "this is unacceptable",
+        "your bot is stupid",
+        "this is a fraud",
+        "fraud app",
+        "I am not happy with Zyppi"
+      ],
+      "bn": [
+        "খুব বাজে সার্ভিস",
+        "আমি খুব রেগে আছি"
+      ],
+      "hi": [
+        "बहुत बेकार सर्विस है",
+        "मैं बहुत नाराज़ हूँ"
+      ],
+      "pa": [
+        "ਬਹੁਤ ਮਾੜੀ ਸਰਵਿਸ",
+        "ਮੈਂ ਬਹੁਤ ਨਾਰਾਜ਼ ਹਾਂ"
+      ]
+    },
+    "answers": {
+      "en": "I’m really sorry you’ve had a bad experience with Zyppi. I’m passing this chat to our support team so a person can look into it right away.",
+      "bn": "Zyppi-তে আপনার খারাপ অভিজ্ঞতার জন্য সত্যিই দুঃখিত। চ্যাটটি আমাদের সাপোর্ট টিমকে দিচ্ছি, যাতে একজন মানুষ এখনই বিষয়টি দেখেন।",
+      "hi": "Zyppi के साथ आपके बुरे अनुभव के लिए सच में माफ़ी चाहता हूँ। मैं यह चैट हमारी सपोर्ट टीम को दे रहा हूँ, ताकि कोई तुरंत इसे देखे।",
+      "pa": "Zyppi ਨਾਲ ਤੁਹਾਡੇ ਮਾੜੇ ਤਜਰਬੇ ਲਈ ਸੱਚਮੁੱਚ ਮਾਫ਼ੀ। ਮੈਂ ਇਹ ਚੈਟ ਸਾਡੀ ਸਪੋਰਟ ਟੀਮ ਨੂੰ ਦੇ ਰਿਹਾ ਹਾਂ, ਤਾਂ ਜੋ ਕੋਈ ਤੁਰੰਤ ਇਸਨੂੰ ਦੇਖੇ।"
+    },
+    "keywords": [
+      "worst",
+      "useless",
+      "angry",
+      "bad",
+      "bakwas",
+      "pathetic",
+      "terrible",
+      "disappointed",
+      "unhappy",
+      "stupid"
+    ],
+    "related": []
+  },
+  {
+    "id": "app_issue",
+    "action": "none",
+    "hidden": false,
+    "title": {
+      "en": "The app isn’t working",
+      "bn": "অ্যাপ কাজ করছে না",
+      "hi": "ऐप काम नहीं कर रहा",
+      "pa": "ਐਪ ਕੰਮ ਨਹੀਂ ਕਰ ਰਹੀ"
+    },
+    "questions": {
+      "en": [
+        "The app keeps crashing",
+        "app is not opening",
+        "app is very slow",
+        "screen is blank",
+        "app hang ho raha hai",
+        "app not loading"
+      ],
+      "bn": [
+        "অ্যাপ বারবার বন্ধ হয়ে যাচ্ছে",
+        "অ্যাপ খুলছে না"
+      ],
+      "hi": [
+        "ऐप बार-बार बंद हो रहा है",
+        "ऐप नहीं खुल रहा"
+      ],
+      "pa": [
+        "ਐਪ ਵਾਰ-ਵਾਰ ਬੰਦ ਹੋ ਰਹੀ ਹੈ",
+        "ਐਪ ਨਹੀਂ ਖੁੱਲ੍ਹ ਰਹੀ"
+      ]
+    },
+    "answers": {
+      "en": "Sorry about that! Please update Zyppi from the Play Store, then close the app fully and open it again, and check that your internet is working. If it still doesn’t work, tap “Talk to a person” and tell us what you see — a screenshot helps.",
+      "bn": "এর জন্য দুঃখিত! Play Store থেকে Zyppi আপডেট করুন, তারপর অ্যাপ পুরো বন্ধ করে আবার খুলুন, আর ইন্টারনেট চলছে কি না দেখুন। তবুও না চললে “কারও সঙ্গে কথা বলুন” ট্যাপ করে কী দেখছেন জানান — স্ক্রিনশট দিলে ভালো হয়।",
+      "hi": "इसके लिए माफ़ी! Play Store से Zyppi अपडेट करें, फिर ऐप पूरी तरह बंद करके दोबारा खोलें, और देखें कि इंटरनेट चल रहा है। फिर भी न चले तो “किसी से बात करें” पर टैप करके बताएँ कि क्या दिख रहा है — स्क्रीनशॉट से मदद मिलती है।",
+      "pa": "ਇਸ ਲਈ ਮਾਫ਼ੀ! Play Store ਤੋਂ Zyppi ਅੱਪਡੇਟ ਕਰੋ, ਫਿਰ ਐਪ ਪੂਰੀ ਤਰ੍ਹਾਂ ਬੰਦ ਕਰਕੇ ਦੁਬਾਰਾ ਖੋਲ੍ਹੋ, ਅਤੇ ਦੇਖੋ ਕਿ ਇੰਟਰਨੈੱਟ ਚੱਲ ਰਿਹਾ ਹੈ। ਫਿਰ ਵੀ ਨਾ ਚੱਲੇ ਤਾਂ “ਕਿਸੇ ਨਾਲ ਗੱਲ ਕਰੋ” ’ਤੇ ਟੈਪ ਕਰਕੇ ਦੱਸੋ ਕਿ ਕੀ ਦਿਖ ਰਿਹਾ ਹੈ — ਸਕ੍ਰੀਨਸ਼ਾਟ ਨਾਲ ਮਦਦ ਮਿਲਦੀ ਹੈ।"
+    },
+    "keywords": [
+      "crash",
+      "crashing",
+      "hang",
+      "slow",
+      "blank",
+      "not opening",
+      "loading",
+      "bug",
+      "stuck"
+    ],
+    "related": [
+      "cant_order",
+      "talk_to_person"
+    ]
   }
 ]

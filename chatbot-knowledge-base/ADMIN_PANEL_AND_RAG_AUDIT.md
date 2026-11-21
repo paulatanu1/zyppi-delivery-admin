@@ -89,6 +89,25 @@ Delete → adminDeleteKbEntry → audit → cache clear
 2. **Audience field.** Add `audience: 'customer' | 'seller' | 'rider'` to `supportKb`, and filter in `Retriever` by the chat owner's role. That lets the same pipeline serve the seller and rider apps.
 3. **Vector field migration.** Store `FieldValue.vector()` alongside the base64 vectors, so moving to `findNearest` later is just a switch.
 
+### 3.5 Red-team round (2026-11-22): small talk and the confidence gate
+Testing on the live bot showed general chat failing. "good morning", "good night", "ok", "bye", "how are you" all got "Sorry, I can't answer that one yet" or unrelated chips. A 164-message adversarial set (greetings in 4 languages, typos, Hinglish, anger, off-topic, prompt injection, emoji, punctuation) traced it to four causes:
+
+1. **Missing entries.** There was nothing for goodbye, how-are-you, who-are-you, ok, compliments, complaints or app crashes. **Added 8 entries**: `goodbye`, `how_are_you`, `about_bot`, `about_zyppi`, `acknowledge`, `compliment`, `complaint` (hands off to a person), `app_issue`.
+2. **Hidden entries turned into random chips.** When the best match was the greeting (hidden), the bot offered three unrelated topics instead.
+3. **An absolute cosine gate inside e5's noise floor.** Any short text scores 0.82–0.87 against everything. The gate now uses **lift**: the cosine above the median over all entries (real hits are at least about 0.06, off-topic about 0.03).
+4. **Chips weren't filtered for relevance.**
+
+**Code fixes** (zyppi-APP `functions/src/support`, branch `feat/support-bot-redteam`):
+- `smalltalk.ts`: pattern-matches greeting, goodbye, thanks, ok and how-are-you in en/bn/hi/pa plus romanised forms and emoji. It answers from the KB entry with that id, so the text stays editable in the admin. It also strips a leading greeting ("hi, where is my order") and treats letter-less messages ("?", "...") as unknown without loading the model.
+- `kb/retrieve.ts`: the lift gate, relevant-only chips, answering hidden entries directly, answering a lone relevant topic directly, and a standout rule.
+
+| Message set | Before | After |
+|---|---|---|
+| Red-team set (164) | 81 pass, 26 chips, **57 fail** | **155** pass, 8 chips, 1 fail |
+| Held-out set (62, never used for tuning) | — | **57** pass, 5 chips, **0 fail** |
+
+The one remaining "failure" ("do you sell iphones") answers with "What is Zyppi? … groceries", which is acceptable.
+
 ## 4. Plugin and package recommendations
 
 The admin repo's `CLAUDE.md` says to ask before adding packages that aren't in `docs/PLAN.md`. None of these are installed yet.
@@ -147,6 +166,6 @@ These are fixed in code, so no confirmation is needed: tip cap ₹500 (`MAX_TIP_
 | File | Purpose |
 |---|---|
 | `01`–`05-*.md` | Customer KB in English. YAML frontmatter (`category`, `audience: end_user`, `keywords`), `##` question headings, self-contained sections, a `Keywords:` line each, `[VERIFY_CONFIG]` markers. |
-| `supportKb-import.json` | 36 entries in the exact `supportKb` schema, in en/bn/hi/pa. Passes `validateKbEntry`'s rules (checked by the admin parser and the build script). |
-| `common-words-and-synonyms.json` / `.csv` | 36 intents. Each maps the canonical intent name (e.g. `order_tracking`, `refund_status`, `cod_availability`) to its KB id, and lists category, action, phrases (everyday wording, Hinglish/Banglish, typos), keywords and trigger tags. The phrases are already folded into the KB's `questions` and `keywords`; use the tags for analytics or filtering. |
+| `supportKb-import.json` | 44 entries in the exact `supportKb` schema, in en/bn/hi/pa. Passes `validateKbEntry`'s rules (checked by the admin parser and the build script). |
+| `common-words-and-synonyms.json` / `.csv` | 44 intents. Each maps the canonical intent name (e.g. `order_tracking`, `refund_status`, `cod_availability`) to its KB id, and lists category, action, phrases (everyday wording, Hinglish/Banglish, typos), keywords and trigger tags. The phrases are already folded into the KB's `questions` and `keywords`; use the tags for analytics or filtering. |
 | `ADMIN_PANEL_AND_RAG_AUDIT.md` | This file. |
