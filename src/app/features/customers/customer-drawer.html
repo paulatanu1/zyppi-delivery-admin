@@ -26,6 +26,9 @@
               <nz-tag [nzColor]="c.notifyOffers ? 'green' : 'default'">
                 Offers {{ c.notifyOffers ? 'on' : 'off' }}
               </nz-tag>
+              @if (!c.notifyOrderUpdates) {
+                <nz-tag>Order updates off</nz-tag>
+              }
               @if (!c.hasDevice) {
                 <nz-tag>No device for pushes</nz-tag>
               }
@@ -81,6 +84,78 @@
         }
 
         <nz-tabs class="mt-4">
+          <nz-tab nzTitle="Profile">
+            <dl class="grid grid-cols-[150px_1fr] gap-y-2 text-[13px]">
+              <dt class="z-muted">Name</dt>
+              <dd>{{ c.fullName || '—' }}</dd>
+              <dt class="z-muted">Phone</dt>
+              <dd>{{ c.phone ?? account()?.phone ?? '—' }}</dd>
+              <dt class="z-muted">Email</dt>
+              <dd class="break-all">{{ c.email ?? account()?.email ?? '—' }}</dd>
+              <dt class="z-muted">Date of birth</dt>
+              <dd>{{ c.dob ?? '—' }}</dd>
+              <dt class="z-muted">Gender</dt>
+              <dd>{{ c.gender ?? '—' }}</dd>
+              <dt class="z-muted">Language</dt>
+              <dd>{{ c.lang.toUpperCase() }}</dd>
+              <dt class="z-muted">Preferred payment</dt>
+              <dd>{{ c.preferredPaymentMethod ?? '—' }}</dd>
+              <dt class="z-muted">Notifications</dt>
+              <dd>
+                Order updates {{ c.notifyOrderUpdates ? 'on' : 'off' }} · Offers
+                {{ c.notifyOffers ? 'on' : 'off' }}
+              </dd>
+              <dt class="z-muted">Service area</dt>
+              <dd>{{ c.serviceAreaId ? (areaName() ?? c.serviceAreaId) : '—' }}</dd>
+              <dt class="z-muted">Joined</dt>
+              <dd>{{ c.createdAt | when }}</dd>
+              <dt class="z-muted">Profile updated</dt>
+              <dd>{{ c.updatedAt | when }}</dd>
+              <dt class="z-muted">App</dt>
+              <dd>
+                @if (device(); as d) {
+                  {{ d.platform ?? '' }} {{ d.appVersion ? 'v' + d.appVersion : '' }}
+                  <span class="z-caption">(when terms were accepted)</span>
+                } @else {
+                  —
+                }
+              </dd>
+              <dt class="z-muted">Coupons used</dt>
+              <dd>
+                @for (cp of coupons(); track cp.code) {
+                  <nz-tag>{{ cp.code }}{{ cp.count > 1 ? ' ×' + cp.count : '' }}</nz-tag>
+                } @empty {
+                  —
+                }
+              </dd>
+            </dl>
+
+            <h4 class="z-overline mt-4 mb-2">Push devices ({{ c.pushTokens.length }})</h4>
+            <p class="z-caption mb-2">
+              FCM tokens of the phones signed in to this account, newest first. Last registered
+              {{ c.pushTokenAt | when }}.
+            </p>
+            <ul class="list-none p-0 m-0">
+              @for (t of c.pushTokens; track t; let i = $index) {
+                <li class="flex items-center gap-2 py-1 border-b border-[var(--z-line)]">
+                  <code class="flex-1 truncate text-[12px]">{{ mask(t) }}</code>
+                  @if (i === 0) {
+                    <nz-tag>Newest</nz-tag>
+                  }
+                  <button
+                    nz-button
+                    nzSize="small"
+                    aria-label="Copy the full token"
+                    (click)="copy(t)"
+                  >
+                    <span nz-icon nzType="copy"></span>
+                  </button>
+                </li>
+              } @empty {
+                <p class="z-muted">No device registered for pushes.</p>
+              }
+            </ul>
+          </nz-tab>
           <nz-tab nzTitle="Orders">
             @if (orders() === null) {
               <p class="z-muted" aria-busy="true">Loading…</p>
@@ -98,6 +173,9 @@
                     <nz-tag [nzColor]="orderMeta[o.status].color">{{
                       orderMeta[o.status].label
                     }}</nz-tag>
+                    @if (o.couponCode) {
+                      <nz-tag nzColor="purple">{{ o.couponCode }}</nz-tag>
+                    }
                     <span class="z-caption flex-1">{{ o.placedAt | when }}</span>
                     <span class="font-bold">{{ o.totalPaise | rupees }}</span>
                   </li>
@@ -105,6 +183,18 @@
                   <p class="z-muted">No orders yet.</p>
                 }
               </ul>
+              @if (ratings().length) {
+                <h4 class="z-overline mt-4 mb-2">Seller ratings given</h4>
+                <ul class="list-none p-0 m-0">
+                  @for (r of ratings(); track r.orderId + r.sellerId) {
+                    <li class="flex flex-wrap gap-2 py-1 border-b border-[var(--z-line)]">
+                      <span class="flex-1">{{ r.sellerName }}</span>
+                      <span class="z-caption">#{{ r.orderId.slice(0, 8).toUpperCase() }}</span>
+                      <b>{{ r.stars }}★</b>
+                    </li>
+                  }
+                </ul>
+              }
             }
           </nz-tab>
           <nz-tab nzTitle="Wallet">
@@ -194,6 +284,174 @@
               </ul>
             </nz-tab>
           }
+          <nz-tab nzTitle="Cart">
+            @if (cart() === null) {
+              <p class="z-muted" aria-busy="true">Loading…</p>
+            } @else {
+              <ul class="list-none p-0 m-0">
+                @for (l of cart(); track l.id) {
+                  <li
+                    class="flex flex-wrap items-center gap-2 py-2 border-b border-[var(--z-line)]"
+                  >
+                    <span class="flex-1">{{ productLabel(l.productId, l.variantId) }}</span>
+                    @if (l.offerId) {
+                      <nz-tag>Marketplace</nz-tag>
+                    }
+                    <span class="z-caption">{{ l.updatedAt | when }}</span>
+                    <b>× {{ l.quantity }}</b>
+                  </li>
+                } @empty {
+                  <p class="z-muted">The cart is empty.</p>
+                }
+              </ul>
+            }
+          </nz-tab>
+          <nz-tab nzTitle="Favourites">
+            @if (favourites() === null) {
+              <p class="z-muted" aria-busy="true">Loading…</p>
+            } @else {
+              <ul class="list-none p-0 m-0">
+                @for (f of favourites(); track f.productId) {
+                  <li
+                    class="flex flex-wrap items-center gap-2 py-2 border-b border-[var(--z-line)]"
+                  >
+                    <span class="flex-1">{{ productLabel(f.productId) }}</span>
+                    <span class="z-caption">{{ f.createdAt | when }}</span>
+                  </li>
+                } @empty {
+                  <p class="z-muted">No favourites.</p>
+                }
+              </ul>
+            }
+          </nz-tab>
+          <nz-tab nzTitle="Notifications">
+            <p class="z-caption mb-2">The newest entries of the app’s inbox (kept 60 days).</p>
+            @if (inbox() === null) {
+              <p class="z-muted" aria-busy="true">Loading…</p>
+            } @else {
+              <ul class="list-none p-0 m-0">
+                @for (n of inbox(); track n.id) {
+                  <li class="py-2 border-b border-[var(--z-line)]">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <b class="flex-1">{{ n.title }}</b>
+                      @if (!n.read) {
+                        <nz-tag nzColor="blue">Unread</nz-tag>
+                      }
+                      <span class="z-caption">{{ n.at | when }}</span>
+                    </div>
+                    <div class="z-caption">{{ n.body }}</div>
+                  </li>
+                } @empty {
+                  <p class="z-muted">Nothing in the inbox.</p>
+                }
+              </ul>
+            }
+          </nz-tab>
+          @if (canCases()) {
+            <nz-tab nzTitle="Claims & returns">
+              @if (claims() === null || returns() === null) {
+                <p class="z-muted" aria-busy="true">Loading…</p>
+              } @else {
+                <h4 class="z-overline mb-2">Claims</h4>
+                <ul class="list-none p-0 m-0">
+                  @for (cl of claims(); track cl.id) {
+                    <li
+                      class="flex flex-wrap items-center gap-2 py-2 border-b border-[var(--z-line)]"
+                    >
+                      <span class="font-bold">#{{ cl.shortOrderId }}</span>
+                      <nz-tag [nzColor]="claimMeta[cl.status].color">{{
+                        claimMeta[cl.status].label
+                      }}</nz-tag>
+                      <span class="flex-1 z-caption">{{ claimKinds(cl) }}</span>
+                      <span class="z-caption">{{ cl.createdAt | when }}</span>
+                      <b>{{ cl.amountPaise | rupees }}</b>
+                    </li>
+                  } @empty {
+                    <p class="z-muted">No claims.</p>
+                  }
+                </ul>
+                <h4 class="z-overline mt-4 mb-2">Return pickups</h4>
+                <ul class="list-none p-0 m-0">
+                  @for (r of returns(); track r.id) {
+                    <li
+                      class="flex flex-wrap items-center gap-2 py-2 border-b border-[var(--z-line)]"
+                    >
+                      <span class="font-bold">#{{ r.shortOrderId }}</span>
+                      <nz-tag [nzColor]="returnMeta[r.status].color">{{
+                        returnMeta[r.status].label
+                      }}</nz-tag>
+                      <span class="flex-1"></span>
+                      <span class="z-caption">{{ r.createdAt | when }}</span>
+                    </li>
+                  } @empty {
+                    <p class="z-muted">No return pickups.</p>
+                  }
+                </ul>
+              }
+            </nz-tab>
+          }
+          <nz-tab nzTitle="Payments">
+            <p class="z-caption mb-2">Online payment attempts, including ones that weren’t paid.</p>
+            @if (payments() === null) {
+              <p class="z-muted" aria-busy="true">Loading…</p>
+            } @else {
+              <ul class="list-none p-0 m-0">
+                @for (pi of payments(); track pi.id) {
+                  <li
+                    class="flex flex-wrap items-center gap-2 py-2 border-b border-[var(--z-line)]"
+                  >
+                    <nz-tag [nzColor]="intentMeta[pi.status]?.color ?? 'default'">{{
+                      intentMeta[pi.status]?.label ?? pi.status
+                    }}</nz-tag>
+                    <span class="flex-1 z-caption">
+                      {{ pi.paymentMethod }}
+                      @if (pi.failureReason) {
+                        · {{ pi.failureReason }}
+                      }
+                      @if (pi.orderId) {
+                        · #{{ pi.orderId.slice(0, 8).toUpperCase() }}
+                      }
+                    </span>
+                    <span class="z-caption">{{ pi.createdAt | when }}</span>
+                    <b>{{ pi.amountPaise | rupees }}</b>
+                  </li>
+                } @empty {
+                  <p class="z-muted">No online payments.</p>
+                }
+              </ul>
+            }
+          </nz-tab>
+          <nz-tab nzTitle="Legal">
+            @if (consents() === null) {
+              <p class="z-muted" aria-busy="true">Loading…</p>
+            } @else {
+              <ul class="list-none p-0 m-0">
+                @for (cn of consents(); track cn.id) {
+                  <li
+                    class="flex flex-wrap items-center gap-2 py-2 border-b border-[var(--z-line)]"
+                  >
+                    <span class="flex-1 font-bold">
+                      {{ cn.type }}
+                      @if (cn.version !== null) {
+                        <span class="z-caption">v{{ cn.version }}</span>
+                      }
+                    </span>
+                    @if (cn.method) {
+                      <nz-tag>{{ cn.method }}</nz-tag>
+                    }
+                    <span class="z-caption">
+                      {{ cn.acceptedAt | when }}
+                      @if (cn.platform || cn.appVersion) {
+                        · {{ cn.platform }} {{ cn.appVersion }}
+                      }
+                    </span>
+                  </li>
+                } @empty {
+                  <p class="z-muted">No accepted documents recorded.</p>
+                }
+              </ul>
+            }
+          </nz-tab>
           <nz-tab nzTitle="Account">
             @if (account(); as a) {
               <dl class="grid grid-cols-[140px_1fr] gap-y-2 text-[13px]">

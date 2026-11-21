@@ -28,19 +28,33 @@ import { RupeesPipe } from '../../shared/pipes/rupees.pipe';
 import { WhenPipe } from '../../shared/pipes/when.pipe';
 import { PageState } from '../../shared/ui/page-state';
 import { Order, STATUS_META } from '../orders/orders.models';
+import { INTENT_META, Intent } from '../payments/payments.api';
+import { RETURN_META, ReturnDoc } from '../returns/returns.models';
 import { CHAT_META, Chat } from '../support/support.models';
-import { CustomersApi } from './customers.api';
+import { CustomersApi, ProductName } from './customers.api';
 import {
+  CartLine,
+  Consent,
   Customer,
   CustomerAddress,
   CustomerAuth,
+  Favourite,
+  InboxEntry,
   MAX_WALLET_CREDIT_PAISE,
+  SellerRating,
   WALLET_TYPE_LABEL,
   WalletEntry,
   averageOrder,
+  couponsUsed,
   customerName,
+  maskToken,
 } from './customers.models';
-import { claimAmountPaise } from '../claims/claims.models';
+import {
+  Claim,
+  KIND_LABEL,
+  STATUS_META as CLAIM_META,
+  claimAmountPaise,
+} from '../claims/claims.models';
 
 const PROVIDERS: Record<string, string> = {
   phone: 'Phone OTP',
@@ -79,10 +93,17 @@ export class CustomerDrawer {
 
   readonly orderMeta = STATUS_META;
   readonly chatMeta = CHAT_META;
+  readonly claimMeta = CLAIM_META;
+  readonly claimKind = KIND_LABEL;
+  readonly returnMeta = RETURN_META;
+  readonly intentMeta = INTENT_META;
+  readonly mask = maskToken;
   readonly aov = averageOrder;
   readonly canBlock = computed(() => hasRole(this.auth.role(), ['ops']));
   readonly canOrders = computed(() => hasRole(this.auth.role(), ['ops', 'support']));
   readonly canSupport = computed(() => hasRole(this.auth.role(), ['support']));
+  /** orderIssues and returns: ops, support, finance (firestore.rules). */
+  readonly canCases = computed(() => hasRole(this.auth.role(), ['ops', 'support', 'finance']));
   /** adminCreditWallet is finance only. */
   readonly canCredit = computed(() => hasRole(this.auth.role(), ['finance']));
   readonly walletLabel = WALLET_TYPE_LABEL;
@@ -106,7 +127,23 @@ export class CustomerDrawer {
   readonly addresses = signal<CustomerAddress[] | null>(null);
   readonly chats = signal<Chat[] | null>(null);
   readonly account = signal<CustomerAuth | null>(null);
+  readonly ratings = signal<SellerRating[]>([]);
+  readonly cart = signal<CartLine[] | null>(null);
+  readonly favourites = signal<Favourite[] | null>(null);
+  readonly inbox = signal<InboxEntry[] | null>(null);
+  readonly consents = signal<Consent[] | null>(null);
+  readonly claims = signal<Claim[] | null>(null);
+  readonly returns = signal<ReturnDoc[] | null>(null);
+  readonly payments = signal<Intent[] | null>(null);
+  readonly products = signal<Map<string, ProductName>>(new Map());
+  readonly areaName = signal<string | null>(null);
   readonly sideError = signal<string | null>(null);
+
+  readonly coupons = computed(() => couponsUsed(this.orders() ?? []));
+  /** The app version / platform from the newest consent (sent by the app). */
+  readonly device = computed(
+    () => this.consents()?.find((c) => c.appVersion || c.platform) ?? null,
+  );
 
   readonly title = computed(() => {
     const c = this.customer();
@@ -143,6 +180,16 @@ export class CustomerDrawer {
     this.chats.set(null);
     this.account.set(null);
     this.wallet.set(null);
+    this.ratings.set([]);
+    this.cart.set(null);
+    this.favourites.set(null);
+    this.inbox.set(null);
+    this.consents.set(null);
+    this.claims.set(null);
+    this.returns.set(null);
+    this.payments.set(null);
+    this.products.set(new Map());
+    this.areaName.set(null);
     this.sideError.set(null);
     if (!id) return;
     this.status.set('loading');
@@ -168,21 +215,92 @@ export class CustomerDrawer {
 
   async loadSide(id: string): Promise<void> {
     this.sideError.set(null);
-    const [orders, addresses, chats, account, wallet] = await Promise.allSettled([
+    const results = await Promise.allSettled([
       this.api.orders(id),
       this.api.addresses(id),
       this.canSupport() ? this.api.chats(id) : Promise.resolve([]),
       this.api.auth(id),
       this.api.wallet(id),
+      this.api.cart(id),
+      this.api.favourites(id),
+      this.api.inbox(id),
+      this.api.consents(id),
+      this.canCases() ? this.api.claims(id) : Promise.resolve([]),
+      this.canCases() ? this.api.returns(id) : Promise.resolve([]),
+      this.api.payments(id),
+    ] as const);
+    if (this.id() !== id) return;
+    const [
+      orders,
+      addresses,
+      chats,
+      account,
+      wallet,
+      cart,
+      favourites,
+      inbox,
+      consents,
+      claims,
+      returns,
+      payments,
+    ] = results;
+    const value = <T>(r: PromiseSettledResult<T>, fallback: T): T =>
+      r.status === 'fulfilled' ? r.value : fallback;
+    const o = value(orders, { orders: [], ratings: [] });
+    this.orders.set(o.orders);
+    this.ratings.set(o.ratings);
+    this.addresses.set(value(addresses, []));
+    this.chats.set(value(chats, []));
+    this.account.set(value(account, null));
+    this.wallet.set(value(wallet, []));
+    this.cart.set(value(cart, []));
+    this.favourites.set(value(favourites, []));
+    this.inbox.set(value(inbox, []));
+    this.consents.set(value(consents, []));
+    this.claims.set(value(claims, []));
+    this.returns.set(value(returns, []));
+    this.payments.set(value(payments, []));
+    if (results.some((r) => r.status === 'rejected')) {
+      this.sideError.set('Some details couldn’t be loaded.');
+    }
+    void this.loadNames(id);
+  }
+
+  /** Product names for the cart and favourites, and the service area's name. */
+  private async loadNames(id: string): Promise<void> {
+    const ids = [
+      ...(this.cart() ?? []).map((l) => l.productId),
+      ...(this.favourites() ?? []).map((f) => f.productId),
+    ];
+    const areaId = this.customer()?.serviceAreaId ?? null;
+    const [names, area] = await Promise.allSettled([
+      ids.length ? this.api.productNames(ids) : Promise.resolve(new Map<string, ProductName>()),
+      areaId ? this.api.areaName(areaId) : Promise.resolve(null),
     ]);
     if (this.id() !== id) return;
-    this.orders.set(orders.status === 'fulfilled' ? orders.value : []);
-    this.addresses.set(addresses.status === 'fulfilled' ? addresses.value : []);
-    this.chats.set(chats.status === 'fulfilled' ? chats.value : []);
-    this.account.set(account.status === 'fulfilled' ? account.value : null);
-    this.wallet.set(wallet.status === 'fulfilled' ? wallet.value : []);
-    const failed = [orders, addresses, chats, account, wallet].find((r) => r.status === 'rejected');
-    if (failed) this.sideError.set('Some details couldn’t be loaded.');
+    if (names.status === 'fulfilled') this.products.set(names.value);
+    if (area.status === 'fulfilled') this.areaName.set(area.value);
+  }
+
+  /** "Missing, Damaged" for a claim's lines. */
+  claimKinds(c: Claim): string {
+    return [...new Set(c.lines.map((l) => this.claimKind[l.kind] ?? l.kind))].join(', ');
+  }
+
+  productLabel(productId: string, variantId?: string): string {
+    const p = this.products().get(productId);
+    if (!p) return productId;
+    const v = variantId ? p.variants[variantId] : '';
+    return v ? `${p.name} · ${v}` : p.name;
+  }
+
+  async copy(text: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+      this.message.success('Copied');
+    } catch {
+      this.message.error('Couldn’t copy');
+    }
   }
 
   retry(): void {

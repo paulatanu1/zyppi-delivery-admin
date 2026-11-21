@@ -1,9 +1,14 @@
 import { Timestamp } from 'firebase/firestore';
 import {
   averageOrder,
+  couponsUsed,
   customerName,
+  maskToken,
   parseCustomerQuery,
+  ratingsOf,
   titleCase,
+  toCartLine,
+  toConsent,
   toCustomer,
 } from './customers.models';
 import {
@@ -121,5 +126,95 @@ describe('store settings models', () => {
     const url = osmEmbedUrl(23.3324, 86.3617, 6000);
     expect(url).toContain('marker=23.33240%2C86.36170');
     expect(url.startsWith('https://www.openstreetmap.org/export/embed.html?bbox=')).toBe(true);
+  });
+});
+
+describe('customer details', () => {
+  it('lists every push token once, newest first (fcmToken, then pushTokens newest last)', () => {
+    const c = toCustomer('u1', { fcmToken: 'tok-c', pushTokens: ['tok-a', 'tok-b', 'tok-c'] });
+    expect(c.pushTokens).toEqual(['tok-c', 'tok-b', 'tok-a']);
+    expect(c.hasDevice).toBe(true);
+    expect(toCustomer('u2', {}).hasDevice).toBe(false);
+  });
+
+  it('reads the profile fields the app saves', () => {
+    const c = toCustomer('u1', {
+      dob: '1990-04-02',
+      gender: 'female',
+      preferredPaymentMethod: 'UPI',
+      notifyOrderUpdates: false,
+    });
+    expect([c.dob, c.gender, c.preferredPaymentMethod, c.notifyOrderUpdates]).toEqual([
+      '1990-04-02',
+      'female',
+      'UPI',
+      false,
+    ]);
+    expect(toCustomer('u2', {}).notifyOrderUpdates).toBe(true);
+  });
+
+  it('masks long tokens but keeps both ends', () => {
+    expect(maskToken('abcdefgh1234567890xyzuvw')).toBe('abcdefgh…xyzuvw');
+    expect(maskToken('short')).toBe('short');
+  });
+
+  it('reads Zyppi and marketplace cart lines', () => {
+    expect(toCartLine('v-milk', { productId: 'p1', quantity: 2 })).toMatchObject({
+      productId: 'p1',
+      variantId: 'v-milk',
+      offerId: null,
+      quantity: 2,
+    });
+    expect(
+      toCartLine('off1', { productId: 'p1', offerId: 'off1', variantId: 'v1', quantity: 1 }),
+    ).toMatchObject({ variantId: 'v1', offerId: 'off1' });
+  });
+
+  it('reads consents with app version and platform', () => {
+    const at = Timestamp.fromMillis(1);
+    expect(
+      toConsent('terms_3', {
+        type: 'terms',
+        version: 3,
+        acceptedAt: at,
+        method: 'checkbox',
+        appVersion: '1.0.0+6',
+        platform: 'android',
+      }),
+    ).toEqual({
+      id: 'terms_3',
+      type: 'terms',
+      version: 3,
+      acceptedAt: at,
+      method: 'checkbox',
+      appVersion: '1.0.0+6',
+      platform: 'android',
+    });
+  });
+
+  it('reads seller ratings from an order, skipping bad ones', () => {
+    const r = ratingsOf(
+      'o1',
+      { sellerRatings: { s1: { stars: 4 }, s2: { stars: 9 }, s3: {} } },
+      { s1: 'Fresh Mart' },
+    );
+    expect(r).toEqual([
+      { orderId: 'o1', sellerId: 's1', sellerName: 'Fresh Mart', stars: 4, at: null },
+    ]);
+    expect(ratingsOf('o2', {}, {})).toEqual([]);
+  });
+
+  it('counts coupons used, most used first', () => {
+    expect(
+      couponsUsed([
+        { couponCode: 'A' },
+        { couponCode: 'B' },
+        { couponCode: 'B' },
+        { couponCode: null },
+      ]),
+    ).toEqual([
+      { code: 'B', count: 2 },
+      { code: 'A', count: 1 },
+    ]);
   });
 });
