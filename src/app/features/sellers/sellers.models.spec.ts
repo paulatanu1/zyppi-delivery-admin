@@ -25,8 +25,16 @@ describe('sellers models', () => {
     expect(s.ratingAvg).toBe(4.6);
     expect(s.subscription?.status).toBe('grace');
     expect(s.licenceExpired).toBe(true);
+    expect(s.fssaiMissing).toBe(false);
+    expect(s.storeCode).toBe('');
     expect(reliabilityPercent(s)).toBe(90);
     expect(reliabilityPercent({ orders: 0, cancelled: 0, lateAccepts: 0 })).toBeNull();
+  });
+
+  it('reads the Store ID and a missing FSSAI licence', () => {
+    const s = toSeller('u2', { status: 'applied', storeCode: 'ZS482913', fssaiMissing: true });
+    expect(s.storeCode).toBe('ZS482913');
+    expect(s.fssaiMissing).toBe(true);
   });
 
   it('measures how far a shop photo was taken from the pin', () => {
