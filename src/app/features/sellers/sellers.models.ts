@@ -70,6 +70,10 @@ export interface Seller {
   gstin: string;
   fssaiNo: string;
   fssaiExpiry: string;
+  /** Food shop that applied without an FSSAI licence (optional at apply). */
+  fssaiMissing: boolean;
+  /** Store ID for "Log in with Store ID" (e.g. ZS482913). */
+  storeCode: string;
   shopCategory: string;
   address: string;
   lat: number | null;
@@ -137,6 +141,8 @@ export function toSeller(id: string, d: Record<string, unknown>): Seller {
     gstin: str(d['gstin']),
     fssaiNo: str(d['fssaiNo']),
     fssaiExpiry: str(d['fssaiExpiry']),
+    fssaiMissing: d['fssaiMissing'] === true,
+    storeCode: str(d['storeCode']),
     shopCategory: str(d['shopCategory']),
     address: str(d['address']),
     lat: typeof d['lat'] === 'number' ? d['lat'] : null,

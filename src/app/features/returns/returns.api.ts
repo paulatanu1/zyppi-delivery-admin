@@ -74,8 +74,12 @@ export class ReturnsApi {
     return this.fn.call<ClaimsConfig, { ok: true }>('adminSaveClaimsConfig', c);
   }
 
-  /** Dark-store staff: a phone that receives returns in the Zyppi Seller app. */
-  setStaff(phone: string, action: 'add' | 'remove') {
-    return this.fn.call<unknown, { uid: string }>('adminSetZyppiStoreStaff', { phone, action });
+  /**
+   * Dark-store staff: a Zyppi Seller login (email, or a phone for older
+   * logins) that receives returns.
+   */
+  setStaff(login: string, action: 'add' | 'remove') {
+    const who = login.includes('@') ? { email: login } : { phone: login };
+    return this.fn.call<unknown, { uid: string }>('adminSetZyppiStoreStaff', { ...who, action });
   }
 }
