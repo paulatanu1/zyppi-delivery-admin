@@ -192,16 +192,17 @@ const KIND: Record<string, string> = {
         <section class="z-card p-4 flex flex-col gap-3">
           <h3 class="m-0">Dark-store staff logins</h3>
           <p class="z-muted m-0">
-            Staff at Zyppi's own stores sign in to the Zyppi Seller app with this phone number to
-            get return alerts and receive returns. They must sign in to the app once first.
+            Staff at Zyppi's own stores sign in to the Zyppi Seller app with this email to get
+            return alerts and receive returns. They must sign in to the app once first. Older logins
+            can still be found by their 10-digit mobile number.
           </p>
           <input
             nz-input
-            inputmode="tel"
-            placeholder="10-digit mobile number"
-            aria-label="Phone"
-            [ngModel]="staffPhone()"
-            (ngModelChange)="staffPhone.set($event)"
+            inputmode="email"
+            placeholder="Email (or 10-digit mobile)"
+            aria-label="Staff login email or mobile"
+            [ngModel]="staffLogin()"
+            (ngModelChange)="staffLogin.set($event)"
           />
           <div class="flex gap-2">
             <button nz-button nzType="primary" [nzLoading]="busy()" (click)="staff('add')">
@@ -274,7 +275,7 @@ export class ReturnsPage {
   readonly cfg = signal<ClaimsConfig>(DEFAULT_CLAIMS_CONFIG);
   readonly maxRupees = signal(String(DEFAULT_CLAIMS_CONFIG.autoMaxPaise / 100));
   readonly maxClaims = signal(String(DEFAULT_CLAIMS_CONFIG.autoMaxClaims30d));
-  readonly staffPhone = signal('');
+  readonly staffLogin = signal('');
 
   constructor() {
     void this.loadConfig();
@@ -352,9 +353,9 @@ export class ReturnsPage {
   async staff(action: 'add' | 'remove'): Promise<void> {
     this.busy.set(true);
     try {
-      await this.api.setStaff(this.staffPhone().trim(), action);
+      await this.api.setStaff(this.staffLogin().trim(), action);
       this.toast.success(action === 'add' ? 'Added: they can sign in now' : 'Removed');
-      this.staffPhone.set('');
+      this.staffLogin.set('');
     } catch (e) {
       this.toast.error((e as Error).message);
     } finally {

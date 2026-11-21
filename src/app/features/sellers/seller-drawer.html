@@ -39,6 +39,9 @@
           }
 
           <div class="facts pb-4">
+            @if (s.storeCode) {
+              <span class="z-muted">Store ID</span><span class="font-bold">{{ s.storeCode }}</span>
+            }
             <span class="z-muted">Owner</span><span>{{ s.ownerName }}</span>
             <span class="z-muted">Mobile</span
             ><a [href]="'tel:' + s.phone" class="font-bold">{{ s.phone }}</a>
@@ -57,6 +60,9 @@
             <span class="z-muted">FSSAI</span>
             <span
               >{{ s.fssaiNo || '—' }}
+              @if (s.fssaiMissing) {
+                <nz-tag nzColor="warning">Missing · follow up before food sales</nz-tag>
+              }
               @if (s.fssaiExpiry) {
                 <span class="z-caption">· valid to {{ s.fssaiExpiry }}</span>
               }
