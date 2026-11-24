@@ -21,6 +21,7 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { RupeesPipe } from '../../shared/pipes/rupees.pipe';
 import { CatalogApi } from '../catalog/catalog.api';
 import { Category, Product, discountPercent } from '../catalog/catalog.models';
+import { barcodeProblem, barcodeValue, printedGtin } from '../catalog/barcode';
 import { ImagePicker } from '../catalog/image-picker';
 
 interface VariantDraft {
@@ -29,9 +30,17 @@ interface VariantDraft {
   /** Rupees as typed (nz-input-number), converted to paise on save. */
   price: number | null;
   mrp: number | null;
+  /** Barcode as typed or read by a USB scanner (it types digits + Enter). */
+  gtin: string;
 }
 
-const blankVariant = (): VariantDraft => ({ id: null, label: '', price: null, mrp: null });
+const blankVariant = (): VariantDraft => ({
+  id: null,
+  label: '',
+  price: null,
+  mrp: null,
+  gtin: '',
+});
 
 /** Create / edit one product in a side drawer (full width on phones). */
 @Component({
@@ -54,7 +63,7 @@ const blankVariant = (): VariantDraft => ({ id: null, label: '', price: null, mr
   styles: `
     .variant {
       display: grid;
-      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr) auto;
       gap: 8px;
       align-items: start;
     }
@@ -62,8 +71,12 @@ const blankVariant = (): VariantDraft => ({ id: null, label: '', price: null, mr
       .variant {
         grid-template-columns: 1fr 1fr auto;
       }
-      .variant .label {
+      .variant .label,
+      .variant .barcode {
         grid-column: 1 / -1;
+      }
+      .variant .barcode {
+        order: 1;
       }
     }
   `,
@@ -78,6 +91,7 @@ export class ProductEditor {
   readonly closed = output<void>();
 
   readonly name = signal('');
+  readonly brand = signal('');
   readonly description = signal('');
   readonly categoryId = signal<string | null>(null);
   readonly subcategoryId = signal<string | null>(null);
@@ -109,6 +123,7 @@ export class ProductEditor {
     if (n.length < 2) out.push('Enter a product name.');
     if (!this.categoryId()) out.push('Pick a category.');
     const labels = new Set<string>();
+    const gtins = new Set<string>();
     this.variants().forEach((v, i) => {
       const k = `Variant ${i + 1}`;
       if (!v.label.trim()) out.push(`${k}: add the size, e.g. “500 g”.`);
@@ -118,6 +133,11 @@ export class ProductEditor {
       if (v.mrp != null && v.price != null && v.mrp < v.price) {
         out.push(`${k}: MRP can’t be below the selling price.`);
       }
+      const bad = barcodeProblem(v.gtin);
+      if (bad) out.push(`${k}: ${bad}.`);
+      const g = barcodeValue(v.gtin);
+      if (g && gtins.has(g)) out.push(`${k}: same barcode as another size.`);
+      if (g) gtins.add(g);
     });
     return out;
   });
@@ -129,6 +149,7 @@ export class ProductEditor {
       this.submitted.set(false);
       if (p === 'new') {
         this.name.set('');
+        this.brand.set('');
         this.description.set('');
         this.categoryId.set(null);
         this.subcategoryId.set(null);
@@ -137,6 +158,7 @@ export class ProductEditor {
         this.variants.set([blankVariant()]);
       } else if (p) {
         this.name.set(p.name);
+        this.brand.set(p.brand ?? '');
         this.description.set(p.description);
         this.categoryId.set(p.categoryId || null);
         this.subcategoryId.set(p.subcategoryId);
@@ -149,6 +171,7 @@ export class ProductEditor {
                 label: v.label,
                 price: v.pricePaise / 100,
                 mrp: v.mrpPaise / 100,
+                gtin: v.gtin ? printedGtin(v.gtin) : '',
               }))
             : [blankVariant()],
         );
@@ -187,6 +210,7 @@ export class ProductEditor {
       const res = await this.api.saveProduct({
         ...(p && p !== 'new' ? { id: p.id } : {}),
         name: this.name().trim(),
+        brand: this.brand().trim() || null,
         description: this.description().trim(),
         categoryId: this.categoryId()!,
         subcategoryId: this.subcategoryId(),
@@ -197,6 +221,7 @@ export class ProductEditor {
           label: v.label.trim(),
           pricePaise: Math.round((v.price ?? 0) * 100),
           mrpPaise: Math.round((v.mrp ?? v.price ?? 0) * 100),
+          gtin: barcodeValue(v.gtin),
         })),
       });
       this.toast.success(res.created ? 'Product created' : 'Product saved');

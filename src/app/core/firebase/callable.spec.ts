@@ -15,4 +15,10 @@ describe('callableErrorMessage', () => {
       'Something went wrong. Please try again.',
     );
   });
+
+  it('explains barcode reason codes', () => {
+    expect(
+      callableErrorMessage({ code: 'functions/already-exists', message: 'DUPLICATE_BARCODE' }),
+    ).toContain('already on another product');
+  });
 });

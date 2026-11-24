@@ -61,4 +61,17 @@ describe('helpers', () => {
     expect(p).toMatchObject({ name: 'Milk', isActive: true, subcategoryId: null });
     expect(p.variants[0].mrpPaise).toBe(0);
   });
+
+  it('reads brand and barcodes', () => {
+    const p = toProduct('p1', {
+      name: 'Nutella',
+      brand: 'Ferrero',
+      variants: [
+        { id: 'v', label: '400 g', pricePaise: 1, gtin: '03017620422003' },
+        { id: 'w', label: '750 g', pricePaise: 1 },
+      ],
+    });
+    expect(p.brand).toBe('Ferrero');
+    expect(p.variants.map((v) => v.gtin)).toEqual(['03017620422003', null]);
+  });
 });
