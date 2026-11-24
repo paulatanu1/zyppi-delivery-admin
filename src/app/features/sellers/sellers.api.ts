@@ -56,7 +56,10 @@ export interface ProductRequest {
     description: string;
     categoryId: string;
     imageUrl: string | null;
-    variants: { label: string; mrpPaise: number }[];
+    brand: string | null;
+    variants: { label: string; mrpPaise: number; gtin: string | null }[];
+    /** Raw details map: product-requests/request-details.ts reads it. */
+    details: unknown;
   };
   status: string;
   at: Timestamp | null;
@@ -270,12 +273,15 @@ export class SellersApi {
               description: (p['description'] as string) ?? '',
               categoryId: (p['categoryId'] as string) ?? '',
               imageUrl: (p['imageUrl'] as string | null) ?? null,
+              brand: typeof p['brand'] === 'string' ? p['brand'] : null,
               variants: ((p['variants'] as Record<string, unknown>[] | undefined) ?? []).map(
                 (v) => ({
                   label: String(v['label'] ?? ''),
                   mrpPaise: Number(v['mrpPaise']) || 0,
+                  gtin: typeof v['gtin'] === 'string' ? v['gtin'] : null,
                 }),
               ),
+              details: p['details'] ?? null,
             },
             status: d.get('status') ?? 'pending',
             at: ts(d.get('at')),

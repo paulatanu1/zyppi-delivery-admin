@@ -6,6 +6,8 @@ export interface Variant {
   label: string;
   pricePaise: number;
   mrpPaise: number;
+  /** 14-digit GTIN (docs/BARCODES.md in zyppi-APP), when the pack has one. */
+  gtin: string | null;
 }
 
 export interface Product {
@@ -16,6 +18,7 @@ export interface Product {
   subcategoryId: string | null;
   imageUrl: string | null;
   isActive: boolean;
+  brand: string | null;
   variants: Variant[];
   updatedAt: Timestamp | null;
 }
@@ -59,11 +62,13 @@ export function toProduct(id: string, d: Record<string, unknown>): Product {
     subcategoryId: str(d['subcategoryId']) || null,
     imageUrl: str(d['imageUrl']) || null,
     isActive: d['isActive'] !== false,
+    brand: str(d['brand']) || null,
     variants: variants.map((v) => ({
       id: str(v['id']),
       label: str(v['label']),
       pricePaise: Number(v['pricePaise']) || 0,
       mrpPaise: Number(v['mrpPaise']) || 0,
+      gtin: str(v['gtin']) || null,
     })),
     updatedAt: d['updatedAt'] instanceof Timestamp ? d['updatedAt'] : null,
   };

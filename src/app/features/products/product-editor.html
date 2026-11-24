@@ -22,6 +22,18 @@
         />
       </div>
 
+      <div class="flex flex-col gap-2">
+        <label for="p-brand" class="font-bold text-[13px]">Brand</label>
+        <input
+          nz-input
+          id="p-brand"
+          maxlength="60"
+          placeholder="Optional, e.g. Amul"
+          [ngModel]="brand()"
+          (ngModelChange)="brand.set($event)"
+        />
+      </div>
+
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="flex flex-col gap-2">
           <label for="p-cat" class="font-bold text-[13px]">Category</label>
@@ -102,6 +114,18 @@
               >
                 <span nzInputPrefix>₹</span>
               </nz-input-number>
+              <input
+                nz-input
+                class="barcode"
+                inputmode="numeric"
+                autocomplete="off"
+                maxlength="20"
+                placeholder="Barcode (EAN / UPC), optional"
+                [attr.aria-label]="'Barcode for variant ' + (i + 1)"
+                [ngModel]="v.gtin"
+                (ngModelChange)="patchVariant(i, { gtin: $event })"
+                (keydown.enter)="$event.preventDefault()"
+              />
               <button
                 nz-button
                 nzType="text"

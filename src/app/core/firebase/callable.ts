@@ -17,6 +17,16 @@ export class Callables {
   }
 }
 
+/** Server reason codes (not sentences) worth explaining. */
+const KNOWN_CODES: Record<string, string> = {
+  // functions/src/catalog/products.ts, marketplace/product_requests.ts
+  DUPLICATE_BARCODE:
+    'This barcode is already on another product. Search the catalogue for it, or clear the barcode.',
+  BARCODE_PENDING: 'A seller request with this barcode is already waiting for review.',
+  INVALID_BARCODE: 'That isn’t a valid product barcode (EAN-13, EAN-8, UPC-A or UPC-E).',
+  RATE_LIMITED: 'Too many tries. Wait a minute and try again.',
+};
+
 /** The server's own message for expected errors, a generic one otherwise. */
 export function callableErrorMessage(e: unknown): string {
   const err = e as { code?: string; message?: string };
@@ -32,6 +42,8 @@ export function callableErrorMessage(e: unknown): string {
     'already-exists',
     'out-of-range',
   ];
+  const known = KNOWN_CODES[err?.message ?? ''];
+  if (known) return known;
   if (expected.some((c) => code.endsWith(c)) && err.message) return err.message;
   if (code.endsWith('permission-denied')) return 'Your role isn’t allowed to do this.';
   if (code.endsWith('unauthenticated')) return 'Your session ended. Sign in again.';

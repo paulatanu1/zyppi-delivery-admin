@@ -12,7 +12,9 @@ import { RupeesPipe } from '../../shared/pipes/rupees.pipe';
 import { WhenPipe } from '../../shared/pipes/when.pipe';
 import { PageHeader } from '../../shared/ui/page-header';
 import { PageState } from '../../shared/ui/page-state';
+import { printedGtin } from '../catalog/barcode';
 import { ProductRequest, SellersApi } from '../sellers/sellers.api';
+import { RequestDetails, toRequestDetails } from './request-details';
 
 /** Catalog: products sellers asked to add or change. */
 @Component({
@@ -66,6 +68,9 @@ import { ProductRequest, SellersApi } from '../sellers/sellers.api';
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
                 <b>{{ r.payload.name }}</b>
+                @if (r.payload.brand) {
+                  <span class="z-muted">{{ r.payload.brand }}</span>
+                }
                 <nz-tag [nzColor]="r.kind === 'new' ? 'purple' : 'blue'">{{
                   r.kind === 'new' ? 'New' : 'Edit'
                 }}</nz-tag>
@@ -78,9 +83,66 @@ import { ProductRequest, SellersApi } from '../sellers/sellers.api';
               <div class="z-caption">{{ r.sellerName }} · {{ r.at | when }}</div>
               <div class="text-[13px] mt-1">
                 @for (v of r.payload.variants; track $index) {
-                  <span class="mr-2">{{ v.label }} · MRP {{ v.mrpPaise | rupees }}</span>
+                  <span class="mr-2"
+                    >{{ v.label }} · MRP {{ v.mrpPaise | rupees }}
+                    @if (v.gtin) {
+                      · <span class="font-mono">{{ barcode(v.gtin) }}</span>
+                    }
+                  </span>
                 }
               </div>
+              @if (details(r); as d) {
+                <dl
+                  class="text-[13px] m-0 mt-1 grid gap-x-2"
+                  style="grid-template-columns: auto 1fr"
+                >
+                  @if (d.quantity) {
+                    <dt class="z-muted">Net qty</dt>
+                    <dd class="m-0">{{ d.quantity }}</dd>
+                  }
+                  @if (d.packaging) {
+                    <dt class="z-muted">Packaging</dt>
+                    <dd class="m-0">{{ d.packaging }}</dd>
+                  }
+                  @if (d.ingredients) {
+                    <dt class="z-muted">Ingredients</dt>
+                    <dd class="m-0 line-clamp-3">{{ d.ingredients }}</dd>
+                  }
+                  @if (d.allergens.length) {
+                    <dt class="z-muted">Allergens</dt>
+                    <dd class="m-0">{{ d.allergens.join(', ') }}</dd>
+                  }
+                  @if (d.nutrition) {
+                    <dt class="z-muted">Nutrition</dt>
+                    <dd class="m-0">{{ d.nutrition }}</dd>
+                  }
+                  @if (d.origin) {
+                    <dt class="z-muted">Made in</dt>
+                    <dd class="m-0">{{ d.origin }}</dd>
+                  }
+                  @if (d.labels.length) {
+                    <dt class="z-muted">Labels</dt>
+                    <dd class="m-0">{{ d.labels.join(', ') }}</dd>
+                  }
+                </dl>
+                @if (d.provenance.length) {
+                  <div class="flex gap-1 flex-wrap mt-1">
+                    @for (p of d.provenance; track p.field) {
+                      <nz-tag [nzColor]="p.value === 'off' ? 'cyan' : 'orange'">
+                        {{ p.field }}:
+                        {{ p.value === 'off' ? 'as in the database' : 'edited by seller' }}
+                      </nz-tag>
+                    }
+                  </div>
+                }
+                @if (d.source; as s) {
+                  <div class="z-caption mt-1">
+                    Data from
+                    <a [href]="s.url" target="_blank" rel="noopener noreferrer">{{ s.name }}</a>
+                    (ODbL). Check it against the seller's photo; it can be wrong.
+                  </div>
+                }
+              }
               @if (r.payload.description) {
                 <p class="z-muted text-[13px] m-0 mt-1 line-clamp-3">{{ r.payload.description }}</p>
               }
@@ -154,6 +216,17 @@ export class ProductRequestsPage {
   readonly rejecting = signal<ProductRequest | null>(null);
   readonly reason = signal('');
   readonly error = signal<string | null>(null);
+
+  private readonly detailsCache = new WeakMap<ProductRequest, RequestDetails | null>();
+
+  details(r: ProductRequest): RequestDetails | null {
+    if (!this.detailsCache.has(r)) this.detailsCache.set(r, toRequestDetails(r.payload.details));
+    return this.detailsCache.get(r) ?? null;
+  }
+
+  barcode(gtin: string): string {
+    return printedGtin(gtin);
+  }
 
   async approve(r: ProductRequest): Promise<void> {
     this.busy.set(r.id);

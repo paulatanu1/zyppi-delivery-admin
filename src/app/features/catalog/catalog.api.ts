@@ -26,7 +26,16 @@ export interface ProductPayload {
   subcategoryId: string | null;
   imageUrl: string | null;
   isActive: boolean;
-  variants: { id?: string; label: string; pricePaise: number; mrpPaise: number }[];
+  /** Omitted = keep the stored one (also for gtin and details). */
+  brand?: string | null;
+  variants: {
+    id?: string;
+    label: string;
+    pricePaise: number;
+    mrpPaise: number;
+    /** GTIN (any EAN / UPC form; the server stores GTIN-14) or null to clear. */
+    gtin?: string | null;
+  }[];
 }
 
 export interface CategoryPayload {
