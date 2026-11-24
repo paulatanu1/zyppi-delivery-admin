@@ -2,7 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 
 /** Mirrors zyppi-APP functions/src/marketplace (model.ts, pricing.ts, settlement.ts). */
 export type SellerStatus =
-  'draft' | 'applied' | 'changes_requested' | 'approved' | 'rejected' | 'suspended';
+  'draft' | 'applied' | 'changes_requested' | 'approved' | 'rejected' | 'suspended' | 'deleted';
 export type SellerModel = 'subscription' | 'supply';
 export type Fulfilment = 'seller_shop' | 'zyppi_store';
 export type DocKey =
@@ -21,6 +21,8 @@ export const STATUS_META: Record<SellerStatus, { label: string; color: string }>
   approved: { label: 'Active', color: 'green' },
   rejected: { label: 'Rejected', color: 'red' },
   suspended: { label: 'Suspended', color: 'volcano' },
+  // Deleted their account in the app; records kept, personal data removed.
+  deleted: { label: 'Deleted', color: 'default' },
 };
 
 export const MODEL_LABEL: Record<string, string> = {

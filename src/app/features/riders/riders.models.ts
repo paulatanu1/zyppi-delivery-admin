@@ -2,7 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 
 /** Mirrors zyppi-APP functions/src/riders/model.ts. */
 export type RiderStatus =
-  'draft' | 'submitted' | 'changes_requested' | 'approved' | 'rejected' | 'suspended';
+  'draft' | 'submitted' | 'changes_requested' | 'approved' | 'rejected' | 'suspended' | 'deleted';
 
 export type VehicleType = 'bike' | 'scooter' | 'ev_scooter' | 'cycle';
 export type DocKey = 'aadhaarFront' | 'aadhaarBack' | 'selfie' | 'drivingLicence' | 'rc';
@@ -14,6 +14,8 @@ export const STATUS_META: Record<RiderStatus, { label: string; color: string }> 
   approved: { label: 'Active', color: 'green' },
   rejected: { label: 'Rejected', color: 'red' },
   suspended: { label: 'Suspended', color: 'volcano' },
+  // Deleted their account in the app; records kept, personal data removed.
+  deleted: { label: 'Deleted', color: 'default' },
 };
 
 export const VEHICLES: { value: VehicleType; label: string }[] = [

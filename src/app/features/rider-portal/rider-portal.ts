@@ -138,7 +138,7 @@ export class RiderPortal {
   readonly motor = computed(() => isMotor(this.form().vehicleType));
   readonly showForm = computed(() => {
     const r = this.rider();
-    return r === null || r?.status === 'draft' || this.editing();
+    return r === null || r?.status === 'draft' || r?.status === 'deleted' || this.editing();
   });
   readonly maxDob = (() => {
     const d = new Date();
