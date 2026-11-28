@@ -61,6 +61,8 @@ export interface ProductRequest {
     /** Raw details map: product-requests/request-details.ts reads it. */
     details: unknown;
   };
+  /** A sub-category the seller asked for; created on approval. */
+  suggestedSubcategory: string | null;
   status: string;
   at: Timestamp | null;
 }
@@ -283,6 +285,10 @@ export class SellersApi {
               ),
               details: p['details'] ?? null,
             },
+            suggestedSubcategory:
+              typeof d.get('suggestedSubcategory') === 'string'
+                ? (d.get('suggestedSubcategory') as string)
+                : null,
             status: d.get('status') ?? 'pending',
             at: ts(d.get('at')),
           };
@@ -290,7 +296,21 @@ export class SellersApi {
     );
   }
 
-  reviewProductRequest(requestId: string, action: 'approve' | 'reject', reason: string) {
-    return this.callables.call('adminReviewProductRequest', { requestId, action, reason });
+  /**
+   * `opts` applies to approvals of requests with a suggested sub-category:
+   * create it (default) under a possibly tidied name, or skip it.
+   */
+  reviewProductRequest(
+    requestId: string,
+    action: 'approve' | 'reject',
+    reason: string,
+    opts: { createSubcategory?: boolean; subcategoryName?: string | null } = {},
+  ) {
+    return this.callables.call('adminReviewProductRequest', {
+      requestId,
+      action,
+      reason,
+      ...opts,
+    });
   }
 }
