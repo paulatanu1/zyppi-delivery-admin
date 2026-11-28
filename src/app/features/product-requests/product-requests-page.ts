@@ -143,6 +143,39 @@ import { RequestDetails, toRequestDetails } from './request-details';
                   </div>
                 }
               }
+              @if (r.suggestedSubcategory; as sub) {
+                <div class="mt-2 p-2 rounded border border-dashed border-[var(--z-line,#d9d9d9)]">
+                  <div class="text-[13px]">
+                    <b>New sub-category suggested</b>
+                    @if (r.status !== 'pending') {
+                      · {{ sub }}
+                    }
+                  </div>
+                  @if (r.status === 'pending') {
+                    <input
+                      nz-input
+                      nzSize="small"
+                      class="mt-1"
+                      maxlength="60"
+                      aria-label="Sub-category name"
+                      [disabled]="!!skipSub()[r.id]"
+                      [ngModel]="subName()[r.id] ?? sub"
+                      (ngModelChange)="setSubName(r.id, $event)"
+                    />
+                    <label class="text-[13px] flex items-center gap-1 mt-1">
+                      <input
+                        type="checkbox"
+                        [checked]="!skipSub()[r.id]"
+                        (change)="setSkipSub(r.id, !$any($event.target).checked)"
+                      />
+                      Create it when approving
+                    </label>
+                    <div class="z-caption">
+                      If one with this name already exists in the category, the product goes there.
+                    </div>
+                  }
+                </div>
+              }
               @if (r.payload.description) {
                 <p class="z-muted text-[13px] m-0 mt-1 line-clamp-3">{{ r.payload.description }}</p>
               }
@@ -216,6 +249,17 @@ export class ProductRequestsPage {
   readonly rejecting = signal<ProductRequest | null>(null);
   readonly reason = signal('');
   readonly error = signal<string | null>(null);
+  /** Per request: staff's tidied sub-category name, and whether to skip it. */
+  readonly subName = signal<Record<string, string>>({});
+  readonly skipSub = signal<Record<string, boolean>>({});
+
+  setSubName(id: string, name: string): void {
+    this.subName.update((m) => ({ ...m, [id]: name }));
+  }
+
+  setSkipSub(id: string, skip: boolean): void {
+    this.skipSub.update((m) => ({ ...m, [id]: skip }));
+  }
 
   private readonly detailsCache = new WeakMap<ProductRequest, RequestDetails | null>();
 
@@ -231,7 +275,17 @@ export class ProductRequestsPage {
   async approve(r: ProductRequest): Promise<void> {
     this.busy.set(r.id);
     try {
-      await this.api.reviewProductRequest(r.id, 'approve', '');
+      await this.api.reviewProductRequest(
+        r.id,
+        'approve',
+        '',
+        r.suggestedSubcategory
+          ? {
+              createSubcategory: !this.skipSub()[r.id],
+              subcategoryName: (this.subName()[r.id] ?? r.suggestedSubcategory).trim(),
+            }
+          : {},
+      );
       this.toast.success(`${r.payload.name} added to the catalogue`);
     } catch (e) {
       this.toast.error((e as Error).message);
